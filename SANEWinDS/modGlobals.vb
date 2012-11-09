@@ -35,15 +35,12 @@ Module modGlobals
         Do
             Status = SANE.Net_Start(net, SANE.CurrentDevice.Handle, Port, ByteOrder)
 
-            'Me.TextBoxScanStatus.Text = Status.ToString
-
             If Status = SANE_API.SANE_Status.SANE_STATUS_GOOD Then
                 ReDim Preserve SANEImage.Frames(CurrentFrame)
                 Try
                     SANEImage.Frames(CurrentFrame) = SANE.AcquireFrame(net, Port, ByteOrder, CurrentSettings.SANE.CurrentHost.TCP_Timeout_ms)
                 Catch ex As Exception
                     Logger.Write(DebugLogger.Level.Error_, True, "AcquireFrame returned exception: " & ex.Message)
-                    'Exit Function
                     Status = SANE_API.SANE_Status.SANE_STATUS_IO_ERROR
                     Exit Do
                 End Try

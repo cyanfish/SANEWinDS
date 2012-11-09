@@ -20,16 +20,9 @@ Imports System.Windows.Forms
 Imports System.Drawing
 
 Public Class FormMain
-    'Private Structure HostInfo
-    '    Dim NameOrAddress As String
-    '    Dim Port As Integer
-    '    Dim Username As String
-    '    Dim TCP_Timeout_ms As Integer
-    'End Structure
-
-    'Dim net As System.Net.Sockets.TcpClient 'do NOT use the New keyword here!
-    'Dim stream As System.Net.Sockets.NetworkStream
-    'Dim SANE As New SANE_API
+    Public Event ImageAcquired(ByVal PageNumber As Integer, ByVal Bmp As Bitmap)
+    Public Event ImageError(ByVal PageNumber As Integer, ByVal Message As String)
+    Public Event BatchCompleted(ByVal Pages As Integer)
 
     Dim Host As SharedSettings.HostInfo
 
@@ -44,52 +37,6 @@ Public Class FormMain
     Public Mode As UIMode = UIMode.Scan
     Private PanelOptIsDirty As Boolean
 
-
-    'Private Sub ButtonConnect_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles ButtonConnect.Click
-    '    ''Host.NameOrAddress = "gilia.insomnia.local"
-    '    'Host.NameOrAddress = "left.rbc.local"
-    '    'Host.Port = 6566
-    '    'Host.Username = "SANE_Win"
-    '    'Host.TCP_Timeout_ms = 5000
-
-    '    Try
-    '        If net Is Nothing Then
-    '            net = New System.Net.Sockets.TcpClient
-    '            net.ReceiveTimeout = Host.TCP_Timeout_ms
-    '            net.SendTimeout = Host.TCP_Timeout_ms
-    '            Debug.Print("TCPClient Send buffer length is " & net.SendBufferSize)
-    '            Debug.Print("TCPClient Receive buffer length is " & net.ReceiveBufferSize)
-    '        End If
-    '        If net IsNot Nothing Then
-    '            net.Connect(Host.NameOrAddress, Host.Port)
-    '            'stream = net.GetStream
-    '            Dim Status As SANE_API.SANE_Status = SANE.Net_Init(net, Host.Username)
-    '            'MsgBox("status: " & Status.ToString)
-    '            Me.TextBoxConnectStatus.Text = Status.ToString
-
-    '        End If
-    '    Catch ex As Exception
-    '        MsgBox(ex.Message)
-    '    End Try
-    'End Sub
-
-    'Private Sub ButtonDisconnect_Click(ByVal sender As System.Object, ByVal e As System.EventArgs)
-    '    'Try
-    '    '    Me.ButtonClose_Click(sender, e)
-    '    '    If net IsNot Nothing Then
-    '    '        If net.Connected Then SANE.Net_Exit(net)
-    '    '        Dim stream As System.Net.Sockets.NetworkStream = net.GetStream
-    '    '        stream.Close()
-    '    '        stream = Nothing
-    '    '        If net.Connected Then net.Close()
-    '    '        net = Nothing
-    '    '    End If
-    '    'Catch ex As Exception
-    '    '    MsgBox(ex.Message)
-    '    'End Try
-    '    Me.CloseCurrentHost()
-
-    'End Sub
     Private Sub CloseCurrentHost()
         Logger.Write(DebugLogger.Level.Debug, False, "")
         Try
@@ -107,27 +54,6 @@ Public Class FormMain
         End Try
     End Sub
 
-    'Private Sub ButtonGetDevices_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles ButtonGetDevices.Click
-
-    '    Try
-    '        Dim Devices(-1) As SANE_API.SANE_Device
-    '        Me.ComboBoxDevices.Items.Clear()
-    '        Dim Status As SANE_API.SANE_Status = SANE.Net_Get_Devices(net, Devices)
-    '        Me.TextBoxGetDevicesStatus.Text = Status.ToString
-    '        'MsgBox("status: " & Status.ToString)
-    '        If Status = SANE_API.SANE_Status.SANE_STATUS_GOOD Then
-    '            For i As Integer = 0 To Devices.Length - 1
-    '                'MsgBox("Name: " & Devices(i).name & vbCr & "Vendor: " & Devices(i).vendor & vbCr & "Model: " & Devices(i).model & vbCr & "Type: " & Devices(i).type)
-    '                Me.ComboBoxDevices.Items.Add(Devices(i).name)
-    '            Next
-    '            If Me.ComboBoxDevices.Items.Count > 0 Then Me.ComboBoxDevices.SelectedIndex = 0
-    '        End If
-    '    Catch ex As Exception
-    '        MsgBox(ex.Message)
-    '    End Try
-
-    'End Sub
-
     Private Function BytesToString(ByVal buffer As Byte(), ByVal offset As Integer, ByVal length As Integer) As String
         Dim s As String = Nothing
         For i = offset To offset + length - 1
@@ -136,38 +62,6 @@ Public Class FormMain
         Return s
     End Function
 
-    'Private Sub ButtonOpenDevice_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles ButtonOpenDevice.Click
-
-    '    If SANE.CurrentDevice.Name IsNot Nothing Then
-    '        If SANE.CurrentDevice.Open Then
-    '            ButtonClose_Click(sender, e)
-    '        End If
-    '    End If
-
-    '    SANE.CurrentDevice = New SANE_API.CurrentDeviceInfo
-
-    '    Dim DeviceHandle As Integer
-    '    Dim Status As SANE_API.SANE_Status = SANE.Net_Open(net, Me.ComboBoxDevices.SelectedItem, DeviceHandle)
-    '    Me.TextBoxOpenStatus.Text = Status.ToString
-    '    If Status = SANE_API.SANE_Status.SANE_STATUS_GOOD Then
-    '        SANE.CurrentDevice.Name = Me.ComboBoxDevices.SelectedItem
-    '        SANE.CurrentDevice.Handle = DeviceHandle
-    '        SANE.CurrentDevice.Open = True
-    '        'MsgBox(DeviceHandle)
-    '    End If
-    'End Sub
-
-    'Private Sub ButtonClose_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles ButtonClose.Click
-    '    'If SANE IsNot Nothing Then
-    '    '    If SANE.CurrentDevice.Name IsNot Nothing Then
-    '    '        If SANE.CurrentDevice.Open Then
-    '    '            SANE.Net_Close(net, SANE.CurrentDevice.Handle)
-    '    '            SANE.CurrentDevice.Open = False
-    '    '        End If
-    '    '    End If
-    '    'End If
-    '    Me.CloseCurrentDevice()
-    'End Sub
     Private Sub CloseCurrentDevice()
         Logger.Write(DebugLogger.Level.Debug, False, "")
         Try
@@ -187,128 +81,38 @@ Public Class FormMain
     Private Sub ButtonOK_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles ButtonOK.Click
         Logger.Write(DebugLogger.Level.Debug, False, "")
         If Not TWAIN_Is_Active Then 'TWAIN_VB registers its own event handler
+            Dim PageNo As Integer = 0
             If SANE.CurrentDevice.Name IsNot Nothing Then
                 If SANE.CurrentDevice.Open Then
                     Dim Status As SANE_API.SANE_Status = 0
-                    Dim FileName As String = "c:\temp\SANEWin" 'XXX
-                    Dim PageNo As Integer = 0
                     Do
+                        PageNo += 1
                         Dim bmp As Bitmap = Nothing
-                        Status = AcquireImage(bmp)
-                        If Status = SANE_API.SANE_Status.SANE_STATUS_GOOD Then
-                            Dim bmp_data As Imaging.BitmapData
-                            If bmp IsNot Nothing Then
-                                Try
-                                    Dim frm As New Form2
-                                    frm.Show()
-                                    frm.PictureBox1.BorderStyle = BorderStyle.None
-                                    frm.PictureBox1.SizeMode = PictureBoxSizeMode.Normal
-                                    frm.PictureBox1.Visible = True
-                                    frm.PictureBox1.Show()
-
-                                    'XXX we have to save as a PNG here or 16bit color images get jacked up.
-                                    Dim fname As String = FileName
-                                    'If Me.CheckBoxBatchMode.Checked Then
-                                    If CurrentSettings.ScanContinuously Then
-                                        fname += PageNo.ToString
-                                        PageNo += 1
-                                    End If
-                                    fname += ".png"
-
-                                    bmp.Save(fname, Imaging.ImageFormat.Png)
-
-                                    'ReDim SANEImage.Frames(0).Data(-1)
-                                    bmp_data = Nothing
+                        Try
+                            Status = AcquireImage(bmp)
+                            If Status = SANE_API.SANE_Status.SANE_STATUS_GOOD Then
+                                If bmp IsNot Nothing Then
+                                    RaiseEvent ImageAcquired(PageNo, bmp)
                                     bmp = Nothing
-
-                                    Dim fs As New System.IO.FileStream(fname, System.IO.FileMode.Open)
-                                    Dim ms As New System.IO.MemoryStream
-                                    Dim b(fs.Length - 1) As Byte
-                                    fs.Read(b, 0, fs.Length)
-                                    ms.Write(b, 0, fs.Length)
-                                    fs.Close()
-                                    fs = Nothing
-                                    frm.PictureBox1.Image = Image.FromStream(ms)
-                                    ms.Close()
-                                    ms = Nothing
-
-                                Catch ex As Exception
-                                    MsgBox("Error creating image: " & ex.Message)
-                                Finally
-                                    'XXX also dispose of fs and ms here to avoid leaking mem after exceptions
-                                    'ReDim SANEImage.Frames(0).Data(-1)
-                                    bmp_data = Nothing
-                                    bmp = Nothing
-                                End Try
+                                End If
+                            ElseIf Status = SANE_API.SANE_Status.SANE_STATUS_NO_DOCS Then
+                                RaiseEvent BatchCompleted(PageNo - 1)
+                            Else
+                                RaiseEvent ImageError(PageNo, Status.ToString)
                             End If
-                        End If
-
-                    Loop While Status = SANE_API.SANE_Status.SANE_STATUS_GOOD And CurrentSettings.ScanContinuously = True 'Me.CheckBoxBatchMode.Checked = True
-                    'If Status <> SANE_API.SANE_Status.SANE_STATUS_GOOD Then MsgBox(Status.ToString)
-
+                        Catch ex As Exception
+                            RaiseEvent ImageError(PageNo, ex.Message)
+                            Exit Do
+                        End Try
+                    Loop While Status = SANE_API.SANE_Status.SANE_STATUS_GOOD And CurrentSettings.ScanContinuously = True
+                Else
+                    RaiseEvent ImageError(PageNo, "The SANE device '" & SANE.CurrentDevice.Name & "' has not been opened")
                 End If
+            Else
+                RaiseEvent ImageError(PageNo, "The SANE device name is not defined")
             End If
         End If
     End Sub
-
-
-
-    'Private Sub RGBtoBGR(ByRef bytes() As Byte, ByVal BitsPerColor As Integer)
-    '    Select Case BitsPerColor
-    '        Case 1
-    '            'XXX
-    '        Case 8
-    '            For i As UInt32 = 0 To bytes.Length - 1 Step 3
-    '                If i < bytes.Length - 2 Then
-    '                    Dim R As Byte = bytes(i)
-    '                    bytes(i) = bytes(i + 2)
-    '                    bytes(i + 2) = R
-    '                End If
-    '            Next
-    '        Case 16
-    '            For i As UInt32 = 0 To bytes.Length - 1 Step 6
-    '                If i < bytes.Length - 5 Then
-    '                    Dim R1 As Byte = bytes(i)
-    '                    Dim R2 As Byte = bytes(i + 1)
-    '                    bytes(i) = bytes(i + 4)
-    '                    bytes(i + 1) = bytes(i + 5)
-    '                    bytes(i + 4) = R1
-    '                    bytes(i + 5) = R2
-    '                End If
-    '            Next
-    '    End Select
-    'End Sub
-
-    'Private Sub SwapImageBytes(ByRef bytes() As Byte)
-    '    For i As UInteger = 0 To bytes.Length - 1 Step 2
-    '        If i < bytes.Length - 1 Then
-    '            Dim b As Byte = bytes(i)
-    '            bytes(i) = bytes(i + 1)
-    '            bytes(i + 1) = b
-    '        End If
-    '    Next
-    'End Sub
-
-    'Private Function Get1bitGrayScalePalette()
-    '    Dim bmp As New Bitmap(1, 1, Imaging.PixelFormat.Format1bppIndexed)
-    '    Dim palette As Imaging.ColorPalette = bmp.Palette
-    '    palette.Entries(0) = Color.White
-    '    palette.Entries(1) = Color.Black
-    '    Return palette
-    'End Function
-
-    'Private Function Get8bitGrayScalePalette()
-    '    Dim bmp As New Bitmap(1, 1, Imaging.PixelFormat.Format8bppIndexed)
-    '    Dim palette As Imaging.ColorPalette = bmp.Palette
-    '    For i As Integer = 0 To palette.Entries.Length - 1
-    '        palette.Entries(i) = Color.FromArgb(i, i, i)
-    '    Next
-    '    Return palette
-    'End Function
-
-    ' Private Sub ButtonGetOpts_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles ButtonGetOpts.Click
-    '    GetOpts(True)
-    'End Sub
 
     Friend Sub GetOpts(ByVal Recreate As Boolean)
         Try
@@ -327,7 +131,7 @@ Public Class FormMain
             Dim AdvancedNode As TreeNode = Nothing
             For i As Integer = 1 To Descriptors.Length - 1 'skip the first element, which contains the array length
                 ReDim SANE.CurrentDevice.OptionValues(i)(SANE.OptionValueArrayLength(Descriptors(i).size, Descriptors(i).type) - 1) 'make sure it's not Nothing, even for unreadable options
-                 Select Case Descriptors(i).type
+                Select Case Descriptors(i).type
                     Case SANE_API.SANE_Value_Type.SANE_TYPE_GROUP
                         If Recreate Then
                             GroupNode = New TreeNode
@@ -403,10 +207,7 @@ Public Class FormMain
     End Sub
 
     Private Sub Form1_FormClosing(ByVal sender As Object, ByVal e As System.Windows.Forms.FormClosingEventArgs) Handles Me.FormClosing
-        'Me.ButtonClose_Click(sender, New System.EventArgs)
-        'Me.CloseCurrentDevice()
         Me.CloseCurrentHost()
-        'Me.ButtonDisconnect_Click(sender, New System.EventArgs)
         If net IsNot Nothing Then
             If net.Connected Then net.Close()
             net = Nothing
@@ -550,15 +351,6 @@ Public Class FormMain
         End If
 
         If Me.Mode = UIMode.Scan Then Me.ButtonOK.Text = "Scan" Else Me.ButtonOK.Text = "OK"
-
-        'RootNode = New TreeNode
-        'RootNode.Tag = -1
-        'RootNode.Name = "Root"
-        'RootNode.Text = "Options"
-        'Me.TreeViewOptions.Nodes.Add(RootNode)
-
-        'Me.PanelOpt = DirectCast(Me.PanelOpt, DirtyPanel)
-
     End Sub
 
     Private Sub OptionButton_Click(ByVal sender As System.Object, ByVal e As System.EventArgs)
@@ -919,14 +711,6 @@ Public Class FormMain
         Dim f As SizeF = g.MeasureString(Text, DestinationControl.Font)
         Return f.Width
     End Function
-
-    'Private Sub ButtonSetOpt_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles ButtonSetOpt.Click
-    '    If Me.PanelOptIsDirty Then
-    '        SetOption()
-    '    Else
-    '        'MsgBox("Not dirty!")
-    '    End If
-    'End Sub
 
     Private Sub OptionControl_TextChanged(ByVal sender As System.Object, ByVal e As System.EventArgs)
         Me.PanelOptIsDirty = True

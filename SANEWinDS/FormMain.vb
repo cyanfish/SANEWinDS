@@ -97,6 +97,10 @@ Public Class FormMain
                                     RaiseEvent ImageAcquired(PageNo, bmp)
                                     bmp.Dispose()
                                     bmp = Nothing
+                                    If Not CurrentSettings.ScanContinuously Then
+                                        RaiseEvent BatchCompleted(PageNo)
+                                        Exit Do
+                                    End If
                                 End If
                             ElseIf Status = SANE_API.SANE_Status.SANE_STATUS_NO_DOCS Then
                                 RaiseEvent BatchCompleted(PageNo - 1)

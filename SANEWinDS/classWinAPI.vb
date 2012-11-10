@@ -46,4 +46,8 @@ Public Class WinAPI
     Public Shared Function GlobalFree(ByVal handle As IntPtr) As IntPtr
     End Function
 
+    <DllImport("kernel32.dll", CharSet:=CharSet.Auto, ExactSpelling:=True)> _
+    Public Shared Function SetProcessWorkingSetSize(ByVal handle As IntPtr, ByVal minSize As Integer, ByVal maxSize As Integer) As Boolean
+    End Function
+
 End Class

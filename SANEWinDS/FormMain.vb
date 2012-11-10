@@ -20,6 +20,7 @@ Imports System.Windows.Forms
 Imports System.Drawing
 
 Public Class FormMain
+    Public Event BatchStarted()
     Public Event ImageAcquired(ByVal PageNumber As Integer, ByVal Bmp As Bitmap)
     Public Event ImageError(ByVal PageNumber As Integer, ByVal Message As String)
     Public Event BatchCompleted(ByVal Pages As Integer)
@@ -84,6 +85,7 @@ Public Class FormMain
             Dim PageNo As Integer = 0
             If SANE.CurrentDevice.Name IsNot Nothing Then
                 If SANE.CurrentDevice.Open Then
+                    RaiseEvent BatchStarted()
                     Dim Status As SANE_API.SANE_Status = 0
                     Do
                         PageNo += 1
@@ -93,6 +95,7 @@ Public Class FormMain
                             If Status = SANE_API.SANE_Status.SANE_STATUS_GOOD Then
                                 If bmp IsNot Nothing Then
                                     RaiseEvent ImageAcquired(PageNo, bmp)
+                                    bmp.Dispose()
                                     bmp = Nothing
                                 End If
                             ElseIf Status = SANE_API.SANE_Status.SANE_STATUS_NO_DOCS Then
@@ -111,6 +114,7 @@ Public Class FormMain
             Else
                 RaiseEvent ImageError(PageNo, "The SANE device name is not defined")
             End If
+            WinAPI.SetProcessWorkingSetSize(Process.GetCurrentProcess().Handle, -1, -1)
         End If
     End Sub
 

@@ -29,12 +29,12 @@ Partial Class FormMain
         Me.TreeViewOptions = New System.Windows.Forms.TreeView()
         Me.ButtonOK = New System.Windows.Forms.Button()
         Me.ButtonCancel = New System.Windows.Forms.Button()
-        Me.Label1 = New System.Windows.Forms.Label()
         Me.Label2 = New System.Windows.Forms.Label()
         Me.Label3 = New System.Windows.Forms.Label()
         Me.TextBoxHost = New System.Windows.Forms.TextBox()
         Me.TextBoxPort = New System.Windows.Forms.TextBox()
         Me.TextBoxDevice = New System.Windows.Forms.TextBox()
+        Me.ButtonHost = New System.Windows.Forms.Button()
         Me.SuspendLayout()
         '
         'PanelOpt
@@ -79,19 +79,10 @@ Partial Class FormMain
         Me.ButtonCancel.Text = "Cancel"
         Me.ButtonCancel.UseVisualStyleBackColor = True
         '
-        'Label1
-        '
-        Me.Label1.AutoSize = True
-        Me.Label1.Location = New System.Drawing.Point(13, 13)
-        Me.Label1.Name = "Label1"
-        Me.Label1.Size = New System.Drawing.Size(29, 13)
-        Me.Label1.TabIndex = 21
-        Me.Label1.Text = "Host"
-        '
         'Label2
         '
         Me.Label2.AutoSize = True
-        Me.Label2.Location = New System.Drawing.Point(241, 13)
+        Me.Label2.Location = New System.Drawing.Point(252, 13)
         Me.Label2.Name = "Label2"
         Me.Label2.Size = New System.Drawing.Size(26, 13)
         Me.Label2.TabIndex = 22
@@ -109,17 +100,17 @@ Partial Class FormMain
         'TextBoxHost
         '
         Me.TextBoxHost.Enabled = False
-        Me.TextBoxHost.Location = New System.Drawing.Point(48, 10)
+        Me.TextBoxHost.Location = New System.Drawing.Point(56, 10)
         Me.TextBoxHost.Name = "TextBoxHost"
-        Me.TextBoxHost.Size = New System.Drawing.Size(179, 20)
+        Me.TextBoxHost.Size = New System.Drawing.Size(180, 20)
         Me.TextBoxHost.TabIndex = 24
         '
         'TextBoxPort
         '
         Me.TextBoxPort.Enabled = False
-        Me.TextBoxPort.Location = New System.Drawing.Point(273, 10)
+        Me.TextBoxPort.Location = New System.Drawing.Point(284, 10)
         Me.TextBoxPort.Name = "TextBoxPort"
-        Me.TextBoxPort.Size = New System.Drawing.Size(61, 20)
+        Me.TextBoxPort.Size = New System.Drawing.Size(50, 20)
         Me.TextBoxPort.TabIndex = 25
         '
         'TextBoxDevice
@@ -130,17 +121,26 @@ Partial Class FormMain
         Me.TextBoxDevice.Size = New System.Drawing.Size(212, 20)
         Me.TextBoxDevice.TabIndex = 26
         '
+        'ButtonHost
+        '
+        Me.ButtonHost.Location = New System.Drawing.Point(13, 8)
+        Me.ButtonHost.Name = "ButtonHost"
+        Me.ButtonHost.Size = New System.Drawing.Size(37, 23)
+        Me.ButtonHost.TabIndex = 27
+        Me.ButtonHost.Text = "Host"
+        Me.ButtonHost.UseVisualStyleBackColor = True
+        '
         'FormMain
         '
         Me.AutoScaleDimensions = New System.Drawing.SizeF(6.0!, 13.0!)
         Me.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font
         Me.ClientSize = New System.Drawing.Size(617, 344)
+        Me.Controls.Add(Me.ButtonHost)
         Me.Controls.Add(Me.TextBoxDevice)
         Me.Controls.Add(Me.TextBoxPort)
         Me.Controls.Add(Me.TextBoxHost)
         Me.Controls.Add(Me.Label3)
         Me.Controls.Add(Me.Label2)
-        Me.Controls.Add(Me.Label1)
         Me.Controls.Add(Me.ButtonCancel)
         Me.Controls.Add(Me.ButtonOK)
         Me.Controls.Add(Me.TreeViewOptions)
@@ -158,11 +158,11 @@ Partial Class FormMain
     Friend WithEvents TreeViewOptions As System.Windows.Forms.TreeView
     Friend WithEvents ButtonOK As System.Windows.Forms.Button
     Friend WithEvents ButtonCancel As System.Windows.Forms.Button
-    Friend WithEvents Label1 As System.Windows.Forms.Label
     Friend WithEvents Label2 As System.Windows.Forms.Label
     Friend WithEvents Label3 As System.Windows.Forms.Label
     Friend WithEvents TextBoxHost As System.Windows.Forms.TextBox
     Friend WithEvents TextBoxPort As System.Windows.Forms.TextBox
     Friend WithEvents TextBoxDevice As System.Windows.Forms.TextBox
+    Friend WithEvents ButtonHost As System.Windows.Forms.Button
 
 End Class

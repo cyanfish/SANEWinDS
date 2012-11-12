@@ -206,6 +206,32 @@ Module modGlobals
         Next
         Return False
     End Function
+    Public Function Device_Appears_To_Have_ADF_Enabled() As Boolean
+        For i As Integer = 1 To SANE.CurrentDevice.OptionDescriptors.Count - 1 'index 0 is the array length
+            If SANE.CurrentDevice.OptionDescriptors(i).name IsNot Nothing AndAlso SANE.CurrentDevice.OptionDescriptors(i).name.ToLower = "source" Then
+                Select Case SANE.CurrentDevice.OptionDescriptors(i).type
+                    Case SANE_API.SANE_Value_Type.SANE_TYPE_STRING
+                        Select Case SANE.CurrentDevice.OptionDescriptors(i).constraint_type
+                            Case SANE_API.SANE_Constraint_Type.SANE_CONSTRAINT_STRING_LIST
+                                For j As Integer = 0 To SANE.CurrentDevice.OptionDescriptors(i).constraint.string_list.Count - 1
+                                    Dim s As String = SANE.CurrentDevice.OptionDescriptors(i).constraint.string_list(j).ToLower
+                                    If (s.Contains("adf") Or s.Contains("automatic document feeder")) Then
+                                        Return SANE.CurrentDevice.OptionValues(i)(0).ToLower = s.ToLower
+                                    End If
+                                Next
+                        End Select
+                End Select
+            ElseIf SANE.CurrentDevice.OptionDescriptors(i).type = SANE_API.SANE_Value_Type.SANE_TYPE_BOOL Then
+                If SANE.CurrentDevice.OptionDescriptors(i).name IsNot Nothing Then
+                    Dim s As String = SANE.CurrentDevice.OptionDescriptors(i).name.ToLower
+                    If (s.Contains("adf") Or s.Contains("automatic document feeder")) Then
+                        Return SANE.CurrentDevice.OptionValues(i)(0)
+                    End If
+                End If
+            End If
+        Next
+        Return False
+    End Function
 
     Public Function Device_Appears_To_Have_Duplex() As Boolean
         For i As Integer = 1 To SANE.CurrentDevice.OptionDescriptors.Count - 1 'index 0 is the array length
@@ -234,4 +260,35 @@ Module modGlobals
         Return False
     End Function
 
+    Public Sub Close_SANE()
+        Try
+            If SANE.CurrentDevice.Open Then
+                SANE.CurrentDevice.Open = False
+                SANE.Net_Close(net, SANE.CurrentDevice.Handle)
+            End If
+            If CurrentSettings.SANE.CurrentHost.Open Then
+                CurrentSettings.SANE.CurrentHost.Open = False
+                SANE.Net_Exit(net)
+            End If
+        Catch exx As Exception
+        End Try
+    End Sub
+
+    Public Sub Close_Net()
+        Try
+            If Not CurrentSettings.SANE.CurrentHost.Open Then
+                If net IsNot Nothing Then
+                    If net.Connected Then
+                        Dim stream As System.Net.Sockets.NetworkStream = net.GetStream
+                        stream.Close()
+                        stream = Nothing
+                    End If
+                    If net.Connected Then net.Close()
+                    net = Nothing
+                End If
+            End If
+        Catch ex As Exception
+            Logger.Write(DebugLogger.Level.Error_, True, ex.Message)
+        End Try
+    End Sub
 End Module

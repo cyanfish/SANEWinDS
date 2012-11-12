@@ -204,7 +204,7 @@ Public Class FormMain
             Next
             If Not Me.TWAIN_Is_Active Then
                 If Not CurrentSettings.ScanContinuouslyUserConfigured Then
-                    CurrentSettings.ScanContinuously = Device_Appears_To_Have_ADF()
+                    CurrentSettings.ScanContinuously = Device_Appears_To_Have_ADF() AndAlso Device_Appears_To_Have_ADF_Enabled()
                     Me.CheckBoxBatchMode.Checked = CurrentSettings.ScanContinuously
                 End If
             End If
@@ -237,11 +237,12 @@ Public Class FormMain
         Logger.Write(DebugLogger.Level.Debug, False, "")
 
         Me.ButtonOK.Enabled = False
+        Me.ButtonHost.Enabled = Not TWAIN_Is_Active 'XXX is it ok to reconfigure with TWAIN active?
 
         If SANE Is Nothing Then SANE = New SANE_API
 
         If Not TWAIN_Is_Active Then
-            If SANE Is Nothing Then SANE = New SANE_API
+            'If SANE Is Nothing Then SANE = New SANE_API
             If Not (CurrentSettings.HostIsValid(CurrentSettings.SANE.CurrentHost) AndAlso (CurrentSettings.SANE.CurrentDevice IsNot Nothing) AndAlso CurrentSettings.SANE.CurrentDevice.Length) Then
                 Dim f As New FormSANEHostWizard
                 If f.ShowDialog <> Windows.Forms.DialogResult.OK Then
@@ -249,107 +250,7 @@ Public Class FormMain
                     'XXX
                 End If
             End If
-
-            Try
-                If net Is Nothing Then net = New System.Net.Sockets.TcpClient
-                If net IsNot Nothing Then
-                    If CurrentSettings.SANE.CurrentHost.NameOrAddress IsNot Nothing Then
-                        net.ReceiveTimeout = CurrentSettings.SANE.CurrentHost.TCP_Timeout_ms
-                        net.SendTimeout = CurrentSettings.SANE.CurrentHost.TCP_Timeout_ms
-                        Logger.Write(DebugLogger.Level.Debug, False, "TCPClient Send buffer length is " & net.SendBufferSize)
-                        Logger.Write(DebugLogger.Level.Debug, False, "TCPClient Receive buffer length is " & net.ReceiveBufferSize)
-                        net.Connect(CurrentSettings.SANE.CurrentHost.NameOrAddress, CurrentSettings.SANE.CurrentHost.Port)
-                        Dim Status As SANE_API.SANE_Status = SANE.Net_Init(net, CurrentSettings.SANE.CurrentHost.Username)
-                        Logger.Write(DebugLogger.Level.Debug, False, "Net_Init returned status '" & Status.ToString & "'")
-                        If Status = SANE_API.SANE_Status.SANE_STATUS_GOOD Then CurrentSettings.SANE.CurrentHost.Open = True
-                        If CurrentSettings.SANE.CurrentHost.Open Then
-                            SANE.CurrentDevice = New SANE_API.CurrentDeviceInfo
-
-                            Dim DeviceHandle As Integer
-                            Status = SANE.Net_Open(net, CurrentSettings.SANE.CurrentDevice, DeviceHandle)
-                            Logger.Write(DebugLogger.Level.Debug, False, "Net_Open returned status '" & Status.ToString & "'")
-
-
-                            If Status = SANE_API.SANE_Status.SANE_STATUS_INVAL Then  'Auto-Locate
-                                If CurrentSettings.SANE.AutoLocateDevice IsNot Nothing AndAlso CurrentSettings.SANE.AutoLocateDevice.Length > 0 Then
-                                    Logger.Write(DebugLogger.Level.Debug, False, "Attempting to auto-locate devices matching '" & CurrentSettings.SANE.AutoLocateDevice & "'")
-                                    Dim Devices(-1) As SANE_API.SANE_Device
-                                    Status = SANE.Net_Get_Devices(net, Devices)
-                                    If Status = SANE_API.SANE_Status.SANE_STATUS_GOOD Then
-                                        For i As Integer = 0 To Devices.Length - 1
-                                            Status = SANE_API.SANE_Status.SANE_STATUS_INVAL
-                                            If Devices(i).name.Trim.Length >= CurrentSettings.SANE.AutoLocateDevice.Length Then
-                                                If Devices(i).name.Trim.Substring(0, CurrentSettings.SANE.AutoLocateDevice.Length) = CurrentSettings.SANE.AutoLocateDevice Then
-                                                    Logger.Write(DebugLogger.Level.Debug, False, "Auto-located device '" & Devices(i).name & "'; attempting to open...")
-                                                    Status = SANE.Net_Open(net, Devices(i).name, DeviceHandle)
-                                                    Logger.Write(DebugLogger.Level.Debug, False, "Net_Open returned status '" & Status.ToString & "'")
-                                                    If Status = SANE_API.SANE_Status.SANE_STATUS_GOOD Then CurrentSettings.SANE.CurrentDevice = Devices(i).name
-                                                    Exit For
-                                                End If
-                                            End If
-                                        Next
-                                    End If
-                                End If
-                            End If
-
-                            If Status = SANE_API.SANE_Status.SANE_STATUS_GOOD Then
-                                SANE.CurrentDevice.Name = CurrentSettings.SANE.CurrentDevice
-                                SANE.CurrentDevice.Handle = DeviceHandle
-                                SANE.CurrentDevice.Open = True
-                            Else
-                                'XXX
-                            End If
-                        End If
-                    Else
-                        Logger.Write(DebugLogger.Level.Warn, True, "No host is configured")
-                    End If
-
-                    If SANE.CurrentDevice.Open Then
-
-                        Me.GetOpts(True)  'must occur prior to reading GetDeviceConfigFileName()!
-
-                        CurrentSettings.SANE.CurrentDeviceINI = New IniFile
-                        Dim s As String = CurrentSettings.GetDeviceConfigFileName()
-                        If s IsNot Nothing AndAlso s.Length > 0 Then CurrentSettings.SANE.CurrentDeviceINI.Load(s)
-
-                        Me.SetUserDefaults()
-
-                        Me.ButtonOK.Enabled = True
-                    Else
-                        'XXX
-                    End If
-
-                End If
-            Catch ex As Exception
-                Logger.Write(DebugLogger.Level.Error_, True, ex.Message)
-                Try
-                    If SANE.CurrentDevice.Open Then
-                        SANE.Net_Close(net, SANE.CurrentDevice.Handle)
-                        SANE.CurrentDevice.Open = False
-                    End If
-                    If CurrentSettings.SANE.CurrentHost.Open Then
-                        SANE.Net_Exit(net)
-                    End If
-                Catch exx As Exception
-                End Try
-            Finally
-                Try
-                    If Not CurrentSettings.SANE.CurrentHost.Open Then
-                        If net IsNot Nothing Then
-                            If net.Connected Then
-                                Dim stream As System.Net.Sockets.NetworkStream = net.GetStream
-                                stream.Close()
-                                stream = Nothing
-                            End If
-                            If net.Connected Then net.Close()
-                            net = Nothing
-                        End If
-                    End If
-                Catch ex As Exception
-                    Logger.Write(DebugLogger.Level.Error_, True, ex.Message)
-                End Try
-            End Try
-
+            Try_Init_SANE()
         End If
 
         If CurrentSettings.SANE.CurrentHost.NameOrAddress IsNot Nothing Then
@@ -359,6 +260,86 @@ Public Class FormMain
         End If
 
         If Me.Mode = UIMode.Scan Then Me.ButtonOK.Text = "Scan" Else Me.ButtonOK.Text = "OK"
+    End Sub
+
+    Private Sub Try_Init_SANE()
+        Try
+            If net Is Nothing Then net = New System.Net.Sockets.TcpClient
+            If net IsNot Nothing Then
+                If CurrentSettings.SANE.CurrentHost.NameOrAddress IsNot Nothing Then
+                    net.ReceiveTimeout = CurrentSettings.SANE.CurrentHost.TCP_Timeout_ms
+                    net.SendTimeout = CurrentSettings.SANE.CurrentHost.TCP_Timeout_ms
+                    Logger.Write(DebugLogger.Level.Debug, False, "TCPClient Send buffer length is " & net.SendBufferSize)
+                    Logger.Write(DebugLogger.Level.Debug, False, "TCPClient Receive buffer length is " & net.ReceiveBufferSize)
+                    net.Connect(CurrentSettings.SANE.CurrentHost.NameOrAddress, CurrentSettings.SANE.CurrentHost.Port)
+                    Dim Status As SANE_API.SANE_Status = SANE.Net_Init(net, CurrentSettings.SANE.CurrentHost.Username)
+                    Logger.Write(DebugLogger.Level.Debug, False, "Net_Init returned status '" & Status.ToString & "'")
+                    If Status = SANE_API.SANE_Status.SANE_STATUS_GOOD Then CurrentSettings.SANE.CurrentHost.Open = True
+                    If CurrentSettings.SANE.CurrentHost.Open Then
+                        SANE.CurrentDevice = New SANE_API.CurrentDeviceInfo
+
+                        Dim DeviceHandle As Integer
+                        Status = SANE.Net_Open(net, CurrentSettings.SANE.CurrentDevice, DeviceHandle)
+                        Logger.Write(DebugLogger.Level.Debug, False, "Net_Open returned status '" & Status.ToString & "'")
+
+
+                        If Status = SANE_API.SANE_Status.SANE_STATUS_INVAL Then  'Auto-Locate
+                            If CurrentSettings.SANE.AutoLocateDevice IsNot Nothing AndAlso CurrentSettings.SANE.AutoLocateDevice.Length > 0 Then
+                                Logger.Write(DebugLogger.Level.Debug, False, "Attempting to auto-locate devices matching '" & CurrentSettings.SANE.AutoLocateDevice & "'")
+                                Dim Devices(-1) As SANE_API.SANE_Device
+                                Status = SANE.Net_Get_Devices(net, Devices)
+                                If Status = SANE_API.SANE_Status.SANE_STATUS_GOOD Then
+                                    For i As Integer = 0 To Devices.Length - 1
+                                        Status = SANE_API.SANE_Status.SANE_STATUS_INVAL
+                                        If Devices(i).name.Trim.Length >= CurrentSettings.SANE.AutoLocateDevice.Length Then
+                                            If Devices(i).name.Trim.Substring(0, CurrentSettings.SANE.AutoLocateDevice.Length) = CurrentSettings.SANE.AutoLocateDevice Then
+                                                Logger.Write(DebugLogger.Level.Debug, False, "Auto-located device '" & Devices(i).name & "'; attempting to open...")
+                                                Status = SANE.Net_Open(net, Devices(i).name, DeviceHandle)
+                                                Logger.Write(DebugLogger.Level.Debug, False, "Net_Open returned status '" & Status.ToString & "'")
+                                                If Status = SANE_API.SANE_Status.SANE_STATUS_GOOD Then CurrentSettings.SANE.CurrentDevice = Devices(i).name
+                                                Exit For
+                                            End If
+                                        End If
+                                    Next
+                                End If
+                            End If
+                        End If
+
+                        If Status = SANE_API.SANE_Status.SANE_STATUS_GOOD Then
+                            SANE.CurrentDevice.Name = CurrentSettings.SANE.CurrentDevice
+                            SANE.CurrentDevice.Handle = DeviceHandle
+                            SANE.CurrentDevice.Open = True
+                        Else
+                            'XXX
+                        End If
+                    End If
+                Else
+                    Logger.Write(DebugLogger.Level.Warn, True, "No host is configured")
+                End If
+
+                If SANE.CurrentDevice.Open Then
+
+                    Me.GetOpts(True)  'must occur prior to reading GetDeviceConfigFileName()!
+
+                    CurrentSettings.SANE.CurrentDeviceINI = New IniFile
+                    Dim s As String = CurrentSettings.GetDeviceConfigFileName()
+                    If s IsNot Nothing AndAlso s.Length > 0 Then CurrentSettings.SANE.CurrentDeviceINI.Load(s)
+
+                    Me.SetUserDefaults()
+
+                    Me.ButtonOK.Enabled = True
+                Else
+                    'XXX
+                End If
+
+            End If
+        Catch ex As Exception
+            Logger.Write(DebugLogger.Level.Error_, True, ex.Message)
+            Close_SANE()
+        Finally
+            Close_Net()
+        End Try
+
     End Sub
 
     Private Sub OptionButton_Click(ByVal sender As System.Object, ByVal e As System.EventArgs)
@@ -942,7 +923,7 @@ Public Class FormMain
             If Status = SANE_API.SANE_Status.SANE_STATUS_GOOD Then
                 If Not Me.TWAIN_Is_Active Then
                     If Not CurrentSettings.ScanContinuouslyUserConfigured Then
-                        CurrentSettings.ScanContinuously = Device_Appears_To_Have_ADF()
+                        CurrentSettings.ScanContinuously = Device_Appears_To_Have_ADF() AndAlso Device_Appears_To_Have_ADF_Enabled()
                         Me.CheckBoxBatchMode.Checked = CurrentSettings.ScanContinuously
                     End If
                 End If
@@ -967,6 +948,10 @@ Public Class FormMain
     End Sub
 
     Private Sub FormMain_Shown(ByVal sender As Object, ByVal e As System.EventArgs) Handles Me.Shown
+        Update_Host_GUI()
+    End Sub
+
+    Private Sub Update_Host_GUI()
         Me.TextBoxHost.Text = CurrentSettings.SANE.CurrentHost.NameOrAddress
         Me.TextBoxPort.Text = CurrentSettings.SANE.CurrentHost.Port
         Me.TextBoxDevice.Text = CurrentSettings.SANE.CurrentDevice
@@ -982,4 +967,24 @@ Public Class FormMain
     Private Sub CheckBoxBatchMode_CheckedChanged(ByVal sender As Object, ByVal e As System.EventArgs) Handles CheckBoxBatchMode.CheckedChanged
         CurrentSettings.ScanContinuously = CheckBoxBatchMode.Checked
     End Sub
+
+
+    Private Sub ButtonHost_Click(sender As Object, e As EventArgs) Handles ButtonHost.Click
+        Close_SANE()
+        Close_Net()
+        If SANE Is Nothing Then SANE = New SANE_API
+        Dim f As New FormSANEHostWizard
+        If f.ShowDialog <> Windows.Forms.DialogResult.OK Then
+            Logger.Write(DebugLogger.Level.Debug, False, "User cancelled SANE host wizard")
+            'XXX
+        End If
+        Try_Init_SANE()
+        Update_Host_GUI()
+    End Sub
+
+    Private Sub CheckBoxBatchMode_Click(sender As Object, e As EventArgs) Handles CheckBoxBatchMode.Click
+        CurrentSettings.ScanContinuouslyUserConfigured = True
+
+    End Sub
 End Class
+

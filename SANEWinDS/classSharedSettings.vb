@@ -62,6 +62,42 @@ Public Class SharedSettings
     End Sub
 
     Private Sub WriteSettings()
+        'XXX The INIFile class writes the settings out of order
+        Dim INI As New IniFile
+        Dim UserSettingsFileName As String = Me.GetUserConfigFileName
+        INI.Load(UserSettingsFileName)
+
+        If INI.GetSection("Log") Is Nothing Then
+            INI.AddSection("Log")
+            INI.Save(UserSettingsFileName)
+        End If
+        'XXX this value isn't currently saved in memory anywhere.
+        'If String.IsNullOrEmpty(INI.GetKeyValue("Log", "RetainDays")) Then
+        '    INI.SetKeyValue("Log", "RetainDays", CurrentSettings.)
+        '    INI.Save(UserSettingsFileName)
+        'End If
+        If INI.GetSection("SANE") Is Nothing Then
+            INI.AddSection("SANE")
+            INI.Save(UserSettingsFileName)
+        End If
+        'If String.IsNullOrEmpty(INI.GetKeyValue("SANE", "Hosts")) Then
+        '    INI.SetKeyValue("SANE", "Hosts", " ")
+        '    INI.Save(UserSettingsFileName)
+        'End If
+
+
+        'If String.IsNullOrEmpty(INI.GetKeyValue("SANE", "DefaultHost")) Then
+        '    INI.SetKeyValue("SANE", "DefaultHost", "0")
+        '    INI.Save(UserSettingsFileName)
+        'End If
+        'If String.IsNullOrEmpty(INI.GetKeyValue("SANE", "Device")) Then
+        '    INI.SetKeyValue("SANE", "Device", " ")
+        '    INI.Save(UserSettingsFileName)
+        'End If
+        'If String.IsNullOrEmpty(INI.GetKeyValue("SANE", "AutoLocateDevice")) Then
+        '    INI.SetKeyValue("SANE", "AutoLocateDevice", " ")
+        '    INI.Save(UserSettingsFileName)
+        'End If
 
     End Sub
 
@@ -78,7 +114,8 @@ Public Class SharedSettings
         Me.ConfigDirectory = UserSettingsFolder
         Me.LogDirectory = Me.ConfigDirectory 'XXX
 
-        Dim UserSettingsFileName As String = Me.ConfigDirectory & "\" & Me.ProductName.Name & ".ini"
+        'Dim UserSettingsFileName As String = Me.ConfigDirectory & "\" & Me.ProductName.Name & ".ini"
+        Dim UserSettingsFileName As String = Me.GetUserConfigFileName
         If Not My.Computer.FileSystem.FileExists(UserSettingsFileName) Then
             Dim f As New System.IO.StreamWriter(UserSettingsFileName)
             f.WriteLine("[Log]")
@@ -94,38 +131,7 @@ Public Class SharedSettings
         End If
 
         Dim INI As New IniFile
-        INI.Load(UserSettingsFileName)
-
-        'Set defaults for new ini file
-        'XXX The INIFile class writes the settings out of order
-        'If INI.GetSection("Log") Is Nothing Then
-        '    INI.AddSection("Log")
-        '    INI.Save(UserSettingsFileName)
-        'End If
-        'If String.IsNullOrEmpty(INI.GetKeyValue("Log", "RetainDays")) Then
-        '    INI.SetKeyValue("Log", "RetainDays", "3")
-        '    INI.Save(UserSettingsFileName)
-        'End If
-        'If INI.GetSection("SANE") Is Nothing Then
-        '    INI.AddSection("SANE")
-        '    INI.Save(UserSettingsFileName)
-        'End If
-        'If String.IsNullOrEmpty(INI.GetKeyValue("SANE", "Hosts")) Then
-        '    INI.SetKeyValue("SANE", "Hosts", " ")
-        '    INI.Save(UserSettingsFileName)
-        'End If
-        'If String.IsNullOrEmpty(INI.GetKeyValue("SANE", "DefaultHost")) Then
-        '    INI.SetKeyValue("SANE", "DefaultHost", "0")
-        '    INI.Save(UserSettingsFileName)
-        'End If
-        'If String.IsNullOrEmpty(INI.GetKeyValue("SANE", "Device")) Then
-        '    INI.SetKeyValue("SANE", "Device", " ")
-        '    INI.Save(UserSettingsFileName)
-        'End If
-        'If String.IsNullOrEmpty(INI.GetKeyValue("SANE", "AutoLocateDevice")) Then
-        '    INI.SetKeyValue("SANE", "AutoLocateDevice", " ")
-        '    INI.Save(UserSettingsFileName)
-        'End If
+        INI.Load(Me.GetUserConfigFileName)
 
         Dim Hosts() As HostInfo = GetSANEHostsFromString(INI.GetKeyValue("SANE", "Hosts"))
         Dim CurrentHostIndex As Integer = -1
@@ -217,6 +223,10 @@ Public Class SharedSettings
             Next
         End If
         Return Hosts
+    End Function
+
+    Public Function GetUserConfigFileName() As String
+        Return Me.ConfigDirectory & "\" & Me.ProductName.Name & ".ini"
     End Function
 
     Public Function GetDeviceConfigFileName() As String

@@ -36,6 +36,10 @@ Public Class FormSANEHostWizard
                                 .Username = Me.TextBoxUserName.Text
                             End With
                             Try
+
+                                Close_SANE()
+                                Close_Net()
+
                                 If net Is Nothing Then net = New System.Net.Sockets.TcpClient
                                 If net IsNot Nothing Then
                                     net.ReceiveTimeout = Host.TCP_Timeout_ms
@@ -77,27 +81,8 @@ Public Class FormSANEHostWizard
                             Catch ex As Exception
                                 MsgBox(ex.Message)
                             Finally
-                                Try
-                                    If net IsNot Nothing Then
-                                        If net.Connected Then
-                                            If Host.Open Then
-                                                SANE.Net_Exit(net)
-                                                Host.Open = False
-                                            End If
-
-                                            'XXX why do this?
-                                            Dim stream As System.Net.Sockets.NetworkStream = net.GetStream
-                                            stream.Close()
-                                            stream = Nothing
-                                            '
-
-                                        End If
-                                        If net.Connected Then net.Close()
-                                        net = Nothing
-                                    End If
-                                Catch ex As Exception
-                                    Logger.Write(DebugLogger.Level.Error_, False, ex.Message)
-                                End Try
+                                Close_SANE()
+                                Close_Net()
                                 Me.Cursor = Windows.Forms.Cursors.Default
                             End Try
                         Else
@@ -151,9 +136,12 @@ Public Class FormSANEHostWizard
         If Me.PanelDevice.Visible Then
             Me.PanelDevice.Visible = False
             Me.PanelHost.Visible = True
-            Me.ButtonPrevious.Enabled = False
-            Me.ButtonNext.Text = "Next"
+            'Me.ButtonPrevious.Enabled = False
+            'Me.ButtonNext.Text = "Next"
         End If
+
+        Close_SANE()
+        Close_Net()
 
         Me.SetControlStatus()
 
@@ -169,4 +157,6 @@ Public Class FormSANEHostWizard
         Me.ButtonPrevious.Enabled = Me.PanelDevice.Visible
 
     End Sub
+
+
 End Class

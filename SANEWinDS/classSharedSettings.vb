@@ -238,6 +238,15 @@ Public Class SharedSettings
         Return f
     End Function
 
+    Private Function SANE_Option_Defined(OptionName As String) As Boolean
+        For i As Integer = 1 To modGlobals.SANE.CurrentDevice.OptionDescriptors.Count - 1 'skip the first option, which is just the option count
+            If modGlobals.SANE.CurrentDevice.OptionDescriptors(i).name.ToLower.Trim = OptionName.ToLower.Trim Then
+                Return True
+            End If
+        Next
+        Return False
+    End Function
+
     Private Sub CreateDeviceConfigFile(ByVal FileName As String)
         'Create .INI file to hold all settings for SANE backend
         Dim fs As System.IO.StreamWriter = Nothing
@@ -286,9 +295,112 @@ Public Class SharedSettings
                         End Select
                         'fs.WriteLine(SANE.CurrentDevice.OptionDescriptors(i).name & "=")
                         fs.WriteLine("DefaultValue=")
-                        'fs.WriteLine("TWAIN-capability=" & TWAINcap)
+
+                        'Configure TWAIN capability mappings for SANE well-known options
+                        Select Case modGlobals.SANE.CurrentDevice.OptionDescriptors(i).name.ToLower
+                            Case "resolution"
+                                fs.WriteLine("TWAIN=ICAP_XRESOLUTION,#;ICAP_YRESOLUTION,#")
+                                If Not SANE_Option_Defined("x-resolution") Then
+                                    fs.WriteLine("")
+                                    fs.WriteLine("[TWAIN.ICAP_XRESOLUTION]")
+                                    fs.WriteLine("SANE=resolution,#")
+                                End If
+                                If Not SANE_Option_Defined("y-resolution") Then
+                                    fs.WriteLine("")
+                                    fs.WriteLine("[TWAIN.ICAP_YRESOLUTION]")
+                                    fs.WriteLine("SANE=resolution,#")
+                                End If
+                            Case "x-resolution" 'SANE 2.0 draft
+                                fs.WriteLine("TWAIN=ICAP_XRESOLUTION,#")
+                                fs.WriteLine("")
+                                fs.WriteLine("[TWAIN.ICAP_XRESOLUTION]")
+                                fs.WriteLine("SANE=x-resolution,#")
+                            Case "y-resolution" 'SANE 2.0 draft
+                                fs.WriteLine("TWAIN=ICAP_YRESOLUTION,#")
+                                fs.WriteLine("")
+                                fs.WriteLine("[TWAIN.ICAP_YRESOLUTION]")
+                                fs.WriteLine("SANE=y-resolution,#")
+                            Case "preview"
+                                'XXX
+                            Case "tl-x"
+                                'XXX
+                            Case "tl-y"
+                                'XXX
+                            Case "br-x"
+                                'XXX
+                            Case "br-y"
+                                'XXX
+                            Case "depth" 'SANE 2.0 draft
+                                fs.WriteLine("TWAIN=ICAP_BITDEPTH,#")
+                                fs.WriteLine("")
+                                fs.WriteLine("[TWAIN.ICAP_BITDEPTH]")
+                                fs.WriteLine("SANE=depth,#")
+                            Case "mode" 'SANE 2.0 draft
+                                If modGlobals.SANE.CurrentDevice.OptionDescriptors(i).constraint_type = SANE_API.SANE_Constraint_Type.SANE_CONSTRAINT_STRING_LIST Then
+                                    If modGlobals.SANE.CurrentDevice.OptionDescriptors(i).constraint.string_list.Contains("Lineart") Then
+                                        fs.WriteLine("TWAIN.Lineart=ICAP_PIXELTYPE,TWPT_BW;ICAP_BITDEPTH,1")
+                                    End If
+                                    If modGlobals.SANE.CurrentDevice.OptionDescriptors(i).constraint.string_list.Contains("Gray") Then
+                                        If SANE_Option_Defined("depth") Then
+                                            fs.WriteLine("TWAIN.Gray=ICAP_PIXELTYPE,TWPT_GRAY")
+                                        Else
+                                            fs.WriteLine("TWAIN.Gray=ICAP_PIXELTYPE,TWPT_GRAY;ICAP_BITDEPTH,8")
+                                        End If
+                                    End If
+                                    If modGlobals.SANE.CurrentDevice.OptionDescriptors(i).constraint.string_list.Contains("Color") Then
+                                        If SANE_Option_Defined("depth") Then
+                                            fs.WriteLine("TWAIN.Color=ICAP_PIXELTYPE,TWPT_RGB")
+                                        Else
+                                            fs.WriteLine("TWAIN.Color=ICAP_PIXELTYPE,TWPT_RGB;ICAP_BITDEPTH,8")
+                                        End If
+                                    End If
+                                    'XXX 'Halftone' is possible also.
+
+                                    fs.WriteLine("")
+                                    fs.WriteLine("[TWAIN.ICAP_PIXELTYPE]")
+                                    If modGlobals.SANE.CurrentDevice.OptionDescriptors(i).constraint.string_list.Contains("Lineart") Then
+                                        fs.WriteLine("SANE.TWPT_BW=mode,Lineart")
+                                    End If
+                                    If modGlobals.SANE.CurrentDevice.OptionDescriptors(i).constraint.string_list.Contains("Gray") Then
+                                        fs.WriteLine("SANE.TWPT_GRAY=mode,Gray")
+                                    End If
+                                    If modGlobals.SANE.CurrentDevice.OptionDescriptors(i).constraint.string_list.Contains("Color") Then
+                                        fs.WriteLine("SANE.TWPT_RGB=mode,Color")
+                                    End If
+                                    'XXX 'Halftone' is possible also.
+
+                                End If
+                            Case "source" 'SANE 2.0 draft
+                                If modGlobals.SANE.CurrentDevice.OptionDescriptors(i).constraint_type = SANE_API.SANE_Constraint_Type.SANE_CONSTRAINT_STRING_LIST Then
+                                    If modGlobals.SANE.CurrentDevice.OptionDescriptors(i).constraint.string_list.Contains("Flatbed") Then
+                                        fs.WriteLine("TWAIN.Flatbed=CAP_FEEDERENABLED,False")
+                                    End If
+                                    If modGlobals.SANE.CurrentDevice.OptionDescriptors(i).constraint.string_list.Contains("Transparency Adapter") Then
+                                        'XXX how does a Transparency Adapter behave?
+                                        fs.WriteLine("TWAIN.TransparencyAdapter=CAP_FEEDERENABLED,False")
+                                    End If
+                                    If modGlobals.SANE.CurrentDevice.OptionDescriptors(i).constraint.string_list.Contains("Automatic Document Feeder") Then
+                                        fs.WriteLine("TWAIN.AutomaticDocumentFeeder=CAP_FEEDERENABLED,True")
+                                    End If
+                                    fs.WriteLine("")
+                                    fs.WriteLine("[TWAIN.CAP_FEEDERENABLED]")
+                                    If modGlobals.SANE.CurrentDevice.OptionDescriptors(i).constraint.string_list.Contains("Flatbed") Then
+                                        fs.WriteLine("SANE.0=source,Flatbed")
+                                    End If
+                                    'If modGlobals.SANE.CurrentDevice.OptionDescriptors(i).constraint.string_list.Contains("Transparency Adapter") Then
+                                    '    'XXX how does a Transparency Adapter behave?
+                                    '    fs.WriteLine("SANE.0=source,Flatbed")
+                                    'End If
+                                    If modGlobals.SANE.CurrentDevice.OptionDescriptors(i).constraint.string_list.Contains("Automatic Document Feeder") Then
+                                        fs.WriteLine("SANE.1=source,Automatic Document Feeder")
+                                    End If
+                                End If
+                            Case Else
+                                'XXX there are lots of other new well-known options in the SANE 2.0 draft
+
+                        End Select
                 End Select
-                fs.WriteLine("")
+                        fs.WriteLine("")
             Next
             'End If
         Catch ex As Exception

@@ -2990,6 +2990,7 @@ Namespace TWAIN_VB
                             If (tw_cap.Cap = CAP.CAP_AUTOFEED) AndAlso (Caps(CAP.CAP_FEEDERENABLED).CurrentValue = TW_FALSE) Then
                                 SetCondition(TWCC.TWCC_CAPUNSUPPORTED)
                                 SetResult(TWRC.TWRC_FAILURE)
+                                Return MyResult
                             Else
                                 Dim oneval As TW_ONEVALUE
                                 oneval.ItemType = TWTY.TWTY_BOOL

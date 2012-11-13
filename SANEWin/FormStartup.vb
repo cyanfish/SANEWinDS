@@ -20,10 +20,11 @@
 Imports SANEWinDS
 Public Class FormStartup
     Private WithEvents GUIForm As New SANEWinDS.FormMain
-    Private Enum OutputFormat As Integer
-        Screen = 0
-        PDF = 1
-    End Enum
+    'Private Enum OutputFormat As Integer
+    '    Screen = 0
+    '    PDF = 1
+    '    JPEG = 2
+    'End Enum
     Private Structure PDFInfo
         Dim FileName As String
         Dim FileStream As System.IO.FileStream
@@ -31,13 +32,21 @@ Public Class FormStartup
         Dim iTextWriter As iTextSharp.text.pdf.PdfWriter
     End Structure
 
-    Private OutputTo As OutputFormat = OutputFormat.PDF
+    'Private OutputTo As OutputFormat = OutputFormat.PDF
+    'Private OutputTo As String = Nothing
+
     Private CurrentPDF As PDFInfo
     Private frmStatus As Form
 
     Private Sub FormStartup_Load(ByVal sender As Object, ByVal e As System.EventArgs) Handles Me.Load
         Me.Visible = False
         Try
+            With GUIForm
+                '.AddOutputDestinationString("JPEG")
+                .AddOutputDestinationString("PDF")
+                .AddOutputDestinationString("Screen")
+                .SetOutputDestinationString("PDF")
+            End With
             Dim DialogResult As DialogResult = GUIForm.ShowDialog
         Catch ex As Exception
             MsgBox(ex.Message)
@@ -75,7 +84,8 @@ Public Class FormStartup
     Private Sub OnBatchCompleted(ByVal Pages As Integer) Handles GUIForm.BatchCompleted
         Me.GUIForm.Visible = True
         Try
-            If Me.OutputTo = OutputFormat.PDF Then
+            'If Me.OutputTo = OutputFormat.PDF Then
+            If Me.GUIForm.GetOutputDestinationString.ToUpper = "PDF" Then
                 Dim fname As String = Me.CurrentPDF.FileName
                 Me.ClosePDF()
                 frmStatus.Close()
@@ -99,7 +109,8 @@ Public Class FormStartup
 
     Private Sub OnImageError(ByVal PageNumber As Integer, ByVal Message As String) Handles GUIForm.ImageError
         Me.GUIForm.Visible = True
-        If Me.OutputTo = OutputFormat.PDF Then
+        'If Me.OutputTo = OutputFormat.PDF Then
+        If GUIForm.GetOutputDestinationString.ToUpper = "PDF" Then
             Me.ClosePDF()
         End If
 
@@ -109,14 +120,16 @@ Public Class FormStartup
     End Sub
 
     Private Sub OnImageAcquired(ByVal PageNumber As Integer, ByVal bmp As Bitmap) Handles GUIForm.ImageAcquired
-        Select Case Me.OutputTo
-            Case OutputFormat.Screen
+        Select Case GUIForm.GetOutputDestinationString.ToUpper
+            'Case OutputFormat.Screen
+            Case "SCREEN"
                 Dim FileName As String = My.Computer.FileSystem.SpecialDirectories.Temp & "\SANEWin" 'XXX
                 If bmp IsNot Nothing Then
                     Dim fs As System.IO.FileStream
                     Dim ms As System.IO.MemoryStream
                     Try
                         Dim frm As New Form
+                        frm.Text = "Page " & PageNumber.ToString
                         Dim pb As New PictureBox
                         pb.Name = "PictureBox1"
                         pb.Parent = frm
@@ -156,7 +169,8 @@ Public Class FormStartup
                         bmp = Nothing
                     End Try
                 End If
-            Case OutputFormat.PDF
+                'Case OutputFormat.PDF
+            Case "PDF"
                 Try
                     If bmp IsNot Nothing Then
                         If PageNumber = 1 Then

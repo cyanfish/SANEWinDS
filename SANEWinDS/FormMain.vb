@@ -85,6 +85,7 @@ Public Class FormMain
             Dim PageNo As Integer = 0
             If SANE.CurrentDevice.Name IsNot Nothing Then
                 If SANE.CurrentDevice.Open Then
+                    Me.ComboBoxDestination.Enabled = False
                     RaiseEvent BatchStarted()
                     Dim Status As SANE_API.SANE_Status = 0
                     Do
@@ -112,6 +113,7 @@ Public Class FormMain
                             Exit Do
                         End Try
                     Loop While Status = SANE_API.SANE_Status.SANE_STATUS_GOOD And CurrentSettings.ScanContinuously = True
+                    Me.ComboBoxDestination.Enabled = True
                 Else
                     RaiseEvent ImageError(PageNo, "The SANE device '" & SANE.CurrentDevice.Name & "' has not been opened")
                 End If
@@ -260,7 +262,34 @@ Public Class FormMain
         End If
 
         If Me.Mode = UIMode.Scan Then Me.ButtonOK.Text = "Scan" Else Me.ButtonOK.Text = "OK"
+        If TWAIN_Is_Active Then
+            With Me.ComboBoxDestination
+                .Items.Add("TWAIN")
+                .SelectedIndex = 0
+                .Enabled = False
+            End With
+        Else
+            'Let the caller decide what output formats to enable.
+        End If
     End Sub
+
+    Public Sub AddOutputDestinationString(Destination As String)
+        If Destination IsNot Nothing Then
+            If Not Me.ComboBoxDestination.Items.Contains(Destination) Then
+                Me.ComboBoxDestination.Items.Add(Destination)
+            End If
+        End If
+    End Sub
+    Public Sub SetOutputDestinationString(Destination As String)
+        If Destination IsNot Nothing Then
+            If Me.ComboBoxDestination.Items.Contains(Destination) Then
+                Me.ComboBoxDestination.Text = Destination
+            End If
+        End If
+    End Sub
+    Public Function GetOutputDestinationString() As String
+        Return Me.ComboBoxDestination.Text
+    End Function
 
     Private Sub Try_Init_SANE()
         Try
@@ -934,7 +963,15 @@ Public Class FormMain
     End Sub
 
     Private Sub FormMain_Resize(ByVal sender As Object, ByVal e As System.EventArgs) Handles Me.Resize
-        Me.PanelOpt.Width = Me.ClientRectangle.Width - PanelOpt.Left
+        'Me.PanelOpt.Width = Me.ClientRectangle.Width - PanelOpt.Left
+        If Me.TreeViewOptions.SelectedNode IsNot Nothing Then
+            If Me.TreeViewOptions.SelectedNode.Tag IsNot Nothing Then
+                Me.DisplayOption(Me.PanelOpt, Me.TreeViewOptions.SelectedNode.Tag)
+            End If
+        Else
+            Me.PanelOpt.Controls.Clear()
+        End If
+
     End Sub
 
     Private Sub TreeViewOptions_AfterSelect(ByVal sender As Object, ByVal e As System.Windows.Forms.TreeViewEventArgs) Handles TreeViewOptions.AfterSelect
@@ -968,7 +1005,6 @@ Public Class FormMain
         CurrentSettings.ScanContinuously = CheckBoxBatchMode.Checked
     End Sub
 
-
     Private Sub ButtonHost_Click(sender As Object, e As EventArgs) Handles ButtonHost.Click
         Close_SANE()
         Close_Net()
@@ -986,5 +1022,6 @@ Public Class FormMain
         CurrentSettings.ScanContinuouslyUserConfigured = True
 
     End Sub
+
 End Class
 

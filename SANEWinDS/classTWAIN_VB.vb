@@ -3399,6 +3399,7 @@ Namespace TWAIN_VB
                         Me.SetState(TwainState.DS_Enabled)
                         If CBool(UserInterface.ShowUI) Then
                             MyForm.Show()
+                            MyForm.ButtonOK.Enabled = True
                         Else
                             'MyForm.ButtonOK.PerformClick() 'this doesn't work for some reason
                             Me.GUI_ButtonOK_Click(MyForm.ButtonOK, New System.Windows.Forms.MouseEventArgs(Windows.Forms.MouseButtons.Left, 1, 1, 1, 0))
@@ -3420,6 +3421,7 @@ Namespace TWAIN_VB
                         MyForm.Parent = System.Windows.Forms.Form.FromHandle(UserInterface.hParent)
                         MyForm.Mode = FormMain.UIMode.Configure
                         MyForm.Show()
+                        MyForm.ButtonOK.Enabled = True
 
                         UserInterface.ModalUI = TW_FALSE
                         Marshal.StructureToPtr(UserInterface, _pData, True)
@@ -3568,6 +3570,7 @@ Namespace TWAIN_VB
 
                                             Import_SANE_Options()
                                             MyForm.SetUserDefaults()
+                                            'MyForm.ButtonOK.Enabled = True
                                         End If
                                     End If
 
@@ -4107,7 +4110,7 @@ Namespace TWAIN_VB
                 'XXX set up general options like from Device_Appears_To_Have_ADF()
 
                 If Not CurrentSettings.ScanContinuouslyUserConfigured Then
-                    CurrentSettings.ScanContinuously = Device_Appears_To_Have_ADF()
+                    CurrentSettings.ScanContinuously = Device_Appears_To_Have_ADF() AndAlso Device_Appears_To_Have_ADF_Enabled()
                     'MyForm.CheckBoxBatchMode.Checked = CurrentSettings.ScanContinuously
                     SetCap(CAP.CAP_AUTOFEED, TW_TRUE, RequestSource.SANE) 'XXX applications should set this, but they don't seem to.
                 End If

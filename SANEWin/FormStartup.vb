@@ -220,7 +220,7 @@ Public Class FormStartup
         With Me.CurrentPDF
             .FileName = My.Computer.FileSystem.SpecialDirectories.Temp & "\SANEWin.PDF" 'XXX
             .FileStream = New System.IO.FileStream(.FileName, IO.FileMode.Create, IO.FileAccess.Write, IO.FileShare.None)
-            .iTextDocument = New iTextSharp.text.Document(iTextSharp.text.PageSize.LETTER, 0, 0, 0, 0)
+            .iTextDocument = New iTextSharp.text.Document(PageSize, 0, 0, 0, 0)
             .iTextWriter = iTextSharp.text.pdf.PdfWriter.GetInstance(.iTextDocument, .FileStream)
             .iTextDocument.Open()
         End With

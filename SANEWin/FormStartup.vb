@@ -50,6 +50,7 @@ Public Class FormStartup
             Dim DialogResult As DialogResult = GUIForm.ShowDialog
         Catch ex As Exception
             MsgBox(ex.Message)
+            Me.ClosePDF()
         End Try
         Me.Close()
     End Sub
@@ -177,8 +178,25 @@ Public Class FormStartup
 
                             ShowStatus("Creating PDF document...")
 
-                            'XXX guess page size
-                            Me.OpenPDF(iTextSharp.text.PageSize.LETTER)
+                            'guess page size:
+                            '8.5/11 = .773
+                            '11/8.5 = 1.294
+                            '8.5/14 = .607
+                            '14/8.5 = 1.647
+                            Dim AspectRatio As Single = bmp.Width / bmp.Height
+                            Dim PageSize As iTextSharp.text.Rectangle
+                            Select Case AspectRatio
+                                Case Is < 0.69
+                                    PageSize = iTextSharp.text.PageSize.LEGAL
+                                Case Is < 1.034
+                                    PageSize = iTextSharp.text.PageSize.LETTER
+                                Case Is < 1.471
+                                    PageSize = iTextSharp.text.PageSize.LETTER_LANDSCAPE
+                                Case Else
+                                    PageSize = iTextSharp.text.PageSize.LEGAL_LANDSCAPE
+                            End Select
+
+                            Me.OpenPDF(PageSize)
                         End If
 
                         If CurrentPDF.FileName IsNot Nothing Then
@@ -225,18 +243,23 @@ Public Class FormStartup
         End With
     End Sub
     Private Sub ClosePDF()
-        Try
-            With Me.CurrentPDF
+        With Me.CurrentPDF
+            Try
                 If .iTextDocument IsNot Nothing Then If .iTextDocument.IsOpen Then .iTextDocument.Close()
+            Catch
+            End Try
+            Try
                 If .iTextWriter IsNot Nothing Then .iTextWriter.Close()
+            Catch
+            End Try
+            Try
                 If .FileStream IsNot Nothing Then .FileStream.Close()
-                .iTextDocument = Nothing
-                .iTextWriter = Nothing
-                .FileStream = Nothing
-                .FileName = Nothing
-            End With
-        Catch ex As Exception
-
-        End Try
+            Catch
+            End Try
+            .iTextDocument = Nothing
+            .iTextWriter = Nothing
+            .FileStream = Nothing
+            .FileName = Nothing
+        End With
     End Sub
 End Class

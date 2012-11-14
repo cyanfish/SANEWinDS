@@ -40,7 +40,8 @@ Public Class SharedSettings
         'Dim Enabled As Boolean
 
     End Structure
-    Public ConfigDirectory As String
+    Public UserConfigDirectory As String
+    Public SharedConfigDirectory As String
     Public LogDirectory As String
 
     Public ProductName As System.Reflection.AssemblyName = System.Reflection.Assembly.GetExecutingAssembly.GetName
@@ -104,6 +105,7 @@ Public Class SharedSettings
     Private Sub ReadSettings()
         SANE = New SANESettings
         TWAIN = New TWAINSettings
+
         If UseRoamingAppData Then
             UserSettingsFolder = System.Environment.GetFolderPath(System.Environment.SpecialFolder.ApplicationData) & "\" & Me.ProductName.Name
         Else
@@ -111,8 +113,15 @@ Public Class SharedSettings
         End If
         If Not My.Computer.FileSystem.DirectoryExists(UserSettingsFolder) Then My.Computer.FileSystem.CreateDirectory(UserSettingsFolder)
 
-        Me.ConfigDirectory = UserSettingsFolder
-        Me.LogDirectory = Me.ConfigDirectory 'XXX
+        Me.UserConfigDirectory = UserSettingsFolder
+        Me.LogDirectory = Me.UserConfigDirectory 'XXX
+
+        Try
+            Me.SharedConfigDirectory = System.Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) & "\" & Me.ProductName.Name
+            If Not My.Computer.FileSystem.DirectoryExists(Me.SharedConfigDirectory) Then My.Computer.FileSystem.CreateDirectory(Me.SharedConfigDirectory)
+        Catch ex As Exception
+            Logger.Write(DebugLogger.Level.Error_, True, "Failed to create common configuration folder '" & Me.SharedConfigDirectory & "': " & ex.Message)
+        End Try
 
         'Dim UserSettingsFileName As String = Me.ConfigDirectory & "\" & Me.ProductName.Name & ".ini"
         Dim UserSettingsFileName As String = Me.GetUserConfigFileName
@@ -226,16 +235,25 @@ Public Class SharedSettings
     End Function
 
     Public Function GetUserConfigFileName() As String
-        Return Me.ConfigDirectory & "\" & Me.ProductName.Name & ".ini"
+        Return Me.UserConfigDirectory & "\" & Me.ProductName.Name & ".ini"
     End Function
 
     Public Function GetDeviceConfigFileName() As String
         Dim BackEnd As String = modGlobals.SANE.CurrentDevice.Name
         Dim p As Integer = BackEnd.IndexOf(":")
         If p Then BackEnd = BackEnd.Substring(0, p)
-        Dim f As String = CurrentSettings.ConfigDirectory & "\" & BackEnd & ".ini"
-        If Not My.Computer.FileSystem.FileExists(f) Then CreateDeviceConfigFile(f)
-        Return f
+        Dim f As String = CurrentSettings.UserConfigDirectory & "\" & BackEnd & ".ini"
+        If My.Computer.FileSystem.FileExists(f) Then
+            Return f
+        Else
+            Dim ff As String = CurrentSettings.SharedConfigDirectory & "\" & BackEnd & ".ini"
+            If My.Computer.FileSystem.FileExists(ff) Then
+                Return ff
+            Else
+                CreateDeviceConfigFile(f)
+                Return f
+            End If
+        End If
     End Function
 
     Private Function SANE_Option_Defined(OptionName As String) As Boolean
@@ -400,7 +418,7 @@ Public Class SharedSettings
 
                         End Select
                 End Select
-                        fs.WriteLine("")
+                fs.WriteLine("")
             Next
             'End If
         Catch ex As Exception

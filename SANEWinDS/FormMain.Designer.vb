@@ -23,6 +23,7 @@ Partial Class FormMain
     <System.Diagnostics.DebuggerStepThrough()> _
     Private Sub InitializeComponent()
         Me.components = New System.ComponentModel.Container()
+        Dim resources As System.ComponentModel.ComponentResourceManager = New System.ComponentModel.ComponentResourceManager(GetType(FormMain))
         Me.PanelOpt = New System.Windows.Forms.Panel()
         Me.TreeViewOptions = New System.Windows.Forms.TreeView()
         Me.CheckBoxBatchMode = New System.Windows.Forms.CheckBox()
@@ -199,6 +200,7 @@ Partial Class FormMain
         Me.Controls.Add(Me.ButtonOK)
         Me.Controls.Add(Me.CheckBoxBatchMode)
         Me.Controls.Add(Me.SplitContainerOptions)
+        Me.Icon = CType(resources.GetObject("$this.Icon"), System.Drawing.Icon)
         Me.Name = "FormMain"
         Me.Text = "SANEWin"
         Me.SplitContainerOptions.Panel1.ResumeLayout(False)

@@ -793,63 +793,65 @@ Namespace TWAIN_VB
     '#define TWSG_AUTO                1
 
     '/* ICAP_SUPPORTEDSIZES values (SS_ means Supported Sizes) */
-    '#define TWSS_NONE                0
-    '#define TWSS_A4                  1
-    '#define TWSS_JISB5               2
-    '#define TWSS_USLETTER            3
-    '#define TWSS_USLEGAL             4
-    '/* Added 1.5 */
-    '#define TWSS_A5                  5
-    '#define TWSS_ISOB4               6
-    '#define TWSS_ISOB6               7
-    '/* Added 1.7 */
-    '#define TWSS_USLEDGER            9
-    '#define TWSS_USEXECUTIVE        10
-    '#define TWSS_A3                 11
-    '#define TWSS_ISOB3              12
-    '#define TWSS_A6                 13
-    '#define TWSS_C4                 14
-    '#define TWSS_C5                 15
-    '#define TWSS_C6                 16
-    '/* Added 1.8 */
-    '#define TWSS_4A0                17
-    '#define TWSS_2A0                18
-    '#define TWSS_A0                 19
-    '#define TWSS_A1                 20
-    '#define TWSS_A2                 21
-    '#define TWSS_A7                 22
-    '#define TWSS_A8                 23
-    '#define TWSS_A9                 24
-    '#define TWSS_A10                25
-    '#define TWSS_ISOB0              26
-    '#define TWSS_ISOB1              27
-    '#define TWSS_ISOB2              28
-    '#define TWSS_ISOB5              29
-    '#define TWSS_ISOB7              30
-    '#define TWSS_ISOB8              31
-    '#define TWSS_ISOB9              32
-    '#define TWSS_ISOB10             33
-    '#define TWSS_JISB0              34
-    '#define TWSS_JISB1              35
-    '#define TWSS_JISB2              36
-    '#define TWSS_JISB3              37
-    '#define TWSS_JISB4              38
-    '#define TWSS_JISB6              39
-    '#define TWSS_JISB7              40
-    '#define TWSS_JISB8              41
-    '#define TWSS_JISB9              42
-    '#define TWSS_JISB10             43
-    '#define TWSS_C0                 44
-    '#define TWSS_C1                 45
-    '#define TWSS_C2                 46
-    '#define TWSS_C3                 47
-    '#define TWSS_C7                 48
-    '#define TWSS_C8                 49
-    '#define TWSS_C9                 50
-    '#define TWSS_C10                51
-    '#define TWSS_USSTATEMENT        52
-    '#define TWSS_BUSINESSCARD       53
-    '#define TWSS_MAXSIZE            54  /* Added 2.1 */
+    Public Enum TWSS As UInt16
+        TWSS_NONE = 0
+        TWSS_A4 = 1
+        TWSS_JISB5 = 2
+        TWSS_USLETTER = 3
+        TWSS_USLEGAL = 4
+        '/* Added 1.5 */
+        TWSS_A5 = 5
+        TWSS_ISOB4 = 6
+        TWSS_ISOB6 = 7
+        '/* Added 1.7 */
+        TWSS_USLEDGER = 9
+        TWSS_USEXECUTIVE = 10
+        TWSS_A3 = 11
+        TWSS_ISOB3 = 12
+        TWSS_A6 = 13
+        TWSS_C4 = 14
+        TWSS_C5 = 15
+        TWSS_C6 = 16
+        '/* Added 1.8 */
+        TWSS_4A0 = 17
+        TWSS_2A0 = 18
+        TWSS_A0 = 19
+        TWSS_A1 = 20
+        TWSS_A2 = 21
+        TWSS_A7 = 22
+        TWSS_A8 = 23
+        TWSS_A9 = 24
+        TWSS_A10 = 25
+        TWSS_ISOB0 = 26
+        TWSS_ISOB1 = 27
+        TWSS_ISOB2 = 28
+        TWSS_ISOB5 = 29
+        TWSS_ISOB7 = 30
+        TWSS_ISOB8 = 31
+        TWSS_ISOB9 = 32
+        TWSS_ISOB10 = 33
+        TWSS_JISB0 = 34
+        TWSS_JISB1 = 35
+        TWSS_JISB2 = 36
+        TWSS_JISB3 = 37
+        TWSS_JISB4 = 38
+        TWSS_JISB6 = 39
+        TWSS_JISB7 = 40
+        TWSS_JISB8 = 41
+        TWSS_JISB9 = 42
+        TWSS_JISB10 = 43
+        TWSS_C0 = 44
+        TWSS_C1 = 45
+        TWSS_C2 = 46
+        TWSS_C3 = 47
+        TWSS_C7 = 48
+        TWSS_C8 = 49
+        TWSS_C9 = 50
+        TWSS_C10 = 51
+        TWSS_USSTATEMENT = 52
+        TWSS_BUSINESSCARD = 53
+        TWSS_MAXSIZE = 54  '/* Added 2.1 */
+    End Enum
 
     '/* ICAP_XFERMECH values (SX_ means Setup XFer) */
     Public Enum TWSX As UInt16
@@ -2112,6 +2114,7 @@ Namespace TWAIN_VB
         Private MyResult As TWRC
         Private MyForm As FormMain
         Private Caps As New Dictionary(Of CAP, TwainCapability)
+        Private PageSizes As System.Collections.Generic.SortedDictionary(Of TWSS, PageSize)
         Private Structure TWAINImage
             Dim DIB As DIB
             'Dim hBitmap As IntPtr
@@ -2136,7 +2139,7 @@ Namespace TWAIN_VB
         Private CurrentJob As TWAINJob
         Public Delegate Sub Message_From_DSEventHandler(ByVal _pOrigin As IntPtr, ByVal _pDest As IntPtr, ByVal _DG As UInt32, ByVal _DAT As UInt32, ByVal _MSG As UInt16, ByVal _pData As IntPtr)
         Public Event Message_From_DS As Message_From_DSEventHandler
-        'Private Logger As New Logger
+         'Private Logger As New Logger
 
         Private Sub Send_TWAIN_Message(ByVal _Origin As TW_IDENTITY, ByVal _Dest As TW_IDENTITY, ByVal _DG As DG, ByVal _DAT As DAT, ByVal _MSG As MSG, ByVal _Data As Object)
 
@@ -2342,8 +2345,8 @@ Namespace TWAIN_VB
                             .FrameNumber = 1 'XXX
                             .Frame.Top = FloatToFIX32(0.0)
                             .Frame.Left = FloatToFIX32(0.0)
-                            .Frame.Bottom = FloatToFIX32(Caps(CAP.ICAP_PHYSICALHEIGHT).CurrentValue)
-                            .Frame.Right = FloatToFIX32(Caps(CAP.ICAP_PHYSICALWIDTH).CurrentValue)
+                            .Frame.Bottom = FloatToFIX32(Caps(CAP.ICAP_PHYSICALHEIGHT).CurrentValue) 'XXX
+                            .Frame.Right = FloatToFIX32(Caps(CAP.ICAP_PHYSICALWIDTH).CurrentValue) 'XXX
                         End With
                         Marshal.StructureToPtr(CurrentJob.CurrentImage.ImageLayout, _pData, True)
                         SetResult(TWRC.TWRC_SUCCESS)
@@ -2353,6 +2356,13 @@ Namespace TWAIN_VB
                         SetResult(TWRC.TWRC_FAILURE)
                         Return MyResult
                     End If
+                Case MSG.MSG_SET
+                    SetCap(CAP.ICAP_SUPPORTEDSIZES, TWSS.TWSS_NONE, RequestSource.TWAIN)
+                    'XXX set currentjob.currentimage.imagelayout values
+
+
+                    SetResult(TWRC.TWRC_SUCCESS)
+                    Return MyResult
                 Case Else
                     SetCondition(TWCC.TWCC_BADPROTOCOL)
                     SetResult(TWRC.TWRC_FAILURE)
@@ -2976,6 +2986,13 @@ Namespace TWAIN_VB
                         SetResult(TWRC.TWRC_FAILURE)
                         Return MyResult
                     End Try
+
+                    If Not Cap_Operation_Is_Supported(ReqCap, _MSG) Then
+                        SetCondition(TWCC.TWCC_CAPBADOPERATION)
+                        SetResult(TWRC.TWRC_FAILURE)
+                        Return MyResult
+                    End If
+
                     CurVal = ReqCap.CurrentValue
                     Logger.Write(DebugLogger.Level.Debug, False, "Current Value Type=" & CurVal.GetType.ToString)
                     If CurVal.GetType Is GetType(TW_FIX32) Then
@@ -3032,6 +3049,87 @@ Namespace TWAIN_VB
                             Marshal.StructureToPtr(tw_cap, _pData, True)
                             SetResult(TWRC.TWRC_SUCCESS)
                             Return MyResult
+
+                        Case CAP.ICAP_SUPPORTEDSIZES
+                            Select Case _MSG
+                                Case MSG.MSG_GET
+                                    Dim cap_enum As TW_ENUMERATION
+                                    cap_enum.ItemType = TWTY.TWTY_UINT16
+                                    '
+                                    Dim SupportedSizes As New ArrayList
+                                    For Each ss In PageSizes
+                                        Select Case ss.Key
+                                            Case TWSS.TWSS_NONE, TWSS.TWSS_MAXSIZE
+                                                SupportedSizes.Add(ss.Key)
+                                            Case Else
+                                                'Logger.Write(DebugLogger.Level.Debug, False, "ss.value.width=" & ss.Value.Width.ToString)
+                                                'Logger.Write(DebugLogger.Level.Debug, False, "ss.value.height=" & ss.Value.Height.ToString)
+                                                'Logger.Write(DebugLogger.Level.Debug, False, "caps(cap.icap_physicalwidth).defaultvalue=" & Me.FIX32ToFloat(Caps(CAP.ICAP_PHYSICALWIDTH).DefaultValue).ToString)
+                                                'Logger.Write(DebugLogger.Level.Debug, False, "caps(cap.icap_physicalheight).defaultvalue=" & Me.FIX32ToFloat(Caps(CAP.ICAP_PHYSICALHEIGHT).DefaultValue).ToString)
+                                                If ss.Value.Width <= Me.FIX32ToFloat(Caps(CAP.ICAP_PHYSICALWIDTH).DefaultValue) Then
+                                                    If ss.Value.Height <= Me.FIX32ToFloat(Caps(CAP.ICAP_PHYSICALHEIGHT).DefaultValue) Then
+                                                        SupportedSizes.Add(ss.Key)
+                                                    End If
+                                                End If
+                                        End Select
+                                    Next
+                                    '
+                                    cap_enum.NumItems = SupportedSizes.Count
+                                    Try
+                                        cap_enum.CurrentIndex = SupportedSizes.IndexOf(Caps(tw_cap.Cap).CurrentValue)
+                                    Catch
+                                        cap_enum.CurrentIndex = SupportedSizes.IndexOf(TWSS.TWSS_NONE)
+                                    End Try
+                                    Try
+                                        cap_enum.DefaultIndex = SupportedSizes.IndexOf(Caps(tw_cap.Cap).DefaultValue)
+                                    Catch
+                                        cap_enum.DefaultIndex = SupportedSizes.IndexOf(TWSS.TWSS_NONE)
+                                    End Try
+                                    Logger.Write(DebugLogger.Level.Debug, False, "cap_enum.currentindex=" & cap_enum.CurrentIndex.ToString)
+                                    Logger.Write(DebugLogger.Level.Debug, False, "cap_enum.defaultindex=" & cap_enum.DefaultIndex.ToString)
+
+                                    Dim ItemOffset As Integer = Marshal.SizeOf(cap_enum.ItemType) + Marshal.SizeOf(cap_enum.NumItems) + Marshal.SizeOf(cap_enum.CurrentIndex) + Marshal.SizeOf(cap_enum.DefaultIndex)
+                                    Dim pContainer As IntPtr = WinAPI.GlobalAlloc(WinAPI.GlobalAllocFlags.GHND, CInt(ItemOffset + (2 * cap_enum.NumItems)))
+                                    Marshal.WriteInt16(pContainer, cap_enum.ItemType)
+                                    Marshal.WriteInt32(pContainer + 2, cap_enum.NumItems)
+                                    Marshal.WriteInt32(pContainer + 6, cap_enum.CurrentIndex)
+                                    Marshal.WriteInt32(pContainer + 10, cap_enum.DefaultIndex)
+                                    '
+                                    Dim i As Integer = 0
+                                    For Each ps As TWSS In SupportedSizes
+                                        Logger.Write(DebugLogger.Level.Debug, False, "  Supported size: " & ps.ToString)
+                                        Try
+                                            Marshal.WriteInt16(pContainer + ItemOffset + i, ps)
+                                        Catch ex As Exception
+                                            Logger.Write(DebugLogger.Level.Error_, True, ex.Message)
+                                        End Try
+                                        i += 2
+                                    Next
+                                    '
+                                    tw_cap.ConType = TWON.TWON_ENUMERATION
+                                    tw_cap.hContainer = pContainer
+                                    Marshal.StructureToPtr(tw_cap, _pData, True)
+                                    SetResult(TWRC.TWRC_SUCCESS)
+                                    Return MyResult
+
+                                Case MSG.MSG_GETCURRENT, MSG.MSG_GETDEFAULT
+                                    Dim oneval As TW_ONEVALUE
+                                    oneval.ItemType = TWTY.TWTY_UINT16
+                                    oneval.Item = IIf(_MSG = MSG.MSG_GETDEFAULT, DefaultVal, CurVal)
+                                    Dim pContainer As IntPtr = WinAPI.GlobalAlloc(WinAPI.GlobalAllocFlags.GHND, Marshal.SizeOf(oneval))
+                                    tw_cap.ConType = TWON.TWON_ONEVALUE
+                                    tw_cap.hContainer = pContainer
+                                    Marshal.StructureToPtr(oneval, pContainer, True)
+                                    Marshal.StructureToPtr(tw_cap, _pData, True)
+                                    SetResult(TWRC.TWRC_SUCCESS)
+                                    Return MyResult
+
+                                Case Else
+                                    SetCondition(TWCC.TWCC_CAPBADOPERATION)
+                                    SetResult(TWRC.TWRC_FAILURE)
+                                    Return MyResult
+
+                            End Select
 
                         Case CAP.CAP_XFERCOUNT
                             Dim oneval As TW_ONEVALUE
@@ -3110,13 +3208,18 @@ Namespace TWAIN_VB
                         Return MyResult
                     End Try
 
+                    If Not Cap_Operation_Is_Supported(ReqCap, _MSG) Then
+                        SetCondition(TWCC.TWCC_CAPBADOPERATION)
+                        SetResult(TWRC.TWRC_FAILURE)
+                        Return MyResult
+                    End If
                     'XXX validate constraints & data types here
 
                     Select Case tw_cap.Cap
-                        Case CAP.CAP_ENABLEDSUIONLY, CAP.CAP_UICONTROLLABLE, CAP.CAP_SUPPORTEDCAPS, CAP.CAP_FEEDERLOADED, CAP.CAP_DUPLEX 'ReadOnly caps
-                            SetCondition(TWCC.TWCC_CAPBADOPERATION)
-                            SetResult(TWRC.TWRC_FAILURE)
-                            Return MyResult
+                        'Case CAP.CAP_ENABLEDSUIONLY, CAP.CAP_UICONTROLLABLE, CAP.CAP_SUPPORTEDCAPS, CAP.CAP_FEEDERLOADED, CAP.CAP_DUPLEX 'ReadOnly caps
+                        '    SetCondition(TWCC.TWCC_CAPBADOPERATION)
+                        '    SetResult(TWRC.TWRC_FAILURE)
+                        '    Return MyResult
                         Case CAP.CAP_AUTOFEED
                             If tw_cap.ConType <> TWON.TWON_ONEVALUE Then
                                 SetCondition(TWCC.TWCC_BADVALUE)
@@ -3132,10 +3235,6 @@ Namespace TWAIN_VB
                                     Me.SetResult(TWRC.TWRC_FAILURE)
                                     Return MyResult
                                 End If
-
-                                ''XXX should set a property rather than a checkbox
-                                'MyForm.CheckBoxBatchMode.Checked = CBool(oneval.Item)
-                                'MyForm.CheckBoxBatchMode.Enabled = False
 
                                 Logger.Write(DebugLogger.Level.Debug, False, "app sent value '" & oneval.Item.ToString & "'")
 
@@ -3273,6 +3372,28 @@ Namespace TWAIN_VB
                                 End If
                             End If
 
+                        Case CAP.ICAP_SUPPORTEDSIZES
+                            If tw_cap.ConType <> TWON.TWON_ONEVALUE Then
+                                SetCondition(TWCC.TWCC_BADVALUE)
+                                SetResult(TWRC.TWRC_FAILURE)
+                                Return MyResult
+                            Else
+                                Dim pContainer As IntPtr = WinAPI.GlobalLock(tw_cap.hContainer)
+                                Dim oneval As TW_ONEVALUE = Marshal.PtrToStructure(pContainer, GetType(TW_ONEVALUE))
+                                If pContainer Then WinAPI.GlobalUnlock(tw_cap.hContainer)
+                                Logger.Write(DebugLogger.Level.Debug, False, "ItemType=" & CType(oneval.ItemType, TWTY).ToString)
+                                If oneval.ItemType <> TWTY.TWTY_UINT16 Then
+                                    SetCondition(TWCC.TWCC_BADVALUE)
+                                    SetResult(TWRC.TWRC_FAILURE)
+                                    Return MyResult
+                                Else
+                                    'XXX should verify that we support the requested size
+                                    SetCap(CAP.ICAP_SUPPORTEDSIZES, CType(oneval.Item, TWSS), RequestSource.TWAIN)
+                                    SetResult(TWRC.TWRC_SUCCESS)
+                                    Return MyResult
+                                End If
+                            End If
+
                         Case CAP.ICAP_UNITS
                             If tw_cap.ConType <> TWON.TWON_ONEVALUE Then
                                 SetCondition(TWCC.TWCC_BADVALUE)
@@ -3378,6 +3499,7 @@ Namespace TWAIN_VB
 
                 Case Else
                     'XXX lots more MSGs to add here!
+                    'XXX Notably MSG_RESET.
 
                     SetCondition(TWCC.TWCC_BADPROTOCOL)
                     SetResult(TWRC.TWRC_FAILURE)
@@ -3735,6 +3857,22 @@ Namespace TWAIN_VB
             Return o.ToString
         End Function
 
+        Private Function Cap_Operation_Is_Supported(ByVal ReqCap As TwainCapability, ByVal _MSG As MSG)
+            Select Case _MSG
+                Case MSG.MSG_GET
+                    If ReqCap.SupportedOperations And TWQC.TWQC_GET Then Return True
+                Case MSG.MSG_GETDEFAULT
+                    If ReqCap.SupportedOperations And TWQC.TWQC_GETDEFAULT Then Return True
+                Case MSG.MSG_GETCURRENT
+                    If ReqCap.SupportedOperations And TWQC.TWQC_GETCURRENT Then Return True
+                Case MSG.MSG_SET
+                    If ReqCap.SupportedOperations And TWQC.TWQC_SET Then Return True
+                Case MSG.MSG_RESET
+                    If ReqCap.SupportedOperations And TWQC.TWQC_RESET Then Return True
+            End Select
+            Return False
+        End Function
+
         Public Sub New()
             Dim UseRoamingAppData As Boolean = False
             Try
@@ -3775,6 +3913,7 @@ Namespace TWAIN_VB
             MyTWAINversion = MyIdentity.ProtocolMajor + (MyIdentity.ProtocolMinor / 10)
             Logger.Write(DebugLogger.Level.Info, False, "Reporting my TWAIN version as '" & MyTWAINversion.ToString & "'")
 
+            Me.InitPageSizes()
             Me.InitCaps()
         End Sub
 
@@ -3998,6 +4137,13 @@ Namespace TWAIN_VB
                                             Else
                                                 Throw New ApplicationException("Unable to interpret '" & NewValue.ToString & "' as type '" & ReqCap.EnumType.ToString & "'")
                                             End If
+                                        Case GetType(TWSS)
+                                            Dim o As TWSS
+                                            If [Enum].TryParse(NewValue.ToString, True, o) Then
+                                                NewValue = o
+                                            Else
+                                                Throw New ApplicationException("Unable to interpret '" & NewValue.ToString & "' as type '" & ReqCap.EnumType.ToString & "'")
+                                            End If
                                         Case GetType(TWSX)
                                             Dim o As TWSX
                                             If [Enum].TryParse(NewValue.ToString, True, o) Then
@@ -4013,6 +4159,12 @@ Namespace TWAIN_VB
                                                 Throw New ApplicationException("Unable to interpret '" & NewValue.ToString & "' as type '" & ReqCap.EnumType.ToString & "'")
                                             End If
                                         Case GetType(TWUN)
+                                            Dim o As TWUN
+                                            If [Enum].TryParse(NewValue.ToString, True, o) Then
+                                                NewValue = o
+                                            Else
+                                                Throw New ApplicationException("Unable to interpret '" & NewValue.ToString & "' as type '" & ReqCap.EnumType.ToString & "'")
+                                            End If
                                     End Select
                                 Else
                                     Dim int As Int64
@@ -4099,10 +4251,63 @@ Namespace TWAIN_VB
                         End If
                     Next
                 Else
-                    Logger.Write(DebugLogger.Level.Debug, False, "No capability mapping was found for '" & Capability.ToString & "'")
-                    Return False
+                    If Capability = CAP.ICAP_SUPPORTEDSIZES Then
+                        'Unless otherwise specified in the backend.ini, use standard page sizes to set tl, br.
+                        'XXX Hopefully TWAIN app isn't sending us a value that we didn't say we support when answering a GET message.
+                        If Me.PageSizes.ContainsKey(NewValue) Then
+                            If Me.PageSizes(NewValue).Width > 0 AndAlso Me.PageSizes(NewValue).Height > 0 Then
+                                Dim br_x, br_y As Double
+                                Dim res_unit As SANE_API.SANE_Unit = SANE_API.SANE_Unit.SANE_UNIT_NONE
+
+                                'the unit is required to be the same on all of tl-x, tl-y, br-x, br-y.
+                                For i = 1 To SANE.CurrentDevice.OptionDescriptors.Length - 1
+                                    If SANE.CurrentDevice.OptionDescriptors(i).name.ToLower = "tl-x" Then
+                                        res_unit = SANE.CurrentDevice.OptionDescriptors(i).unit
+                                        Exit For
+                                    End If
+                                Next
+
+                                Select Case res_unit
+                                    Case SANE_API.SANE_Unit.SANE_UNIT_DPI
+                                        'XXX no way to test this without a backend that reports dimensions in pixels
+                                        Dim res_dpi As Double = FIX32ToFloat(Caps(CAP.ICAP_XRESOLUTION).CurrentValue)
+                                        If res_dpi > 0 Then
+                                            br_x = Me.PageSizes(NewValue).Width / res_dpi
+                                        End If
+                                        res_dpi = FIX32ToFloat(Caps(CAP.ICAP_YRESOLUTION).CurrentValue)
+                                        If res_dpi > 0 Then
+                                            br_y = Me.PageSizes(NewValue).Height / res_dpi
+                                        End If
+                                    Case SANE_API.SANE_Unit.SANE_UNIT_MM
+                                        br_x = InchesToMM(Me.PageSizes(NewValue).Width)
+                                        br_y = InchesToMM(Me.PageSizes(NewValue).Height)
+                                    Case Else
+                                        Logger.Write(DebugLogger.Level.Warn, False, "Unable to set scan area using resolution unit '" & res_unit.ToString & "'")
+                                End Select
+                                If MyForm.SetSANEOption("tl-x", {0}) AndAlso _
+                                    MyForm.SetSANEOption("tl-y", {0}) AndAlso _
+                                    MyForm.SetSANEOption("br-x", {br_x}) AndAlso _
+                                    MyForm.SetSANEOption("br-y", {br_y}) Then
+                                    Return True
+                                Else
+                                    Logger.Write(DebugLogger.Level.Warn, False, "SANE backend doesn't appear to support all of 'tl-x', 'tl-y', 'br-x', and 'br-y'")
+                                    Return False
+                                End If
+                            Else
+                                Logger.Write(DebugLogger.Level.Warn, False, "Page width and height must both be greater than zero")
+                                Return False
+                            End If
+                        Else
+                            Logger.Write(DebugLogger.Level.Warn, False, "Unknown page size: '" & NewValue.ToString & "'")
+                            Return False
+                        End If
+                    Else
+                        Logger.Write(DebugLogger.Level.Debug, False, "No capability mapping was found for '" & Capability.ToString & "'")
+                        Return False
+                    End If
                 End If
             End If
+
         End Function
 
         Private Sub Import_SANE_Options()
@@ -4238,6 +4443,74 @@ Namespace TWAIN_VB
         Public Function FIX32ToFloat(ByVal _fix32 As TW_FIX32) As Double
             Return CType(_fix32.Whole, Double) + CType(_fix32.Frac / 65536.0, Double)
         End Function
+
+        Private Sub InitPageSizes()
+            Me.PageSizes = New System.Collections.Generic.SortedDictionary(Of TWSS, PageSize)
+
+            With Me.PageSizes
+                .Add(TWSS.TWSS_NONE, New PageSize(0, 0))
+                .Add(TWSS.TWSS_MAXSIZE, New PageSize(-1, -1))
+
+                .Add(TWSS.TWSS_USLETTER, New PageSize(8.5, 11.0))
+                .Add(TWSS.TWSS_USLEGAL, New PageSize(8.5, 14.0))
+                .Add(TWSS.TWSS_USLEDGER, New PageSize(11.0, 17.0))
+                .Add(TWSS.TWSS_USEXECUTIVE, New PageSize(7.25, 10.5))
+                .Add(TWSS.TWSS_USSTATEMENT, New PageSize(5.5, 8.5))
+                .Add(TWSS.TWSS_BUSINESSCARD, New PageSize(2.0, 3.5))
+
+                .Add(TWSS.TWSS_A0, New PageSize(33.11, 46.81))
+                .Add(TWSS.TWSS_A1, New PageSize(23.39, 33.11))
+                .Add(TWSS.TWSS_A2, New PageSize(16.54, 23.39))
+                .Add(TWSS.TWSS_A3, New PageSize(11.69, 16.54))
+                .Add(TWSS.TWSS_A4, New PageSize(8.27, 11.69))
+                .Add(TWSS.TWSS_A5, New PageSize(5.83, 8.27))
+                .Add(TWSS.TWSS_A6, New PageSize(4.13, 5.83))
+                .Add(TWSS.TWSS_A7, New PageSize(2.91, 4.13))
+                .Add(TWSS.TWSS_A8, New PageSize(2.05, 2.91))
+                .Add(TWSS.TWSS_A9, New PageSize(1.46, 2.05))
+                .Add(TWSS.TWSS_A10, New PageSize(1.02, 1.46))
+
+                .Add(TWSS.TWSS_ISOB0, New PageSize(39.37, 55.67))
+                .Add(TWSS.TWSS_ISOB1, New PageSize(27.83, 39.37))
+                .Add(TWSS.TWSS_ISOB2, New PageSize(19.69, 27.83))
+                .Add(TWSS.TWSS_ISOB3, New PageSize(13.9, 19.69))
+                .Add(TWSS.TWSS_ISOB4, New PageSize(9.84, 13.9))
+                .Add(TWSS.TWSS_ISOB5, New PageSize(6.93, 9.84))
+                .Add(TWSS.TWSS_ISOB6, New PageSize(4.92, 6.93))
+                .Add(TWSS.TWSS_ISOB7, New PageSize(3.46, 4.92))
+                .Add(TWSS.TWSS_ISOB8, New PageSize(2.44, 3.46))
+                .Add(TWSS.TWSS_ISOB9, New PageSize(1.73, 2.44))
+                .Add(TWSS.TWSS_ISOB10, New PageSize(1.22, 1.73))
+
+                .Add(TWSS.TWSS_C0, New PageSize(36.1, 51.06))
+                .Add(TWSS.TWSS_C1, New PageSize(25.51, 36.1))
+                .Add(TWSS.TWSS_C2, New PageSize(18.03, 25.51))
+                .Add(TWSS.TWSS_C3, New PageSize(12.76, 18.03))
+                .Add(TWSS.TWSS_C4, New PageSize(9.02, 12.76))
+                .Add(TWSS.TWSS_C5, New PageSize(6.38, 9.02))
+                .Add(TWSS.TWSS_C6, New PageSize(4.49, 6.38))
+                .Add(TWSS.TWSS_C7, New PageSize(3.19, 4.49))
+                .Add(TWSS.TWSS_C8, New PageSize(2.24, 3.19))
+                .Add(TWSS.TWSS_C9, New PageSize(1.57, 2.24))
+                .Add(TWSS.TWSS_C10, New PageSize(1.1, 1.57))
+
+                .Add(TWSS.TWSS_JISB0, New PageSize(40.55, 57.32))
+                .Add(TWSS.TWSS_JISB1, New PageSize(28.66, 40.55))
+                .Add(TWSS.TWSS_JISB2, New PageSize(20.28, 28.66))
+                .Add(TWSS.TWSS_JISB3, New PageSize(14.33, 20.28))
+                .Add(TWSS.TWSS_JISB4, New PageSize(10.12, 14.33))
+                .Add(TWSS.TWSS_JISB5, New PageSize(7.17, 10.12))
+                .Add(TWSS.TWSS_JISB6, New PageSize(5.04, 7.17))
+                .Add(TWSS.TWSS_JISB7, New PageSize(3.58, 5.04))
+                .Add(TWSS.TWSS_JISB8, New PageSize(2.52, 3.58))
+                .Add(TWSS.TWSS_JISB9, New PageSize(1.77, 2.52))
+                .Add(TWSS.TWSS_JISB10, New PageSize(1.26, 1.77))
+
+                .Add(TWSS.TWSS_4A0, New PageSize(66.22, 93.62))
+                .Add(TWSS.TWSS_2A0, New PageSize(46.81, 66.22))
+            End With
+
+        End Sub
 
         Private Sub InitCaps()
             Logger.Write(DebugLogger.Level.Debug, False, "")
@@ -4398,6 +4671,15 @@ Namespace TWAIN_VB
             tc.DataType = TWTY.TWTY_UINT16
             tc.EnumType = GetType(TWPT)
             tc.DefaultValue = TWPT.TWPT_RGB
+            tc.CurrentValue = tc.DefaultValue
+            tc.SupportedOperations = TWQC.TWQC_ALL
+            Caps.Add(tc.Capability, tc)
+
+            tc = New TwainCapability
+            tc.Capability = CAP.ICAP_SUPPORTEDSIZES
+            tc.DataType = TWTY.TWTY_UINT16
+            tc.EnumType = GetType(TWSS)
+            tc.DefaultValue = TWSS.TWSS_NONE
             tc.CurrentValue = tc.DefaultValue
             tc.SupportedOperations = TWQC.TWQC_ALL
             Caps.Add(tc.Capability, tc)

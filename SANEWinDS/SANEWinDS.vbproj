@@ -99,6 +99,7 @@
     <Compile Include="classDIB.vb" />
     <Compile Include="classINIFile.vb" />
     <Compile Include="classLogger.vb" />
+    <Compile Include="classPageSize.vb" />
     <Compile Include="classSANE.vb" />
     <Compile Include="classSharedSettings.vb" />
     <Compile Include="classTSAPI.vb" />

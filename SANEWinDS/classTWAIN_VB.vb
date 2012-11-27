@@ -2340,13 +2340,76 @@ Namespace TWAIN_VB
                 Case MSG.MSG_GET
                     If (MyState >= TwainState.DS_Opened) And (MyState <= TwainState.DS_Xfer_Ready) Then
                         With CurrentJob.CurrentImage.ImageLayout
-                            .DocumentNumber = 1 'XXX
-                            .PageNumber = 1 'XXX
-                            .FrameNumber = 1 'XXX
-                            .Frame.Top = FloatToFIX32(0.0)
-                            .Frame.Left = FloatToFIX32(0.0)
-                            .Frame.Bottom = FloatToFIX32(Caps(CAP.ICAP_PHYSICALHEIGHT).CurrentValue) 'XXX
-                            .Frame.Right = FloatToFIX32(Caps(CAP.ICAP_PHYSICALWIDTH).CurrentValue) 'XXX
+                            'pImageLayout optionally includes information about which frame on the page, which
+                            'page within a document, and which document the image belongs to. These fields were included
+                            'mostly for future versions which could merge more than one type of data. A more immediate use
+                            'might be for an application that needs to keep track of which frame on the page an image came
+                            'from while acquiring from a Source that can supply more than one image from the same page at
+                            'the same time. The information in this structure always describes the current image. To set
+                            'multiple frames for any page simultaneously, reference ICAP_FRAMES. 
+                            .DocumentNumber = 1
+                            .PageNumber = 1
+                            .FrameNumber = 1
+                            '
+                            Dim tl_x, tl_y, br_x, br_y As Double
+                            Dim unit As SANE_API.SANE_Unit = SANE_API.SANE_Unit.SANE_UNIT_NONE
+
+                            For i As Integer = 1 To SANE.CurrentDevice.OptionDescriptors.Length - 1
+                                If SANE.CurrentDevice.OptionDescriptors(i).name.ToLower = "tl-x" Then
+                                    unit = SANE.CurrentDevice.OptionDescriptors(i).unit
+                                    Exit For
+                                End If
+                            Next
+
+                            Dim o As Object
+                            o = MyForm.GetSANEOption("tl-x")
+                            If o IsNot Nothing Then
+                                Select Case unit
+                                    Case SANE_API.SANE_Unit.SANE_UNIT_MM
+                                        tl_x = MMToInches(o(0))
+                                    Case Else
+                                        'XXX could be pixels
+                                End Select
+                            Else
+                                tl_x = 0
+                            End If
+                            o = MyForm.GetSANEOption("tl-y")
+                            If o IsNot Nothing Then
+                                Select Case unit
+                                    Case SANE_API.SANE_Unit.SANE_UNIT_MM
+                                        tl_y = MMToInches(o(0))
+                                    Case Else
+                                        'XXX could be pixels
+                                End Select
+                            Else
+                                tl_y = 0
+                            End If
+                            o = MyForm.GetSANEOption("br-x")
+                            If o IsNot Nothing Then
+                                Select Case unit
+                                    Case SANE_API.SANE_Unit.SANE_UNIT_MM
+                                        br_x = MMToInches(o(0))
+                                    Case Else
+                                        'XXX could be pixels
+                                End Select
+                            Else
+                                br_x = FIX32ToFloat(Caps(CAP.ICAP_PHYSICALWIDTH).CurrentValue)
+                            End If
+                            o = MyForm.GetSANEOption("br-y")
+                            If o IsNot Nothing Then
+                                Select Case unit
+                                    Case SANE_API.SANE_Unit.SANE_UNIT_MM
+                                        br_y = MMToInches(o(0))
+                                    Case Else
+                                        'XXX could be pixels
+                                End Select
+                            Else
+                                br_y = FIX32ToFloat(Caps(CAP.ICAP_PHYSICALHEIGHT).CurrentValue)
+                            End If
+                            .Frame.Top = FloatToFIX32(tl_y)
+                            .Frame.Left = FloatToFIX32(tl_x)
+                            .Frame.Bottom = FloatToFIX32(br_y)
+                            .Frame.Right = FloatToFIX32(br_x)
                         End With
                         Marshal.StructureToPtr(CurrentJob.CurrentImage.ImageLayout, _pData, True)
                         SetResult(TWRC.TWRC_SUCCESS)
@@ -2358,11 +2421,114 @@ Namespace TWAIN_VB
                     End If
                 Case MSG.MSG_SET
                     SetCap(CAP.ICAP_SUPPORTEDSIZES, TWSS.TWSS_NONE, RequestSource.TWAIN)
-                    'XXX set currentjob.currentimage.imagelayout values
+                    If MyState = TwainState.DS_Opened Then
+                        'Use the values in pImageLayout as the Source’s current image layout information. If you are
+                        'unable to set the device exactly to the values requested in the Frame field, set them as closely as
+                        'possible, always snapping to a value that will result in a larger frame, and return
+                        'TWRC_CHECKSTATUS to the application.
+                        'If the application sets Frame.Top and Frame.Left to zero, then the Source should set the frame
+                        'taking into consideration the default alignment set through CAP_FEEDERALIGNMENT.
+                        'If the application has set Frame.Top and Frame.Left to a non-zero value , set the origin for the
+                        'image to be acquired accordingly. If possible, the Source should consider reflecting these settings
+                        'in the user interface when it is raised. For instance, if your Source presents a pre-scan image,
+                        'consider showing the selection region in the proper location and with the proper size suggested
+                        'by the settings from this operation.
+                        'If the requested values exceed the maximum size the Source can acquire, set the
+                        'pImageLayout->Frame values used within the Source to the largest extent possible within the
+                        'axis of the offending value. Return TWRC_FAILURE with TWCC_BADVALUE.
 
+                        Dim ImageLayout As TW_IMAGELAYOUT = Marshal.PtrToStructure(_pData, GetType(TW_IMAGELAYOUT))
+                        Dim tl_x, tl_y, br_x, br_y As Double
+                        tl_x = FIX32ToFloat(ImageLayout.Frame.Left)
+                        tl_y = FIX32ToFloat(ImageLayout.Frame.Top)
+                        br_x = FIX32ToFloat(ImageLayout.Frame.Right)
+                        br_y = FIX32ToFloat(ImageLayout.Frame.Bottom)
 
-                    SetResult(TWRC.TWRC_SUCCESS)
-                    Return MyResult
+                        Logger.Write(DebugLogger.Level.Debug, False, "tl-x=" & tl_x.ToString)
+                        Logger.Write(DebugLogger.Level.Debug, False, "tl-y=" & tl_y.ToString)
+                        Logger.Write(DebugLogger.Level.Debug, False, "br-x=" & br_x.ToString)
+                        Logger.Write(DebugLogger.Level.Debug, False, "br-y=" & br_y.ToString)
+
+                        Dim BadVal As Boolean = False
+
+                        If tl_x < 0 Then
+                            BadVal = True
+                            tl_x = 0
+                        End If
+                        If tl_x >= FIX32ToFloat(Caps(CAP.ICAP_PHYSICALWIDTH).CurrentValue) Then
+                            BadVal = True
+                            tl_x = FIX32ToFloat(Caps(CAP.ICAP_PHYSICALWIDTH).CurrentValue) - 0.01
+                        End If
+                        If br_x <= tl_x Then
+                            BadVal = True
+                            br_x = tl_x + 0.01
+                        End If
+                        If br_x > FIX32ToFloat(Caps(CAP.ICAP_PHYSICALWIDTH).CurrentValue) Then
+                            BadVal = True
+                            br_x = FIX32ToFloat(Caps(CAP.ICAP_PHYSICALWIDTH).CurrentValue)
+                        End If
+
+                        If tl_y < 0 Then
+                            BadVal = True
+                            tl_y = 0
+                        End If
+                        If tl_y >= FIX32ToFloat(Caps(CAP.ICAP_PHYSICALHEIGHT).CurrentValue) Then
+                            BadVal = True
+                            tl_y = FIX32ToFloat(Caps(CAP.ICAP_PHYSICALHEIGHT).CurrentValue) - 0.01
+                        End If
+                        If br_y <= tl_y Then
+                            BadVal = True
+                            br_y = tl_y + 0.01
+                        End If
+                        If br_y > FIX32ToFloat(Caps(CAP.ICAP_PHYSICALHEIGHT).CurrentValue) Then
+                            BadVal = True
+                            br_y = FIX32ToFloat(Caps(CAP.ICAP_PHYSICALHEIGHT).CurrentValue)
+                        End If
+
+                        'XXX should consider SANE constraints and snap up to the next larger increment.
+                        Dim unit As SANE_API.SANE_Unit
+                        For i As Integer = 1 To SANE.CurrentDevice.OptionDescriptors.Length - 1
+                            If SANE.CurrentDevice.OptionDescriptors(i).name.ToLower = "tl-x" Then
+                                unit = SANE.CurrentDevice.OptionDescriptors(i).unit
+                                Exit For
+                            End If
+                        Next
+                        Select Case unit
+                            Case SANE_API.SANE_Unit.SANE_UNIT_MM
+                                tl_x = InchesToMM(tl_x)
+                                tl_y = InchesToMM(tl_y)
+                                br_x = InchesToMM(br_x)
+                                br_y = InchesToMM(br_y)
+                            Case SANE_API.SANE_Unit.SANE_UNIT_PIXEL
+                                'XXX no way to test this without a backend that reports dimensions in pixels
+                                Dim res_dpi As Double = FIX32ToFloat(Caps(CAP.ICAP_XRESOLUTION).CurrentValue)
+                                tl_x = tl_x * res_dpi
+                                br_x = br_x * res_dpi
+                                res_dpi = FIX32ToFloat(Caps(CAP.ICAP_YRESOLUTION).CurrentValue)
+                                tl_y = tl_y * res_dpi
+                                br_y = br_y * res_dpi
+                            Case Else
+                                'XXX
+                        End Select
+
+                        If Not MyForm.SetSANEOption("tl-x", {tl_x}) Then BadVal = True
+                        If Not MyForm.SetSANEOption("tl-y", {tl_y}) Then BadVal = True
+                        If Not MyForm.SetSANEOption("br-x", {br_x}) Then BadVal = True
+                        If Not MyForm.SetSANEOption("br-y", {br_y}) Then BadVal = True
+
+                        If BadVal Then
+                            SetCondition(TWCC.TWCC_BADVALUE)
+                            SetResult(TWRC.TWRC_FAILURE)
+                        Else
+                            SetCondition(TWCC.TWCC_SUCCESS)
+                            SetResult(TWRC.TWRC_CHECKSTATUS)
+                        End If
+                        Return MyResult
+                    Else
+                        SetCondition(TWCC.TWCC_SEQERROR)
+                        SetResult(TWRC.TWRC_FAILURE)
+                        Return MyResult
+                    End If
                 Case Else
                     SetCondition(TWCC.TWCC_BADPROTOCOL)
                     SetResult(TWRC.TWRC_FAILURE)
@@ -4257,32 +4423,32 @@ Namespace TWAIN_VB
                         If Me.PageSizes.ContainsKey(NewValue) Then
                             If Me.PageSizes(NewValue).Width > 0 AndAlso Me.PageSizes(NewValue).Height > 0 Then
                                 Dim br_x, br_y As Double
-                                Dim res_unit As SANE_API.SANE_Unit = SANE_API.SANE_Unit.SANE_UNIT_NONE
+                                Dim unit As SANE_API.SANE_Unit = SANE_API.SANE_Unit.SANE_UNIT_NONE
 
                                 'the unit is required to be the same on all of tl-x, tl-y, br-x, br-y.
                                 For i = 1 To SANE.CurrentDevice.OptionDescriptors.Length - 1
                                     If SANE.CurrentDevice.OptionDescriptors(i).name.ToLower = "tl-x" Then
-                                        res_unit = SANE.CurrentDevice.OptionDescriptors(i).unit
+                                        unit = SANE.CurrentDevice.OptionDescriptors(i).unit
                                         Exit For
                                     End If
                                 Next
 
-                                Select Case res_unit
-                                    Case SANE_API.SANE_Unit.SANE_UNIT_DPI
+                                Select Case unit
+                                    Case SANE_API.SANE_Unit.SANE_UNIT_PIXEL
                                         'XXX no way to test this without a backend that reports dimensions in pixels
                                         Dim res_dpi As Double = FIX32ToFloat(Caps(CAP.ICAP_XRESOLUTION).CurrentValue)
                                         If res_dpi > 0 Then
-                                            br_x = Me.PageSizes(NewValue).Width / res_dpi
+                                            br_x = Me.PageSizes(NewValue).Width * res_dpi
                                         End If
                                         res_dpi = FIX32ToFloat(Caps(CAP.ICAP_YRESOLUTION).CurrentValue)
                                         If res_dpi > 0 Then
-                                            br_y = Me.PageSizes(NewValue).Height / res_dpi
+                                            br_y = Me.PageSizes(NewValue).Height * res_dpi
                                         End If
                                     Case SANE_API.SANE_Unit.SANE_UNIT_MM
                                         br_x = InchesToMM(Me.PageSizes(NewValue).Width)
                                         br_y = InchesToMM(Me.PageSizes(NewValue).Height)
                                     Case Else
-                                        Logger.Write(DebugLogger.Level.Warn, False, "Unable to set scan area using resolution unit '" & res_unit.ToString & "'")
+                                        Logger.Write(DebugLogger.Level.Warn, False, "Unable to set scan area using resolution unit '" & unit.ToString & "'")
                                 End Select
                                 If MyForm.SetSANEOption("tl-x", {0}) AndAlso _
                                     MyForm.SetSANEOption("tl-y", {0}) AndAlso _
@@ -4406,6 +4572,10 @@ Namespace TWAIN_VB
                     SetCap(CAP.ICAP_UNITS, TWUN.TWUN_INCHES, RequestSource.SANE)
                     SetCap(CAP.ICAP_PHYSICALWIDTH, FloatToFIX32(PhysicalWidth), RequestSource.SANE)
                     SetCap(CAP.ICAP_PHYSICALHEIGHT, FloatToFIX32(PhysicalLength), RequestSource.SANE)
+                    PageSizes(TWSS.TWSS_NONE).Width = PhysicalWidth
+                    PageSizes(TWSS.TWSS_MAXSIZE).Width = PhysicalWidth
+                    PageSizes(TWSS.TWSS_NONE).Height = PhysicalLength
+                    PageSizes(TWSS.TWSS_MAXSIZE).Height = PhysicalLength
 
                 End If
 

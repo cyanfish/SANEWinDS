@@ -822,6 +822,16 @@ Public Class FormMain
         End If
     End Sub
 
+    Public Function GetSANEOption(ByVal OptionName As String) As Object()
+        For Index As Integer = 0 To SANE.CurrentDevice.OptionDescriptors.Length - 1
+            Dim od As SANE_API.SANE_Option_Descriptor = SANE.CurrentDevice.OptionDescriptors(Index)
+            If od.name.ToUpper.Trim = OptionName.ToUpper.Trim Then
+                Return SANE.CurrentDevice.OptionValues(Index)
+            End If
+        Next
+        Return Nothing
+    End Function
+
     Public Function SetSANEOption(ByVal OptionName As String, ByVal Values() As Object) As Boolean
         Return (SetOpt(OptionName, Values) = SANE_API.SANE_Status.SANE_STATUS_GOOD)
     End Function

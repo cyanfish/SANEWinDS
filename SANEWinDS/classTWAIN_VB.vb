@@ -4387,8 +4387,8 @@ Namespace TWAIN_VB
                             Case TWSS.TWSS_NONE, TWSS.TWSS_MAXSIZE
                                 SupportedSizes.Add(ss.Key)
                             Case Else
-                                If ss.Value.Width <= Me.FIX32ToFloat(Caps(CAP.ICAP_PHYSICALWIDTH).CurrentValue) Then
-                                    If ss.Value.Height <= Me.FIX32ToFloat(Caps(CAP.ICAP_PHYSICALHEIGHT).CurrentValue) Then
+                                If ss.Value.Width <= Math.Round(Me.FIX32ToFloat(Caps(CAP.ICAP_PHYSICALWIDTH).CurrentValue), 2, MidpointRounding.AwayFromZero) Then
+                                    If ss.Value.Height <= Math.Round(Me.FIX32ToFloat(Caps(CAP.ICAP_PHYSICALHEIGHT).CurrentValue), 2, MidpointRounding.AwayFromZero) Then
                                         SupportedSizes.Add(ss.Key)
                                     End If
                                 End If

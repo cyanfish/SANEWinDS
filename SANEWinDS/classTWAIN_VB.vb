@@ -2115,6 +2115,7 @@ Namespace TWAIN_VB
         Private MyForm As FormMain
         Private Caps As New Dictionary(Of CAP, TwainCapability)
         Private PageSizes As System.Collections.Generic.SortedDictionary(Of TWSS, PageSize)
+        Private SupportedSizes As New ArrayList
         Private Structure TWAINImage
             Dim DIB As DIB
             'Dim hBitmap As IntPtr
@@ -3222,23 +3223,23 @@ Namespace TWAIN_VB
                                     Dim cap_enum As TW_ENUMERATION
                                     cap_enum.ItemType = TWTY.TWTY_UINT16
                                     '
-                                    Dim SupportedSizes As New ArrayList
-                                    For Each ss In PageSizes
-                                        Select Case ss.Key
-                                            Case TWSS.TWSS_NONE, TWSS.TWSS_MAXSIZE
-                                                SupportedSizes.Add(ss.Key)
-                                            Case Else
-                                                'Logger.Write(DebugLogger.Level.Debug, False, "ss.value.width=" & ss.Value.Width.ToString)
-                                                'Logger.Write(DebugLogger.Level.Debug, False, "ss.value.height=" & ss.Value.Height.ToString)
-                                                'Logger.Write(DebugLogger.Level.Debug, False, "caps(cap.icap_physicalwidth).defaultvalue=" & Me.FIX32ToFloat(Caps(CAP.ICAP_PHYSICALWIDTH).DefaultValue).ToString)
-                                                'Logger.Write(DebugLogger.Level.Debug, False, "caps(cap.icap_physicalheight).defaultvalue=" & Me.FIX32ToFloat(Caps(CAP.ICAP_PHYSICALHEIGHT).DefaultValue).ToString)
-                                                If ss.Value.Width <= Me.FIX32ToFloat(Caps(CAP.ICAP_PHYSICALWIDTH).DefaultValue) Then
-                                                    If ss.Value.Height <= Me.FIX32ToFloat(Caps(CAP.ICAP_PHYSICALHEIGHT).DefaultValue) Then
-                                                        SupportedSizes.Add(ss.Key)
-                                                    End If
-                                                End If
-                                        End Select
-                                    Next
+                                    'Dim SupportedSizes As New ArrayList
+                                    'For Each ss In PageSizes
+                                    '    Select Case ss.Key
+                                    '        Case TWSS.TWSS_NONE, TWSS.TWSS_MAXSIZE
+                                    '            SupportedSizes.Add(ss.Key)
+                                    '        Case Else
+                                    '            'Logger.Write(DebugLogger.Level.Debug, False, "ss.value.width=" & ss.Value.Width.ToString)
+                                    '            'Logger.Write(DebugLogger.Level.Debug, False, "ss.value.height=" & ss.Value.Height.ToString)
+                                    '            'Logger.Write(DebugLogger.Level.Debug, False, "caps(cap.icap_physicalwidth).defaultvalue=" & Me.FIX32ToFloat(Caps(CAP.ICAP_PHYSICALWIDTH).DefaultValue).ToString)
+                                    '            'Logger.Write(DebugLogger.Level.Debug, False, "caps(cap.icap_physicalheight).defaultvalue=" & Me.FIX32ToFloat(Caps(CAP.ICAP_PHYSICALHEIGHT).DefaultValue).ToString)
+                                    '            If ss.Value.Width <= Me.FIX32ToFloat(Caps(CAP.ICAP_PHYSICALWIDTH).DefaultValue) Then
+                                    '                If ss.Value.Height <= Me.FIX32ToFloat(Caps(CAP.ICAP_PHYSICALHEIGHT).DefaultValue) Then
+                                    '                    SupportedSizes.Add(ss.Key)
+                                    '                End If
+                                    '            End If
+                                    '    End Select
+                                    'Next
                                     '
                                     cap_enum.NumItems = SupportedSizes.Count
                                     Try
@@ -3553,10 +3554,16 @@ Namespace TWAIN_VB
                                     SetResult(TWRC.TWRC_FAILURE)
                                     Return MyResult
                                 Else
-                                    'XXX should verify that we support the requested size
-                                    SetCap(CAP.ICAP_SUPPORTEDSIZES, CType(oneval.Item, TWSS), RequestSource.TWAIN)
-                                    SetResult(TWRC.TWRC_SUCCESS)
-                                    Return MyResult
+                                    Dim NewSize As TWSS = CType(oneval.Item, TWSS)
+                                    If SupportedSizes.Contains(NewSize) Then
+                                        SetCap(CAP.ICAP_SUPPORTEDSIZES, NewSize, RequestSource.TWAIN)
+                                        SetResult(TWRC.TWRC_SUCCESS)
+                                        Return MyResult
+                                    Else
+                                        SetCondition(TWCC.TWCC_BADVALUE)
+                                        SetResult(TWRC.TWRC_FAILURE)
+                                        Return MyResult
+                                    End If
                                 End If
                             End If
 
@@ -4373,6 +4380,22 @@ Namespace TWAIN_VB
                 '    MyForm.CheckBoxBatchMode.Enabled = CBool(ReqCap.CurrentValue)
                 'End If
 
+                If (ReqCap.Capability = CAP.ICAP_PHYSICALHEIGHT) Or (ReqCap.Capability = CAP.ICAP_PHYSICALWIDTH) Then
+                    SupportedSizes = New ArrayList
+                    For Each ss In PageSizes
+                        Select Case ss.Key
+                            Case TWSS.TWSS_NONE, TWSS.TWSS_MAXSIZE
+                                SupportedSizes.Add(ss.Key)
+                            Case Else
+                                If ss.Value.Width <= Me.FIX32ToFloat(Caps(CAP.ICAP_PHYSICALWIDTH).CurrentValue) Then
+                                    If ss.Value.Height <= Me.FIX32ToFloat(Caps(CAP.ICAP_PHYSICALHEIGHT).CurrentValue) Then
+                                        SupportedSizes.Add(ss.Key)
+                                    End If
+                                End If
+                        End Select
+                    Next
+                End If
+
                 If Source <> RequestSource.SANE Then 'if it came from SANE we don't want to give it back or we'll have an endless loop
                     If Not SetSANECaps(Capability, NewValue) Then
                         Logger.Write(DebugLogger.Level.Warn, False, "Error setting SANE option for capability '" & ReqCap.Capability.ToString & "'")
@@ -4419,7 +4442,7 @@ Namespace TWAIN_VB
                 Else
                     If Capability = CAP.ICAP_SUPPORTEDSIZES Then
                         'Unless otherwise specified in the backend.ini, use standard page sizes to set tl, br.
-                        'XXX Hopefully TWAIN app isn't sending us a value that we didn't say we support when answering a GET message.
+                        'Validation of supported sizes is handled by DG_CONTROL:DAT_CAPABILITY:MSG_SET.
                         If Me.PageSizes.ContainsKey(NewValue) Then
                             If Me.PageSizes(NewValue).Width > 0 AndAlso Me.PageSizes(NewValue).Height > 0 Then
                                 Dim br_x, br_y As Double

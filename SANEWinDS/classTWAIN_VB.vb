@@ -334,6 +334,15 @@ Namespace TWAIN_VB
         Dim DefaultValue As UInt32 '/* Power-up value.                        */
         Dim CurrentValue As UInt32 '/* The value that is currently in effect. */
     End Structure
+    <StructLayout(LayoutKind.Sequential, Pack:=2, CharSet:=CharSet.Ansi)> _
+    Public Structure TW_RANGE_FIX32
+        Dim ItemType As UInt16
+        Dim MinValue As TW_FIX32    '/* Starting value in the range.           */
+        Dim MaxValue As TW_FIX32    '/* Final value in the range.              */
+        Dim StepSize As TW_FIX32   '/* Increment from MinValue to MaxValue.   */
+        Dim DefaultValue As TW_FIX32 '/* Power-up value.                        */
+        Dim CurrentValue As TW_FIX32 '/* The value that is currently in effect. */
+    End Structure
 
     '/* DAT_RGBRESPONSE */
     'typedef struct {
@@ -2091,14 +2100,21 @@ Namespace TWAIN_VB
             TWAIN = 1
         End Enum
 
+        Public Structure ConstraintRangeUnion
+            Dim UInt32 As TW_RANGE
+            Dim FIX32 As TW_RANGE_FIX32
+        End Structure
+
         Private Structure TwainCapability
             Dim Capability As CAP
             Dim DataType As TWTY
             Dim EnumType As Type
-            'Dim EnumObject As Object
             Dim DefaultValue As Object
             Dim CurrentValue As Object
             Dim SupportedOperations As TWQC
+            Dim ConstraintType As TWON 'Either TWON_ENUMERATION or TWON_RANGE
+            Dim ConstraintRange As ConstraintRangeUnion
+            Dim ConstraintValues As ArrayList
         End Structure
 
         Private Const TW_TRUE = 1
@@ -2140,7 +2156,7 @@ Namespace TWAIN_VB
         Private CurrentJob As TWAINJob
         Public Delegate Sub Message_From_DSEventHandler(ByVal _pOrigin As IntPtr, ByVal _pDest As IntPtr, ByVal _DG As UInt32, ByVal _DAT As UInt32, ByVal _MSG As UInt16, ByVal _pData As IntPtr)
         Public Event Message_From_DS As Message_From_DSEventHandler
-         'Private Logger As New Logger
+        'Private Logger As New Logger
 
         Private Sub Send_TWAIN_Message(ByVal _Origin As TW_IDENTITY, ByVal _Dest As TW_IDENTITY, ByVal _DG As DG, ByVal _DAT As DAT, ByVal _MSG As MSG, ByVal _Data As Object)
 
@@ -3222,25 +3238,6 @@ Namespace TWAIN_VB
                                 Case MSG.MSG_GET
                                     Dim cap_enum As TW_ENUMERATION
                                     cap_enum.ItemType = TWTY.TWTY_UINT16
-                                    '
-                                    'Dim SupportedSizes As New ArrayList
-                                    'For Each ss In PageSizes
-                                    '    Select Case ss.Key
-                                    '        Case TWSS.TWSS_NONE, TWSS.TWSS_MAXSIZE
-                                    '            SupportedSizes.Add(ss.Key)
-                                    '        Case Else
-                                    '            'Logger.Write(DebugLogger.Level.Debug, False, "ss.value.width=" & ss.Value.Width.ToString)
-                                    '            'Logger.Write(DebugLogger.Level.Debug, False, "ss.value.height=" & ss.Value.Height.ToString)
-                                    '            'Logger.Write(DebugLogger.Level.Debug, False, "caps(cap.icap_physicalwidth).defaultvalue=" & Me.FIX32ToFloat(Caps(CAP.ICAP_PHYSICALWIDTH).DefaultValue).ToString)
-                                    '            'Logger.Write(DebugLogger.Level.Debug, False, "caps(cap.icap_physicalheight).defaultvalue=" & Me.FIX32ToFloat(Caps(CAP.ICAP_PHYSICALHEIGHT).DefaultValue).ToString)
-                                    '            If ss.Value.Width <= Me.FIX32ToFloat(Caps(CAP.ICAP_PHYSICALWIDTH).DefaultValue) Then
-                                    '                If ss.Value.Height <= Me.FIX32ToFloat(Caps(CAP.ICAP_PHYSICALHEIGHT).DefaultValue) Then
-                                    '                    SupportedSizes.Add(ss.Key)
-                                    '                End If
-                                    '            End If
-                                    '    End Select
-                                    'Next
-                                    '
                                     cap_enum.NumItems = SupportedSizes.Count
                                     Try
                                         cap_enum.CurrentIndex = SupportedSizes.IndexOf(Caps(tw_cap.Cap).CurrentValue)
@@ -3322,9 +3319,7 @@ Namespace TWAIN_VB
                             SetResult(TWRC.TWRC_SUCCESS)
                             Return MyResult
 
-                        Case CAP.ICAP_PHYSICALHEIGHT, CAP.ICAP_PHYSICALWIDTH, CAP.ICAP_XRESOLUTION, CAP.ICAP_YRESOLUTION
-                            'XXX Need to return a TW_ENUMERATION for resolution values
-
+                        Case CAP.ICAP_PHYSICALHEIGHT, CAP.ICAP_PHYSICALWIDTH
                             Select Case Caps(CAP.ICAP_UNITS).CurrentValue
                                 Case TWUN.TWUN_INCHES, TWUN.TWUN_MILLIMETERS, TWUN.TWUN_CENTIMETERS
                                     Dim oneval As TW_ONEVALUE_FIX32
@@ -3333,9 +3328,9 @@ Namespace TWAIN_VB
                                         Case TWUN.TWUN_INCHES
                                             oneval.Item = IIf(_MSG = MSG.MSG_GETDEFAULT, DefaultVal, CurVal)
                                         Case TWUN.TWUN_MILLIMETERS
-                                            oneval.Item = IIf(_MSG = MSG.MSG_GETDEFAULT, DefaultVal, FloatToFIX32(InchesToMM(FIX32ToFloat(CurVal))))
+                                            oneval.Item = IIf(_MSG = MSG.MSG_GETDEFAULT, FloatToFIX32(InchesToMM(FIX32ToFloat(DefaultVal))), FloatToFIX32(InchesToMM(FIX32ToFloat(CurVal))))
                                         Case TWUN.TWUN_CENTIMETERS
-                                            oneval.Item = IIf(_MSG = MSG.MSG_GETDEFAULT, DefaultVal, FloatToFIX32(InchesToCM(FIX32ToFloat(CurVal))))
+                                            oneval.Item = IIf(_MSG = MSG.MSG_GETDEFAULT, FloatToFIX32(InchesToCM(FIX32ToFloat(DefaultVal))), FloatToFIX32(InchesToCM(FIX32ToFloat(CurVal))))
                                     End Select
                                     Dim pContainer As IntPtr = WinAPI.GlobalAlloc(WinAPI.GlobalAllocFlags.GHND, Marshal.SizeOf(oneval))
                                     tw_cap.ConType = TWON.TWON_ONEVALUE
@@ -3350,6 +3345,48 @@ Namespace TWAIN_VB
                             End Select
                             Return MyResult
 
+                        Case CAP.ICAP_XRESOLUTION, CAP.ICAP_YRESOLUTION
+                            Select Case _MSG
+                                Case MSG.MSG_GETCURRENT, MSG.MSG_GETDEFAULT
+                                    Select Case Caps(CAP.ICAP_UNITS).CurrentValue
+                                        Case TWUN.TWUN_INCHES, TWUN.TWUN_MILLIMETERS, TWUN.TWUN_CENTIMETERS
+                                            Dim oneval As TW_ONEVALUE_FIX32
+                                            oneval.ItemType = TWTY.TWTY_FIX32
+                                            Select Case Caps(CAP.ICAP_UNITS).CurrentValue
+                                                Case TWUN.TWUN_INCHES
+                                                    oneval.Item = IIf(_MSG = MSG.MSG_GETDEFAULT, DefaultVal, CurVal)
+                                                Case TWUN.TWUN_MILLIMETERS
+                                                    oneval.Item = IIf(_MSG = MSG.MSG_GETDEFAULT, FloatToFIX32(InchesToMM(FIX32ToFloat(DefaultVal))), FloatToFIX32(InchesToMM(FIX32ToFloat(CurVal))))
+                                                Case TWUN.TWUN_CENTIMETERS
+                                                    oneval.Item = IIf(_MSG = MSG.MSG_GETDEFAULT, FloatToFIX32(InchesToCM(FIX32ToFloat(DefaultVal))), FloatToFIX32(InchesToCM(FIX32ToFloat(CurVal))))
+                                            End Select
+                                            Dim pContainer As IntPtr = WinAPI.GlobalAlloc(WinAPI.GlobalAllocFlags.GHND, Marshal.SizeOf(oneval))
+                                            tw_cap.ConType = TWON.TWON_ONEVALUE
+                                            tw_cap.hContainer = pContainer
+                                            Marshal.StructureToPtr(oneval, pContainer, True)
+                                            Marshal.StructureToPtr(tw_cap, _pData, True)
+                                            SetResult(TWRC.TWRC_SUCCESS)
+                                        Case Else
+                                            Logger.Write(DebugLogger.Level.Warn, True, "unable to convert to unit '" & CType(Caps(CAP.ICAP_UNITS).CurrentValue, TWUN) & "'")
+                                            SetCondition(TWCC.TWCC_BADVALUE)
+                                            SetResult(TWRC.TWRC_FAILURE)
+                                    End Select
+                                    Return MyResult
+
+                                Case MSG.MSG_GET
+                                    Select Case ReqCap.ConstraintType
+                                        Case TWON.TWON_RANGE
+                                            'XXX
+
+                                        Case TWON.TWON_ENUMERATION
+                                            'XXX
+
+                                    End Select
+
+
+
+                            End Select
+
                         Case Else
                             'XXX lots more CAPs to add here!
 
@@ -3357,327 +3394,327 @@ Namespace TWAIN_VB
                             SetResult(TWRC.TWRC_FAILURE)
                             Return MyResult
                     End Select
-                Case MSG.MSG_SET
-                    If MyState <> TwainState.DS_Opened Then 'XXX we could negotiate to set caps in other states with CAP_EXTENDEDCAPS
-                        SetCondition(TWCC.TWCC_SEQERROR)
-                        SetResult(TWRC.TWRC_FAILURE)
-                        Return MyResult
-                    End If
-                    Dim tw_cap As TW_CAPABILITY = Marshal.PtrToStructure(_pData, GetType(TW_CAPABILITY))
-                    Logger.Write(DebugLogger.Level.Debug, False, "Capability=" & CType(tw_cap.Cap, CAP).ToString & ", ContainerType=" & CType(tw_cap.ConType, TWON).ToString)
-
-                    Dim ReqCap As TwainCapability
-                    Try
-                        ReqCap = Caps(tw_cap.Cap)
-                    Catch ex As Exception
-                        SetCondition(TWCC.TWCC_CAPUNSUPPORTED)
-                        SetResult(TWRC.TWRC_FAILURE)
-                        Return MyResult
-                    End Try
-
-                    If Not Cap_Operation_Is_Supported(ReqCap, _MSG) Then
-                        SetCondition(TWCC.TWCC_CAPBADOPERATION)
-                        SetResult(TWRC.TWRC_FAILURE)
-                        Return MyResult
-                    End If
-                    'XXX validate constraints & data types here
-
-                    Select Case tw_cap.Cap
-                        'Case CAP.CAP_ENABLEDSUIONLY, CAP.CAP_UICONTROLLABLE, CAP.CAP_SUPPORTEDCAPS, CAP.CAP_FEEDERLOADED, CAP.CAP_DUPLEX 'ReadOnly caps
-                        '    SetCondition(TWCC.TWCC_CAPBADOPERATION)
-                        '    SetResult(TWRC.TWRC_FAILURE)
-                        '    Return MyResult
-                        Case CAP.CAP_AUTOFEED
-                            If tw_cap.ConType <> TWON.TWON_ONEVALUE Then
-                                SetCondition(TWCC.TWCC_BADVALUE)
+                        Case MSG.MSG_SET
+                            If MyState <> TwainState.DS_Opened Then 'XXX we could negotiate to set caps in other states with CAP_EXTENDEDCAPS
+                                SetCondition(TWCC.TWCC_SEQERROR)
                                 SetResult(TWRC.TWRC_FAILURE)
-                                Return MyResult
-                            Else
-                                Dim pContainer As IntPtr = WinAPI.GlobalLock(tw_cap.hContainer)
-                                Dim oneval As TW_ONEVALUE = Marshal.PtrToStructure(pContainer, GetType(TW_ONEVALUE))
-                                If pContainer Then WinAPI.GlobalUnlock(tw_cap.hContainer)
-                                Logger.Write(DebugLogger.Level.Debug, False, "ItemType=" & CType(oneval.ItemType, TWTY).ToString)
-                                If oneval.ItemType <> TWTY.TWTY_BOOL Then
-                                    Me.SetCondition(TWCC.TWCC_BADVALUE)
-                                    Me.SetResult(TWRC.TWRC_FAILURE)
-                                    Return MyResult
-                                End If
-
-                                Logger.Write(DebugLogger.Level.Debug, False, "app sent value '" & oneval.Item.ToString & "'")
-
-                                SetCap(ReqCap.Capability, CType(oneval.Item, UInt16), RequestSource.TWAIN)
-
-                                SetResult(TWRC.TWRC_SUCCESS)
                                 Return MyResult
                             End If
+                            Dim tw_cap As TW_CAPABILITY = Marshal.PtrToStructure(_pData, GetType(TW_CAPABILITY))
+                            Logger.Write(DebugLogger.Level.Debug, False, "Capability=" & CType(tw_cap.Cap, CAP).ToString & ", ContainerType=" & CType(tw_cap.ConType, TWON).ToString)
 
-                        Case CAP.CAP_DUPLEXENABLED
-                            If tw_cap.ConType <> TWON.TWON_ONEVALUE Then
-                                SetCondition(TWCC.TWCC_BADVALUE)
+                            Dim ReqCap As TwainCapability
+                            Try
+                                ReqCap = Caps(tw_cap.Cap)
+                            Catch ex As Exception
+                                SetCondition(TWCC.TWCC_CAPUNSUPPORTED)
                                 SetResult(TWRC.TWRC_FAILURE)
                                 Return MyResult
-                            Else
-                                Dim pContainer As IntPtr = WinAPI.GlobalLock(tw_cap.hContainer)
-                                Dim oneval As TW_ONEVALUE = Marshal.PtrToStructure(pContainer, GetType(TW_ONEVALUE))
-                                If pContainer Then WinAPI.GlobalUnlock(tw_cap.hContainer)
-                                Logger.Write(DebugLogger.Level.Debug, False, "ItemType=" & CType(oneval.ItemType, TWTY).ToString)
+                            End Try
 
-                                Logger.Write(DebugLogger.Level.Debug, False, "app sent value '" & oneval.Item.ToString & "'")
-
-                                If oneval.ItemType <> TWTY.TWTY_BOOL Then
-                                    Me.SetCondition(TWCC.TWCC_BADVALUE)
-                                    Me.SetResult(TWRC.TWRC_FAILURE)
-                                    Return MyResult
-                                End If
-
-                                SetCap(ReqCap.Capability, CType(oneval.Item, UInt16), RequestSource.TWAIN)
-                                SetResult(TWRC.TWRC_SUCCESS)
+                            If Not Cap_Operation_Is_Supported(ReqCap, _MSG) Then
+                                SetCondition(TWCC.TWCC_CAPBADOPERATION)
+                                SetResult(TWRC.TWRC_FAILURE)
                                 Return MyResult
                             End If
+                            'XXX validate constraints & data types here
 
-
-                        Case CAP.CAP_FEEDERENABLED
-                            If tw_cap.ConType <> TWON.TWON_ONEVALUE Then
-                                SetCondition(TWCC.TWCC_BADVALUE)
-                                SetResult(TWRC.TWRC_FAILURE)
-                                Return MyResult
-                            Else
-                                Dim pContainer As IntPtr = WinAPI.GlobalLock(tw_cap.hContainer)
-                                Dim oneval As TW_ONEVALUE = Marshal.PtrToStructure(pContainer, GetType(TW_ONEVALUE))
-                                If pContainer Then WinAPI.GlobalUnlock(tw_cap.hContainer)
-                                Logger.Write(DebugLogger.Level.Debug, False, "ItemType=" & CType(oneval.ItemType, TWTY).ToString)
-                                If oneval.ItemType <> TWTY.TWTY_BOOL Then
-                                    Me.SetCondition(TWCC.TWCC_BADVALUE)
-                                    Me.SetResult(TWRC.TWRC_FAILURE)
-                                    Return MyResult
-                                End If
-
-                                Logger.Write(DebugLogger.Level.Debug, False, "app sent value '" & oneval.Item.ToString & "'")
-
-                                SetCap(ReqCap.Capability, CType(oneval.Item, UInt16), RequestSource.TWAIN)
-
-                                CurrentSettings.ScanContinuously = CBool(Caps(CAP.CAP_FEEDERENABLED).CurrentValue)
-                                MyForm.CheckBoxBatchMode.Checked = CurrentSettings.ScanContinuously 'XXX this may cause the cap to be set again through the CheckedChanged event
-                                MyForm.CheckBoxBatchMode.Enabled = False 'if the TWAIN app is controlling this, don't let the user mess with it.
-
-                                SetResult(TWRC.TWRC_SUCCESS)
-                                Return MyResult
-                            End If
-                        Case CAP.CAP_XFERCOUNT
-                            If tw_cap.ConType <> TWON.TWON_ONEVALUE Then
-                                SetCondition(TWCC.TWCC_BADVALUE)
-                                SetResult(TWRC.TWRC_FAILURE)
-                                Return MyResult
-                            Else
-                                Dim pContainer As IntPtr = WinAPI.GlobalLock(tw_cap.hContainer)
-                                Dim oneval As TW_ONEVALUE = Marshal.PtrToStructure(pContainer, GetType(TW_ONEVALUE))
-                                If pContainer Then WinAPI.GlobalUnlock(tw_cap.hContainer)
-                                Logger.Write(DebugLogger.Level.Debug, False, "ItemType=" & CType(oneval.ItemType, TWTY).ToString)
-                                If oneval.ItemType <> TWTY.TWTY_INT16 Then
-                                    Me.SetCondition(TWCC.TWCC_BADVALUE)
-                                    Me.SetResult(TWRC.TWRC_FAILURE)
-                                    Return MyResult
-                                End If
-                                SetCap(ReqCap.Capability, CType(oneval.Item, Int16), RequestSource.TWAIN)
-                                SetResult(TWRC.TWRC_SUCCESS)
-                                Return MyResult
-                            End If
-
-                        Case CAP.ICAP_BITDEPTH
-                            If tw_cap.ConType <> TWON.TWON_ONEVALUE Then
-                                SetCondition(TWCC.TWCC_BADVALUE)
-                                SetResult(TWRC.TWRC_FAILURE)
-                                Return MyResult
-                            Else
-                                Dim pContainer As IntPtr = WinAPI.GlobalLock(tw_cap.hContainer)
-                                Dim oneval As TW_ONEVALUE = Marshal.PtrToStructure(pContainer, GetType(TW_ONEVALUE))
-                                If pContainer Then WinAPI.GlobalUnlock(tw_cap.hContainer)
-                                Logger.Write(DebugLogger.Level.Debug, False, "ItemType=" & CType(oneval.ItemType, TWTY).ToString)
-                                If oneval.ItemType <> TWTY.TWTY_UINT16 Then
-                                    SetCondition(TWCC.TWCC_BADVALUE)
-                                    SetResult(TWRC.TWRC_FAILURE)
-                                    Return MyResult
-                                Else
-                                    SetCap(ReqCap.Capability, CType(oneval.Item, UInt16), RequestSource.TWAIN)
-                                    SetResult(TWRC.TWRC_SUCCESS)
-                                    Return MyResult
-                                End If
-                            End If
-
-                            'Case CAP.ICAP_BITORDER
-                            '    'XXX
-                            'Case CAP.ICAP_COMPRESSION
-                            '    'XXX
-                            'Case CAP.ICAP_PLANARCHUNKY
-                            '    'XXX
-                            'Case CAP.ICAP_PIXELFLAVOR
-                            '    'XXX
-                        Case CAP.ICAP_PIXELTYPE
-                            If tw_cap.ConType <> TWON.TWON_ONEVALUE Then
-                                SetCondition(TWCC.TWCC_BADVALUE)
-                                SetResult(TWRC.TWRC_FAILURE)
-                                Return MyResult
-                            Else
-                                Dim pContainer As IntPtr = WinAPI.GlobalLock(tw_cap.hContainer)
-                                Dim oneval As TW_ONEVALUE = Marshal.PtrToStructure(pContainer, GetType(TW_ONEVALUE))
-                                If pContainer Then WinAPI.GlobalUnlock(tw_cap.hContainer)
-                                Logger.Write(DebugLogger.Level.Debug, False, "ItemType=" & CType(oneval.ItemType, TWTY).ToString)
-                                If oneval.ItemType <> TWTY.TWTY_UINT16 Then
-                                    SetCondition(TWCC.TWCC_BADVALUE)
-                                    SetResult(TWRC.TWRC_FAILURE)
-                                    Return MyResult
-                                Else
-                                    Select Case oneval.Item
-                                        Case TWPT.TWPT_BW, TWPT.TWPT_GRAY, TWPT.TWPT_RGB
-                                            SetCap(ReqCap.Capability, CType(oneval.Item, TWPT), RequestSource.TWAIN)
-                                            SetResult(TWRC.TWRC_SUCCESS)
-                                        Case Else
-                                            SetCondition(TWCC.TWCC_BADVALUE)
-                                            SetResult(TWRC.TWRC_FAILURE)
-                                    End Select
-                                    Return MyResult
-                                End If
-                            End If
-
-                        Case CAP.ICAP_SUPPORTEDSIZES
-                            If tw_cap.ConType <> TWON.TWON_ONEVALUE Then
-                                SetCondition(TWCC.TWCC_BADVALUE)
-                                SetResult(TWRC.TWRC_FAILURE)
-                                Return MyResult
-                            Else
-                                Dim pContainer As IntPtr = WinAPI.GlobalLock(tw_cap.hContainer)
-                                Dim oneval As TW_ONEVALUE = Marshal.PtrToStructure(pContainer, GetType(TW_ONEVALUE))
-                                If pContainer Then WinAPI.GlobalUnlock(tw_cap.hContainer)
-                                Logger.Write(DebugLogger.Level.Debug, False, "ItemType=" & CType(oneval.ItemType, TWTY).ToString)
-                                If oneval.ItemType <> TWTY.TWTY_UINT16 Then
-                                    SetCondition(TWCC.TWCC_BADVALUE)
-                                    SetResult(TWRC.TWRC_FAILURE)
-                                    Return MyResult
-                                Else
-                                    Dim NewSize As TWSS = CType(oneval.Item, TWSS)
-                                    If SupportedSizes.Contains(NewSize) Then
-                                        SetCap(CAP.ICAP_SUPPORTEDSIZES, NewSize, RequestSource.TWAIN)
-                                        SetResult(TWRC.TWRC_SUCCESS)
-                                        Return MyResult
-                                    Else
+                            Select Case tw_cap.Cap
+                                'Case CAP.CAP_ENABLEDSUIONLY, CAP.CAP_UICONTROLLABLE, CAP.CAP_SUPPORTEDCAPS, CAP.CAP_FEEDERLOADED, CAP.CAP_DUPLEX 'ReadOnly caps
+                                '    SetCondition(TWCC.TWCC_CAPBADOPERATION)
+                                '    SetResult(TWRC.TWRC_FAILURE)
+                                '    Return MyResult
+                                Case CAP.CAP_AUTOFEED
+                                    If tw_cap.ConType <> TWON.TWON_ONEVALUE Then
                                         SetCondition(TWCC.TWCC_BADVALUE)
                                         SetResult(TWRC.TWRC_FAILURE)
                                         Return MyResult
+                                    Else
+                                        Dim pContainer As IntPtr = WinAPI.GlobalLock(tw_cap.hContainer)
+                                        Dim oneval As TW_ONEVALUE = Marshal.PtrToStructure(pContainer, GetType(TW_ONEVALUE))
+                                        If pContainer Then WinAPI.GlobalUnlock(tw_cap.hContainer)
+                                        Logger.Write(DebugLogger.Level.Debug, False, "ItemType=" & CType(oneval.ItemType, TWTY).ToString)
+                                        If oneval.ItemType <> TWTY.TWTY_BOOL Then
+                                            Me.SetCondition(TWCC.TWCC_BADVALUE)
+                                            Me.SetResult(TWRC.TWRC_FAILURE)
+                                            Return MyResult
+                                        End If
+
+                                        Logger.Write(DebugLogger.Level.Debug, False, "app sent value '" & oneval.Item.ToString & "'")
+
+                                        SetCap(ReqCap.Capability, CType(oneval.Item, UInt16), RequestSource.TWAIN)
+
+                                        SetResult(TWRC.TWRC_SUCCESS)
+                                        Return MyResult
                                     End If
-                                End If
-                            End If
 
-                        Case CAP.ICAP_UNITS
-                            If tw_cap.ConType <> TWON.TWON_ONEVALUE Then
-                                SetCondition(TWCC.TWCC_BADVALUE)
-                                SetResult(TWRC.TWRC_FAILURE)
-                                Return MyResult
-                            Else
-                                Dim pContainer As IntPtr = WinAPI.GlobalLock(tw_cap.hContainer)
-                                Dim oneval As TW_ONEVALUE = Marshal.PtrToStructure(pContainer, GetType(TW_ONEVALUE))
-                                If pContainer Then WinAPI.GlobalUnlock(tw_cap.hContainer)
-                                Logger.Write(DebugLogger.Level.Debug, False, "ItemType=" & CType(oneval.ItemType, TWTY).ToString)
-                                If (oneval.ItemType <> TWTY.TWTY_UINT16) OrElse ((oneval.Item <> TWUN.TWUN_INCHES)) Then 'only allow inches, or...'And (oneval.Item <> TWUN.TWUN_MILLIMETERS) And (oneval.Item <> TWUN.TWUN_CENTIMETERS)) Then 'only allow inches, mm, or cm
-                                    Me.SetCondition(TWCC.TWCC_BADVALUE)
-                                    Me.SetResult(TWRC.TWRC_FAILURE)
-                                    Return MyResult
-                                End If
-                                SetCap(ReqCap.Capability, CType(oneval.Item, TWUN), RequestSource.TWAIN)
-                                SetResult(TWRC.TWRC_SUCCESS)
-                                Return MyResult
-                            End If
+                                Case CAP.CAP_DUPLEXENABLED
+                                    If tw_cap.ConType <> TWON.TWON_ONEVALUE Then
+                                        SetCondition(TWCC.TWCC_BADVALUE)
+                                        SetResult(TWRC.TWRC_FAILURE)
+                                        Return MyResult
+                                    Else
+                                        Dim pContainer As IntPtr = WinAPI.GlobalLock(tw_cap.hContainer)
+                                        Dim oneval As TW_ONEVALUE = Marshal.PtrToStructure(pContainer, GetType(TW_ONEVALUE))
+                                        If pContainer Then WinAPI.GlobalUnlock(tw_cap.hContainer)
+                                        Logger.Write(DebugLogger.Level.Debug, False, "ItemType=" & CType(oneval.ItemType, TWTY).ToString)
 
-                        Case CAP.ICAP_XFERMECH
-                            If tw_cap.ConType <> TWON.TWON_ONEVALUE Then
-                                SetCondition(TWCC.TWCC_BADVALUE)
-                                SetResult(TWRC.TWRC_FAILURE)
-                                Return MyResult
-                            Else
-                                Dim pContainer As IntPtr = WinAPI.GlobalLock(tw_cap.hContainer)
-                                Dim oneval As TW_ONEVALUE = Marshal.PtrToStructure(pContainer, GetType(TW_ONEVALUE))
-                                If pContainer Then WinAPI.GlobalUnlock(tw_cap.hContainer)
-                                Logger.Write(DebugLogger.Level.Debug, False, "ItemType=" & CType(oneval.ItemType, TWTY).ToString)
-                                If oneval.ItemType <> TWTY.TWTY_UINT16 Then
-                                    SetCondition(TWCC.TWCC_BADVALUE)
-                                    SetResult(TWRC.TWRC_FAILURE)
-                                    Return MyResult
-                                Else
-                                    Select Case oneval.Item
-                                        Case TWSX.TWSX_NATIVE, TWSX.TWSX_MEMORY
-                                            SetCap(ReqCap.Capability, CType(oneval.Item, TWSX), RequestSource.TWAIN)
-                                            SetResult(TWRC.TWRC_SUCCESS)
-                                        Case Else
+                                        Logger.Write(DebugLogger.Level.Debug, False, "app sent value '" & oneval.Item.ToString & "'")
+
+                                        If oneval.ItemType <> TWTY.TWTY_BOOL Then
+                                            Me.SetCondition(TWCC.TWCC_BADVALUE)
+                                            Me.SetResult(TWRC.TWRC_FAILURE)
+                                            Return MyResult
+                                        End If
+
+                                        SetCap(ReqCap.Capability, CType(oneval.Item, UInt16), RequestSource.TWAIN)
+                                        SetResult(TWRC.TWRC_SUCCESS)
+                                        Return MyResult
+                                    End If
+
+
+                                Case CAP.CAP_FEEDERENABLED
+                                    If tw_cap.ConType <> TWON.TWON_ONEVALUE Then
+                                        SetCondition(TWCC.TWCC_BADVALUE)
+                                        SetResult(TWRC.TWRC_FAILURE)
+                                        Return MyResult
+                                    Else
+                                        Dim pContainer As IntPtr = WinAPI.GlobalLock(tw_cap.hContainer)
+                                        Dim oneval As TW_ONEVALUE = Marshal.PtrToStructure(pContainer, GetType(TW_ONEVALUE))
+                                        If pContainer Then WinAPI.GlobalUnlock(tw_cap.hContainer)
+                                        Logger.Write(DebugLogger.Level.Debug, False, "ItemType=" & CType(oneval.ItemType, TWTY).ToString)
+                                        If oneval.ItemType <> TWTY.TWTY_BOOL Then
+                                            Me.SetCondition(TWCC.TWCC_BADVALUE)
+                                            Me.SetResult(TWRC.TWRC_FAILURE)
+                                            Return MyResult
+                                        End If
+
+                                        Logger.Write(DebugLogger.Level.Debug, False, "app sent value '" & oneval.Item.ToString & "'")
+
+                                        SetCap(ReqCap.Capability, CType(oneval.Item, UInt16), RequestSource.TWAIN)
+
+                                        CurrentSettings.ScanContinuously = CBool(Caps(CAP.CAP_FEEDERENABLED).CurrentValue)
+                                        MyForm.CheckBoxBatchMode.Checked = CurrentSettings.ScanContinuously 'XXX this may cause the cap to be set again through the CheckedChanged event
+                                        MyForm.CheckBoxBatchMode.Enabled = False 'if the TWAIN app is controlling this, don't let the user mess with it.
+
+                                        SetResult(TWRC.TWRC_SUCCESS)
+                                        Return MyResult
+                                    End If
+                                Case CAP.CAP_XFERCOUNT
+                                    If tw_cap.ConType <> TWON.TWON_ONEVALUE Then
+                                        SetCondition(TWCC.TWCC_BADVALUE)
+                                        SetResult(TWRC.TWRC_FAILURE)
+                                        Return MyResult
+                                    Else
+                                        Dim pContainer As IntPtr = WinAPI.GlobalLock(tw_cap.hContainer)
+                                        Dim oneval As TW_ONEVALUE = Marshal.PtrToStructure(pContainer, GetType(TW_ONEVALUE))
+                                        If pContainer Then WinAPI.GlobalUnlock(tw_cap.hContainer)
+                                        Logger.Write(DebugLogger.Level.Debug, False, "ItemType=" & CType(oneval.ItemType, TWTY).ToString)
+                                        If oneval.ItemType <> TWTY.TWTY_INT16 Then
+                                            Me.SetCondition(TWCC.TWCC_BADVALUE)
+                                            Me.SetResult(TWRC.TWRC_FAILURE)
+                                            Return MyResult
+                                        End If
+                                        SetCap(ReqCap.Capability, CType(oneval.Item, Int16), RequestSource.TWAIN)
+                                        SetResult(TWRC.TWRC_SUCCESS)
+                                        Return MyResult
+                                    End If
+
+                                Case CAP.ICAP_BITDEPTH
+                                    If tw_cap.ConType <> TWON.TWON_ONEVALUE Then
+                                        SetCondition(TWCC.TWCC_BADVALUE)
+                                        SetResult(TWRC.TWRC_FAILURE)
+                                        Return MyResult
+                                    Else
+                                        Dim pContainer As IntPtr = WinAPI.GlobalLock(tw_cap.hContainer)
+                                        Dim oneval As TW_ONEVALUE = Marshal.PtrToStructure(pContainer, GetType(TW_ONEVALUE))
+                                        If pContainer Then WinAPI.GlobalUnlock(tw_cap.hContainer)
+                                        Logger.Write(DebugLogger.Level.Debug, False, "ItemType=" & CType(oneval.ItemType, TWTY).ToString)
+                                        If oneval.ItemType <> TWTY.TWTY_UINT16 Then
                                             SetCondition(TWCC.TWCC_BADVALUE)
                                             SetResult(TWRC.TWRC_FAILURE)
-                                    End Select
-                                    Return MyResult
-                                End If
-                            End If
+                                            Return MyResult
+                                        Else
+                                            SetCap(ReqCap.Capability, CType(oneval.Item, UInt16), RequestSource.TWAIN)
+                                            SetResult(TWRC.TWRC_SUCCESS)
+                                            Return MyResult
+                                        End If
+                                    End If
 
-                        Case CAP.ICAP_XRESOLUTION, CAP.ICAP_YRESOLUTION
-                            If tw_cap.ConType <> TWON.TWON_ONEVALUE Then
-                                SetCondition(TWCC.TWCC_BADVALUE)
-                                SetResult(TWRC.TWRC_FAILURE)
-                                Return MyResult
-                            Else
-                                Dim pContainer As IntPtr = WinAPI.GlobalLock(tw_cap.hContainer)
-                                Dim oneval As TW_ONEVALUE_FIX32 = Marshal.PtrToStructure(pContainer, GetType(TW_ONEVALUE_FIX32))
-                                If pContainer Then WinAPI.GlobalUnlock(tw_cap.hContainer)
-                                Logger.Write(DebugLogger.Level.Debug, False, "ItemType=" & CType(oneval.ItemType, TWTY).ToString)
-                                If oneval.ItemType <> TWTY.TWTY_FIX32 Then
-                                    SetCondition(TWCC.TWCC_BADVALUE)
+                                    'Case CAP.ICAP_BITORDER
+                                    '    'XXX
+                                    'Case CAP.ICAP_COMPRESSION
+                                    '    'XXX
+                                    'Case CAP.ICAP_PLANARCHUNKY
+                                    '    'XXX
+                                    'Case CAP.ICAP_PIXELFLAVOR
+                                    '    'XXX
+                                Case CAP.ICAP_PIXELTYPE
+                                    If tw_cap.ConType <> TWON.TWON_ONEVALUE Then
+                                        SetCondition(TWCC.TWCC_BADVALUE)
+                                        SetResult(TWRC.TWRC_FAILURE)
+                                        Return MyResult
+                                    Else
+                                        Dim pContainer As IntPtr = WinAPI.GlobalLock(tw_cap.hContainer)
+                                        Dim oneval As TW_ONEVALUE = Marshal.PtrToStructure(pContainer, GetType(TW_ONEVALUE))
+                                        If pContainer Then WinAPI.GlobalUnlock(tw_cap.hContainer)
+                                        Logger.Write(DebugLogger.Level.Debug, False, "ItemType=" & CType(oneval.ItemType, TWTY).ToString)
+                                        If oneval.ItemType <> TWTY.TWTY_UINT16 Then
+                                            SetCondition(TWCC.TWCC_BADVALUE)
+                                            SetResult(TWRC.TWRC_FAILURE)
+                                            Return MyResult
+                                        Else
+                                            Select Case oneval.Item
+                                                Case TWPT.TWPT_BW, TWPT.TWPT_GRAY, TWPT.TWPT_RGB
+                                                    SetCap(ReqCap.Capability, CType(oneval.Item, TWPT), RequestSource.TWAIN)
+                                                    SetResult(TWRC.TWRC_SUCCESS)
+                                                Case Else
+                                                    SetCondition(TWCC.TWCC_BADVALUE)
+                                                    SetResult(TWRC.TWRC_FAILURE)
+                                            End Select
+                                            Return MyResult
+                                        End If
+                                    End If
+
+                                Case CAP.ICAP_SUPPORTEDSIZES
+                                    If tw_cap.ConType <> TWON.TWON_ONEVALUE Then
+                                        SetCondition(TWCC.TWCC_BADVALUE)
+                                        SetResult(TWRC.TWRC_FAILURE)
+                                        Return MyResult
+                                    Else
+                                        Dim pContainer As IntPtr = WinAPI.GlobalLock(tw_cap.hContainer)
+                                        Dim oneval As TW_ONEVALUE = Marshal.PtrToStructure(pContainer, GetType(TW_ONEVALUE))
+                                        If pContainer Then WinAPI.GlobalUnlock(tw_cap.hContainer)
+                                        Logger.Write(DebugLogger.Level.Debug, False, "ItemType=" & CType(oneval.ItemType, TWTY).ToString)
+                                        If oneval.ItemType <> TWTY.TWTY_UINT16 Then
+                                            SetCondition(TWCC.TWCC_BADVALUE)
+                                            SetResult(TWRC.TWRC_FAILURE)
+                                            Return MyResult
+                                        Else
+                                            Dim NewSize As TWSS = CType(oneval.Item, TWSS)
+                                            If SupportedSizes.Contains(NewSize) Then
+                                                SetCap(CAP.ICAP_SUPPORTEDSIZES, NewSize, RequestSource.TWAIN)
+                                                SetResult(TWRC.TWRC_SUCCESS)
+                                                Return MyResult
+                                            Else
+                                                SetCondition(TWCC.TWCC_BADVALUE)
+                                                SetResult(TWRC.TWRC_FAILURE)
+                                                Return MyResult
+                                            End If
+                                        End If
+                                    End If
+
+                                Case CAP.ICAP_UNITS
+                                    If tw_cap.ConType <> TWON.TWON_ONEVALUE Then
+                                        SetCondition(TWCC.TWCC_BADVALUE)
+                                        SetResult(TWRC.TWRC_FAILURE)
+                                        Return MyResult
+                                    Else
+                                        Dim pContainer As IntPtr = WinAPI.GlobalLock(tw_cap.hContainer)
+                                        Dim oneval As TW_ONEVALUE = Marshal.PtrToStructure(pContainer, GetType(TW_ONEVALUE))
+                                        If pContainer Then WinAPI.GlobalUnlock(tw_cap.hContainer)
+                                        Logger.Write(DebugLogger.Level.Debug, False, "ItemType=" & CType(oneval.ItemType, TWTY).ToString)
+                                        If (oneval.ItemType <> TWTY.TWTY_UINT16) OrElse ((oneval.Item <> TWUN.TWUN_INCHES)) Then 'only allow inches, or...'And (oneval.Item <> TWUN.TWUN_MILLIMETERS) And (oneval.Item <> TWUN.TWUN_CENTIMETERS)) Then 'only allow inches, mm, or cm
+                                            Me.SetCondition(TWCC.TWCC_BADVALUE)
+                                            Me.SetResult(TWRC.TWRC_FAILURE)
+                                            Return MyResult
+                                        End If
+                                        SetCap(ReqCap.Capability, CType(oneval.Item, TWUN), RequestSource.TWAIN)
+                                        SetResult(TWRC.TWRC_SUCCESS)
+                                        Return MyResult
+                                    End If
+
+                                Case CAP.ICAP_XFERMECH
+                                    If tw_cap.ConType <> TWON.TWON_ONEVALUE Then
+                                        SetCondition(TWCC.TWCC_BADVALUE)
+                                        SetResult(TWRC.TWRC_FAILURE)
+                                        Return MyResult
+                                    Else
+                                        Dim pContainer As IntPtr = WinAPI.GlobalLock(tw_cap.hContainer)
+                                        Dim oneval As TW_ONEVALUE = Marshal.PtrToStructure(pContainer, GetType(TW_ONEVALUE))
+                                        If pContainer Then WinAPI.GlobalUnlock(tw_cap.hContainer)
+                                        Logger.Write(DebugLogger.Level.Debug, False, "ItemType=" & CType(oneval.ItemType, TWTY).ToString)
+                                        If oneval.ItemType <> TWTY.TWTY_UINT16 Then
+                                            SetCondition(TWCC.TWCC_BADVALUE)
+                                            SetResult(TWRC.TWRC_FAILURE)
+                                            Return MyResult
+                                        Else
+                                            Select Case oneval.Item
+                                                Case TWSX.TWSX_NATIVE, TWSX.TWSX_MEMORY
+                                                    SetCap(ReqCap.Capability, CType(oneval.Item, TWSX), RequestSource.TWAIN)
+                                                    SetResult(TWRC.TWRC_SUCCESS)
+                                                Case Else
+                                                    SetCondition(TWCC.TWCC_BADVALUE)
+                                                    SetResult(TWRC.TWRC_FAILURE)
+                                            End Select
+                                            Return MyResult
+                                        End If
+                                    End If
+
+                                Case CAP.ICAP_XRESOLUTION, CAP.ICAP_YRESOLUTION
+                                    If tw_cap.ConType <> TWON.TWON_ONEVALUE Then
+                                        SetCondition(TWCC.TWCC_BADVALUE)
+                                        SetResult(TWRC.TWRC_FAILURE)
+                                        Return MyResult
+                                    Else
+                                        Dim pContainer As IntPtr = WinAPI.GlobalLock(tw_cap.hContainer)
+                                        Dim oneval As TW_ONEVALUE_FIX32 = Marshal.PtrToStructure(pContainer, GetType(TW_ONEVALUE_FIX32))
+                                        If pContainer Then WinAPI.GlobalUnlock(tw_cap.hContainer)
+                                        Logger.Write(DebugLogger.Level.Debug, False, "ItemType=" & CType(oneval.ItemType, TWTY).ToString)
+                                        If oneval.ItemType <> TWTY.TWTY_FIX32 Then
+                                            SetCondition(TWCC.TWCC_BADVALUE)
+                                            SetResult(TWRC.TWRC_FAILURE)
+                                            Return MyResult
+                                        Else
+                                            SetCap(ReqCap.Capability, oneval.Item, RequestSource.TWAIN)
+                                            SetResult(TWRC.TWRC_SUCCESS)
+                                            Return MyResult
+                                        End If
+                                    End If
+
+                                Case Else
+                                    'XXX lots more CAPs to add here!
+
+                                    SetCondition(TWCC.TWCC_CAPUNSUPPORTED)
                                     SetResult(TWRC.TWRC_FAILURE)
                                     Return MyResult
-                                Else
-                                    SetCap(ReqCap.Capability, oneval.Item, RequestSource.TWAIN)
-                                    SetResult(TWRC.TWRC_SUCCESS)
-                                    Return MyResult
-                                End If
+                            End Select
+                        Case MSG.MSG_QUERYSUPPORT
+                            If MyState < TwainState.DS_Opened Then
+                                SetCondition(TWCC.TWCC_SEQERROR)
+                                SetResult(TWRC.TWRC_FAILURE)
+                                Return MyResult
                             End If
+                            Dim tw_cap As TW_CAPABILITY = Marshal.PtrToStructure(_pData, GetType(TW_CAPABILITY))
+                            Logger.Write(DebugLogger.Level.Debug, False, "Capability=" & CType(tw_cap.Cap, CAP).ToString & ", ContainerType=" & CType(tw_cap.ConType, TWON).ToString)
+
+                            Dim ResultBits As Int32 = 0
+                            Try
+                                Dim ReqCap As TwainCapability = Caps(tw_cap.Cap)
+                                ResultBits = ReqCap.SupportedOperations
+                            Catch ex As Exception
+                                ResultBits = 0 'return success with no supported operations
+                            End Try
+
+                            Dim oneval As TW_ONEVALUE
+                            oneval.ItemType = TWTY.TWTY_INT32
+                            oneval.Item = ResultBits
+                            Dim pContainer As IntPtr = WinAPI.GlobalAlloc(WinAPI.GlobalAllocFlags.GHND, Marshal.SizeOf(oneval))
+                            tw_cap.ConType = TWON.TWON_ONEVALUE
+                            tw_cap.hContainer = pContainer
+                            Marshal.StructureToPtr(oneval, pContainer, True)
+                            Marshal.StructureToPtr(tw_cap, _pData, True)
+                            SetResult(TWRC.TWRC_SUCCESS)
+                            Return MyResult
 
                         Case Else
-                            'XXX lots more CAPs to add here!
+                            'XXX lots more MSGs to add here!
+                            'XXX Notably MSG_RESET.
 
-                            SetCondition(TWCC.TWCC_CAPUNSUPPORTED)
+                            SetCondition(TWCC.TWCC_BADPROTOCOL)
                             SetResult(TWRC.TWRC_FAILURE)
                             Return MyResult
                     End Select
-                Case MSG.MSG_QUERYSUPPORT
-                    If MyState < TwainState.DS_Opened Then
-                        SetCondition(TWCC.TWCC_SEQERROR)
-                        SetResult(TWRC.TWRC_FAILURE)
-                        Return MyResult
-                    End If
-                    Dim tw_cap As TW_CAPABILITY = Marshal.PtrToStructure(_pData, GetType(TW_CAPABILITY))
-                    Logger.Write(DebugLogger.Level.Debug, False, "Capability=" & CType(tw_cap.Cap, CAP).ToString & ", ContainerType=" & CType(tw_cap.ConType, TWON).ToString)
-
-                    Dim ResultBits As Int32 = 0
-                    Try
-                        Dim ReqCap As TwainCapability = Caps(tw_cap.Cap)
-                        ResultBits = ReqCap.SupportedOperations
-                    Catch ex As Exception
-                        ResultBits = 0 'return success with no supported operations
-                    End Try
-
-                    Dim oneval As TW_ONEVALUE
-                    oneval.ItemType = TWTY.TWTY_INT32
-                    oneval.Item = ResultBits
-                    Dim pContainer As IntPtr = WinAPI.GlobalAlloc(WinAPI.GlobalAllocFlags.GHND, Marshal.SizeOf(oneval))
-                    tw_cap.ConType = TWON.TWON_ONEVALUE
-                    tw_cap.hContainer = pContainer
-                    Marshal.StructureToPtr(oneval, pContainer, True)
-                    Marshal.StructureToPtr(tw_cap, _pData, True)
-                    SetResult(TWRC.TWRC_SUCCESS)
-                    Return MyResult
-
-                Case Else
-                    'XXX lots more MSGs to add here!
-                    'XXX Notably MSG_RESET.
-
-                    SetCondition(TWCC.TWCC_BADPROTOCOL)
-                    SetResult(TWRC.TWRC_FAILURE)
-                    Return MyResult
-            End Select
         End Function
 
         Private Function DG_CONTROL__DAT_USERINTERFACE(ByVal _MSG As MSG, ByVal _pData As IntPtr) As TWRC
@@ -4526,12 +4563,62 @@ Namespace TWAIN_VB
                             res_dpi = SANE.CurrentDevice.OptionValues(i)(0)
                             Dim caparray() As CAP = {CAP.ICAP_XRESOLUTION, CAP.ICAP_YRESOLUTION, CAP.ICAP_XNATIVERESOLUTION, CAP.ICAP_YNATIVERESOLUTION}
                             For Each icap As CAP In caparray
-                                SetCap(icap, FloatToFIX32(res_dpi), RequestSource.SANE)
+                                If Caps.ContainsKey(icap) Then
+                                    SetCap(icap, FloatToFIX32(res_dpi), RequestSource.SANE)
+                                    Dim cap As TwainCapability = Caps(icap)
+                                    Select Case SANE.CurrentDevice.OptionDescriptors(i).constraint_type
+                                        Case SANE_API.SANE_Constraint_Type.SANE_CONSTRAINT_RANGE
+                                            Try
+                                                cap.ConstraintType = TWON.TWON_RANGE
+                                                With cap.ConstraintRange.FIX32
+                                                    .ItemType = cap.DataType 'should always be TWTY_FIX32
+                                                    Select Case SANE.CurrentDevice.OptionDescriptors(i).type
+                                                        Case SANE_API.SANE_Value_Type.SANE_TYPE_FIXED
+                                                            .MinValue = FloatToFIX32(SANE.SANE_UNFIX(SANE.CurrentDevice.OptionDescriptors(i).constraint.range.min))
+                                                            .MaxValue = FloatToFIX32(SANE.SANE_UNFIX(SANE.CurrentDevice.OptionDescriptors(i).constraint.range.max))
+                                                            .StepSize = FloatToFIX32(SANE.SANE_UNFIX(SANE.CurrentDevice.OptionDescriptors(i).constraint.range.quant))
+                                                            .CurrentValue = cap.CurrentValue
+                                                            .DefaultValue = cap.DefaultValue
+                                                        Case SANE_API.SANE_Value_Type.SANE_TYPE_INT
+                                                            .MinValue = FloatToFIX32(CDbl(SANE.CurrentDevice.OptionDescriptors(i).constraint.range.min))
+                                                            .MaxValue = FloatToFIX32(CDbl(SANE.CurrentDevice.OptionDescriptors(i).constraint.range.max))
+                                                            .StepSize = FloatToFIX32(CDbl(SANE.CurrentDevice.OptionDescriptors(i).constraint.range.quant))
+                                                            .CurrentValue = cap.CurrentValue
+                                                            .DefaultValue = cap.DefaultValue
+                                                        Case Else
+                                                            Throw New Exception("Invalid data type '" & SANE.CurrentDevice.OptionDescriptors(i).type & "'")
+                                                    End Select
+                                                End With
+                                            Catch ex As Exception
+                                                Logger.Write(DebugLogger.Level.Warn, False, "Error translating SANE range constraint for resolution: " & ex.Message)
+                                            End Try
+                                        Case SANE_API.SANE_Constraint_Type.SANE_CONSTRAINT_WORD_LIST
+                                            Try
+                                                cap.ConstraintType = TWON.TWON_ENUMERATION
+                                                cap.ConstraintValues.Clear()
+                                                Select Case SANE.CurrentDevice.OptionDescriptors(i).type
+                                                    Case SANE_API.SANE_Value_Type.SANE_TYPE_FIXED, SANE_API.SANE_Value_Type.SANE_TYPE_INT
+                                                        For idx As Integer = 0 To SANE.CurrentDevice.OptionDescriptors(i).constraint.word_list.Length - 1
+                                                            Dim val As TW_FIX32
+                                                            If SANE.CurrentDevice.OptionDescriptors(i).type = SANE_API.SANE_Value_Type.SANE_TYPE_FIXED Then
+                                                                val = FloatToFIX32(SANE.SANE_UNFIX(SANE.CurrentDevice.OptionDescriptors(i).constraint.word_list(i)))
+                                                            Else
+                                                                val = FloatToFIX32(CDbl(SANE.CurrentDevice.OptionDescriptors(i).constraint.word_list(i)))
+                                                            End If
+                                                            cap.ConstraintValues.Add(val)
+                                                        Next
+                                                    Case Else
+                                                        Throw New Exception("Invalid data type '" & SANE.CurrentDevice.OptionDescriptors(i).type & "'")
+                                                End Select
+                                            Catch ex As Exception
+                                                Logger.Write(DebugLogger.Level.Warn, False, "Error translating SANE word list constraint for resolution: " & ex.Message)
+                                            End Try
+                                    End Select
+                                End If
                             Next
 
                             'ICAP_UNITS must be set to TWUN_INCHES since SANE 'resolution' is always in DPI.
                             SetCap(CAP.ICAP_UNITS, TWUN.TWUN_INCHES, RequestSource.SANE)
-
                         Case "preview"  'No reason to map this
                         Case "tl-x"
                             tlx = SANE.CurrentDevice.OptionValues(i)(0)

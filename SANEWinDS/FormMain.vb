@@ -755,11 +755,44 @@ Public Class FormMain
                     End If
                 End If
             Catch ex As Exception
-                Logger.Write(DebugLogger.Level.Error_, False, "Exception reading ScanContinuously setting from backend ini: " & ex.Message)
+                Logger.Write(DebugLogger.Level.Error_, False, "Exception reading ScanContinuously setting from backend.ini: " & ex.Message)
             End Try
             Logger.Write(DebugLogger.Level.Info, False, "ScanContinuously = '" & CurrentSettings.ScanContinuously.ToString & "'")
             Me.CheckBoxBatchMode.Checked = CurrentSettings.ScanContinuously
             'XXX need to set CAP_FEEDERENABLED here or does an event fire?
+
+            If TWAIN_Is_Active Then
+                Try
+                    Dim opt As String = CurrentSettings.SANE.CurrentDeviceINI.GetKeyValue("General", "MaxPaperWidth")
+                    If opt IsNot Nothing Then
+                        If opt.Length Then
+                            Dim d As Double
+                            If Double.TryParse(opt, d) Then
+                                Me.TWAINInstance.SetCap(TWAIN_VB.CAP.ICAP_PHYSICALWIDTH, d, TWAIN_VB.DS_Entry_Pump.RequestSource.SANE)
+                            Else
+                                Throw New Exception("Unable to interpret '" & opt & "' as a decimal number")
+                            End If
+                        End If
+                    End If
+                Catch ex As Exception
+                    Logger.Write(DebugLogger.Level.Error_, False, "Exception reading MaxPaperWidth setting from backend.ini: " & ex.Message)
+                End Try
+                Try
+                    Dim opt As String = CurrentSettings.SANE.CurrentDeviceINI.GetKeyValue("General", "MaxPaperHeight")
+                    If opt IsNot Nothing Then
+                        If opt.Length Then
+                            Dim d As Double
+                            If Double.TryParse(opt, d) Then
+                                Me.TWAINInstance.SetCap(TWAIN_VB.CAP.ICAP_PHYSICALHEIGHT, d, TWAIN_VB.DS_Entry_Pump.RequestSource.SANE)
+                            Else
+                                Throw New Exception("Unable to interpret '" & opt & "' as a decimal number")
+                            End If
+                        End If
+                    End If
+                Catch ex As Exception
+                    Logger.Write(DebugLogger.Level.Error_, False, "Exception reading MaxPaperHeight setting from backend.ini: " & ex.Message)
+                End Try
+            End If
 
             For i As Integer = 1 To SANE.CurrentDevice.OptionDescriptors.Count - 1 'skip the first option, which is just the option count
                 Select Case SANE.CurrentDevice.OptionDescriptors(i).type

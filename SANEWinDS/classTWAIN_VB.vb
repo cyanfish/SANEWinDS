@@ -4481,6 +4481,11 @@ Namespace TWAIN_VB
                 'End If
 
                 If (ReqCap.Capability = CAP.ICAP_PHYSICALHEIGHT) Or (ReqCap.Capability = CAP.ICAP_PHYSICALWIDTH) Then
+                    PageSizes(TWSS.TWSS_NONE).Width = Me.FIX32ToFloat(Caps(CAP.ICAP_PHYSICALWIDTH).CurrentValue)
+                    PageSizes(TWSS.TWSS_MAXSIZE).Width = Me.FIX32ToFloat(Caps(CAP.ICAP_PHYSICALWIDTH).CurrentValue)
+                    PageSizes(TWSS.TWSS_NONE).Height = Me.FIX32ToFloat(Caps(CAP.ICAP_PHYSICALHEIGHT).CurrentValue)
+                    PageSizes(TWSS.TWSS_MAXSIZE).Height = Me.FIX32ToFloat(Caps(CAP.ICAP_PHYSICALHEIGHT).CurrentValue)
+
                     SupportedSizes = New ArrayList
                     For Each ss In PageSizes
                         Select Case ss.Key
@@ -4752,11 +4757,6 @@ Namespace TWAIN_VB
                     SetCap(CAP.ICAP_UNITS, TWUN.TWUN_INCHES, RequestSource.SANE)
                     SetCap(CAP.ICAP_PHYSICALWIDTH, FloatToFIX32(PhysicalWidth), RequestSource.SANE)
                     SetCap(CAP.ICAP_PHYSICALHEIGHT, FloatToFIX32(PhysicalLength), RequestSource.SANE)
-                    PageSizes(TWSS.TWSS_NONE).Width = PhysicalWidth
-                    PageSizes(TWSS.TWSS_MAXSIZE).Width = PhysicalWidth
-                    PageSizes(TWSS.TWSS_NONE).Height = PhysicalLength
-                    PageSizes(TWSS.TWSS_MAXSIZE).Height = PhysicalLength
-
                 End If
 
             Catch ex As Exception

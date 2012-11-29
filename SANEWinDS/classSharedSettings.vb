@@ -278,7 +278,14 @@ Public Class SharedSettings
             fs = New System.IO.StreamWriter(FileName)
             'Logger.Write(DebugLogger.Level.Debug, False, "1")
             fs.WriteLine("[General]")
+            fs.WriteLine(";ScanContinuously is a boolean value that determines whether to scan a single page or continue until the ADF is empty.")
+            fs.WriteLine(";In most cases the correct value will be guessed automatically.")
             fs.WriteLine(";ScanContinuously=True")
+            fs.WriteLine(";")
+            fs.WriteLine(";MaxPaperWidth and MaxPaperHeight values are in inches and determine the ICAP_SUPPORTEDSIZES values for TWAIN.")
+            fs.WriteLine(";These values will be taken from the default br-x and br-y values if not specified here.")
+            fs.WriteLine(";MaxPaperWidth=8.5")
+            fs.WriteLine(";MaxPaperHeight=14")
             fs.WriteLine("")
             For i As Integer = 1 To modGlobals.SANE.CurrentDevice.OptionDescriptors.Count - 1 'skip the first option, which is just the option count
                 Select Case modGlobals.SANE.CurrentDevice.OptionDescriptors(i).type

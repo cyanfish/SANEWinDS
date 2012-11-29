@@ -4791,9 +4791,11 @@ Namespace TWAIN_VB
                     SetCap(CAP.CAP_AUTOFEED, TW_TRUE, SetCapScope.CurrentValue, RequestSource.SANE) 'XXX applications should set this, but they don't seem to.
                 End If
 
-                If Device_Appears_To_Have_Duplex() Then 'XXX account for a setting in the ini file
-                    SetCap(CAP.CAP_DUPLEX, TWDX.TWDX_1PASSDUPLEX, SetCapScope.CurrentValue, RequestSource.SANE)
-                End If
+                'This doesn't seem to be necessary any more now that we're mapping the default values of all options.
+                '
+                'If Device_Appears_To_Have_Duplex() Then 'XXX account for a setting in the ini file
+                '    SetCap(CAP.CAP_DUPLEX, TWDX.TWDX_1PASSDUPLEX, SetCapScope.CurrentValue, RequestSource.SANE)
+                'End If
 
             Catch ex As Exception
                 Logger.Write(DebugLogger.Level.Error_, True, ex.Message)

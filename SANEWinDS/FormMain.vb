@@ -768,7 +768,7 @@ Public Class FormMain
                         If opt.Length Then
                             Dim d As Double
                             If Double.TryParse(opt, d) Then
-                                Me.TWAINInstance.SetCap(TWAIN_VB.CAP.ICAP_PHYSICALWIDTH, d, TWAIN_VB.DS_Entry_Pump.RequestSource.SANE)
+                                Me.TWAINInstance.SetCap(TWAIN_VB.CAP.ICAP_PHYSICALWIDTH, d, TWAIN_VB.DS_Entry_Pump.SetCapScope.BothValues, TWAIN_VB.DS_Entry_Pump.RequestSource.SANE)
                             Else
                                 Throw New Exception("Unable to interpret '" & opt & "' as a decimal number")
                             End If
@@ -783,7 +783,7 @@ Public Class FormMain
                         If opt.Length Then
                             Dim d As Double
                             If Double.TryParse(opt, d) Then
-                                Me.TWAINInstance.SetCap(TWAIN_VB.CAP.ICAP_PHYSICALHEIGHT, d, TWAIN_VB.DS_Entry_Pump.RequestSource.SANE)
+                                Me.TWAINInstance.SetCap(TWAIN_VB.CAP.ICAP_PHYSICALHEIGHT, d, TWAIN_VB.DS_Entry_Pump.SetCapScope.BothValues, TWAIN_VB.DS_Entry_Pump.RequestSource.SANE)
                             Else
                                 Throw New Exception("Unable to interpret '" & opt & "' as a decimal number")
                             End If
@@ -805,11 +805,15 @@ Public Class FormMain
                                 If SANE.SANE_OPTION_IS_ACTIVE(SANE.CurrentDevice.OptionDescriptors(i).cap) And SANE.SANE_OPTION_IS_SETTABLE(SANE.CurrentDevice.OptionDescriptors(i).cap) Then
                                     Logger.Write(DebugLogger.Level.Debug, False, "importing setting '" & SANE.CurrentDevice.OptionDescriptors(i).name & "' = '" & optval & "'")
                                     Dim Values() As Object = optval.Split(",")
-                                    SetOpt(i, Values)
+                                    SetOpt(i, Values) 'sets value for both SANE and TWAIN
                                 Else
                                     Logger.Write(DebugLogger.Level.Warn, False, "Option '" & SANE.CurrentDevice.OptionDescriptors(i).title & "' is not currently settable")
                                 End If
+                            Else
+                                'If TWAIN_Is_Active Then SetTWAINCaps(SANE.CurrentDevice.OptionDescriptors(i), SANE.CurrentDevice.OptionValues(i))
                             End If
+                        Else
+                            'If TWAIN_Is_Active Then SetTWAINCaps(SANE.CurrentDevice.OptionDescriptors(i), SANE.CurrentDevice.OptionValues(i))
                         End If
                 End Select
             Next
@@ -820,35 +824,39 @@ Public Class FormMain
         Logger.Write(DebugLogger.Level.Debug, False, "end")
     End Sub
 
-    Private Sub SetTWAINCaps(ByVal OptionDescriptor As SANE_API.SANE_Option_Descriptor, ByVal OptionValues() As Object)
+    Friend Sub SetTWAINCaps(ByVal OptionDescriptor As SANE_API.SANE_Option_Descriptor, ByVal OptionValues() As Object, ByVal SetDefaultValue As Boolean)
         If OptionValues.Length > 1 Then Logger.Write(DebugLogger.Level.Warn, False, "Only the first value in the array will be evaluated for option '" & OptionDescriptor.title & "'")
-        If CurrentSettings.SANE.CurrentDeviceINI IsNot Nothing Then
-            Dim s As String = CurrentSettings.SANE.CurrentDeviceINI.GetKeyValue("Option." & OptionDescriptor.name, "TWAIN." & OptionValues(0).ToString.Replace(" ", ""))
-            'If there wasn't a TWAIN mapping for the specific value that was set, look for a general mapping.
-            If (s Is Nothing) OrElse (s.Length = 0) Then s = CurrentSettings.SANE.CurrentDeviceINI.GetKeyValue("Option." & OptionDescriptor.name, "TWAIN")
-            If s IsNot Nothing AndAlso s.Length Then
-                Dim caps() As String = s.Split(";")
-                Dim capName(caps.Length - 1) As String
-                Dim capVal(caps.Length - 1) As String
-                For i = 0 To caps.Length - 1
-                    Dim ss() As String = caps(i).Split(",")
-                    If ss.Length = 2 Then
-                        capName(i) = ss(0).Trim.ToUpper
-                        capVal(i) = ss(1).Trim.ToUpper
-                        Logger.Write(DebugLogger.Level.Debug, False, "TWAIN Capability = '" & capName(i) & "', Value = '" & capVal(i) & "'")
-                        If Me.TWAINInstance IsNot Nothing Then
-                            Dim n As TWAIN_VB.CAP
-                            If [Enum].TryParse(capName(i), True, n) Then
-                                If capVal(i) = "#" Then capVal(i) = OptionValues(0)
-                                Me.TWAINInstance.SetCap(n, capVal(i), TWAIN_VB.DS_Entry_Pump.RequestSource.SANE)
+        If (CurrentSettings.SANE.CurrentDeviceINI IsNot Nothing) Then
+            If OptionValues.Length > 0 Then
+                If OptionValues(0) IsNot Nothing Then
+                    Dim s As String = CurrentSettings.SANE.CurrentDeviceINI.GetKeyValue("Option." & OptionDescriptor.name, "TWAIN." & OptionValues(0).ToString.Replace(" ", ""))
+                    'If there wasn't a TWAIN mapping for the specific value that was set, look for a general mapping.
+                    If (s Is Nothing) OrElse (s.Length = 0) Then s = CurrentSettings.SANE.CurrentDeviceINI.GetKeyValue("Option." & OptionDescriptor.name, "TWAIN")
+                    If s IsNot Nothing AndAlso s.Length Then
+                        Dim caps() As String = s.Split(";")
+                        Dim capName(caps.Length - 1) As String
+                        Dim capVal(caps.Length - 1) As String
+                        For i = 0 To caps.Length - 1
+                            Dim ss() As String = caps(i).Split(",")
+                            If ss.Length = 2 Then
+                                capName(i) = ss(0).Trim.ToUpper
+                                capVal(i) = ss(1).Trim.ToUpper
+                                Logger.Write(DebugLogger.Level.Debug, False, "TWAIN Capability = '" & capName(i) & "', Value = '" & capVal(i) & "'")
+                                If Me.TWAINInstance IsNot Nothing Then
+                                    Dim n As TWAIN_VB.CAP
+                                    If [Enum].TryParse(capName(i), True, n) Then
+                                        If capVal(i) = "#" Then capVal(i) = OptionValues(0)
+                                        Me.TWAINInstance.SetCap(n, capVal(i), IIf(SetDefaultValue, TWAIN_VB.DS_Entry_Pump.SetCapScope.BothValues, TWAIN_VB.DS_Entry_Pump.SetCapScope.CurrentValue), TWAIN_VB.DS_Entry_Pump.RequestSource.SANE)
+                                    Else
+                                        Logger.Write(DebugLogger.Level.Warn, False, "Unknown TWAIN capability '" & capName(i) & "'")
+                                    End If
+                                End If
                             Else
-                                Logger.Write(DebugLogger.Level.Warn, False, "Unknown TWAIN capability '" & capName(i) & "'")
+                                Logger.Write(DebugLogger.Level.Warn, False, "Malformed TWAIN capability mapping: '" & caps(i) & "'")
                             End If
-                        End If
-                    Else
-                        Logger.Write(DebugLogger.Level.Warn, False, "Malformed TWAIN capability mapping: '" & caps(i) & "'")
+                        Next
                     End If
-                Next
+                End If
             End If
         Else
             Logger.Write(DebugLogger.Level.Warn, False, "Backend configuration file uninitialized; SANE to TWAIN capability mappings were not configured")
@@ -952,12 +960,8 @@ Public Class FormMain
                     End If
                 End If
 
-                'If CurrentSettings.TWAIN.Enabled Then
                 If Me.TWAIN_Is_Active Then
-                    'XXX
-                    'translate well-Known options to TWAIN capabilities
-                    'translate custom-mapped options to TWAIN capabilities
-                    SetTWAINCaps(od, Values)
+                    SetTWAINCaps(od, Values, False)
                 End If
 
             Else

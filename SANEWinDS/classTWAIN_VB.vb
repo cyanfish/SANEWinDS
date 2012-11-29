@@ -2117,6 +2117,12 @@ Namespace TWAIN_VB
             Dim ConstraintValues As ArrayList
         End Structure
 
+        Public Enum SetCapScope
+            CurrentValue = 1
+            DefaultValue = 2
+            BothValues = 3
+        End Enum
+
         Private Const TW_TRUE = 1
         Private Const TW_FALSE = 0
         Private MyTWAINversion As Single = 0
@@ -2437,7 +2443,7 @@ Namespace TWAIN_VB
                         Return MyResult
                     End If
                 Case MSG.MSG_SET
-                    SetCap(CAP.ICAP_SUPPORTEDSIZES, TWSS.TWSS_NONE, RequestSource.TWAIN)
+                    SetCap(CAP.ICAP_SUPPORTEDSIZES, TWSS.TWSS_NONE, SetCapScope.CurrentValue, RequestSource.TWAIN)
                     If MyState = TwainState.DS_Opened Then
                         'Use the values in pImageLayout as the Source’s current image layout information. If you are
                         'unable to set the device exactly to the values requested in the Frame field, set them as closely as
@@ -2872,21 +2878,21 @@ Namespace TWAIN_VB
                         .BitsPerPixel = 16
                         .Planar = TW_TRUE
                         .PixelType = TWPT.TWPT_GRAY
-                        SetCap(CAP.ICAP_PIXELFLAVOR, TWPF.TWPF_CHOCOLATE, RequestSource.TWAIN)
+                        SetCap(CAP.ICAP_PIXELFLAVOR, TWPF.TWPF_CHOCOLATE, SetCapScope.CurrentValue, RequestSource.TWAIN)
                     Case Drawing.Imaging.PixelFormat.Format8bppIndexed
                         .SamplesPerPixel = 1
                         .BitsPerSample(0) = 8
                         .BitsPerPixel = 8
                         .Planar = TW_TRUE
                         .PixelType = TWPT.TWPT_GRAY
-                        SetCap(CAP.ICAP_PIXELFLAVOR, TWPF.TWPF_CHOCOLATE, RequestSource.TWAIN)
+                        SetCap(CAP.ICAP_PIXELFLAVOR, TWPF.TWPF_CHOCOLATE, SetCapScope.CurrentValue, RequestSource.TWAIN)
                     Case Drawing.Imaging.PixelFormat.Format1bppIndexed
                         .SamplesPerPixel = 1
                         .BitsPerSample(0) = 1
                         .BitsPerPixel = 1
                         .Planar = TW_TRUE
                         .PixelType = TWPT.TWPT_BW
-                        SetCap(CAP.ICAP_PIXELFLAVOR, TWPF.TWPF_VANILLA, RequestSource.TWAIN)
+                        SetCap(CAP.ICAP_PIXELFLAVOR, TWPF.TWPF_VANILLA, SetCapScope.CurrentValue, RequestSource.TWAIN)
                     Case Else
                         'XXX lots of formats to deal with here
 
@@ -2947,21 +2953,21 @@ Namespace TWAIN_VB
                                 .BitsPerPixel = 16
                                 .Planar = TW_FALSE
                                 .PixelType = TWPT.TWPT_GRAY
-                                SetCap(CAP.ICAP_PIXELFLAVOR, TWPF.TWPF_CHOCOLATE, RequestSource.TWAIN)
+                                SetCap(CAP.ICAP_PIXELFLAVOR, TWPF.TWPF_CHOCOLATE, SetCapScope.CurrentValue, RequestSource.TWAIN)
                             Case 8
                                 .SamplesPerPixel = 1
                                 .BitsPerSample(0) = 8
                                 .BitsPerPixel = 8
                                 .Planar = TW_FALSE
                                 .PixelType = TWPT.TWPT_GRAY
-                                SetCap(CAP.ICAP_PIXELFLAVOR, TWPF.TWPF_CHOCOLATE, RequestSource.TWAIN)
+                                SetCap(CAP.ICAP_PIXELFLAVOR, TWPF.TWPF_CHOCOLATE, SetCapScope.CurrentValue, RequestSource.TWAIN)
                             Case 1
                                 .SamplesPerPixel = 1
                                 .BitsPerSample(0) = 1
                                 .BitsPerPixel = 1
                                 .Planar = TW_TRUE
                                 .PixelType = TWPT.TWPT_BW
-                                SetCap(CAP.ICAP_PIXELFLAVOR, TWPF.TWPF_VANILLA, RequestSource.TWAIN)
+                                SetCap(CAP.ICAP_PIXELFLAVOR, TWPF.TWPF_VANILLA, SetCapScope.CurrentValue, RequestSource.TWAIN)
                             Case Else
                                 'XXX
                         End Select
@@ -3454,6 +3460,11 @@ Namespace TWAIN_VB
                                             End Select
                                             Return MyResult
                                     End Select
+                                Case Else
+                                    'should never get here
+                                    SetCondition(TWCC.TWCC_CAPBADOPERATION)
+                                    SetResult(TWRC.TWRC_FAILURE)
+                                    Return MyResult
                             End Select
 
                         Case Else
@@ -3511,7 +3522,7 @@ Namespace TWAIN_VB
 
                                 Logger.Write(DebugLogger.Level.Debug, False, "app sent value '" & oneval.Item.ToString & "'")
 
-                                SetCap(ReqCap.Capability, CType(oneval.Item, UInt16), RequestSource.TWAIN)
+                                SetCap(ReqCap.Capability, CType(oneval.Item, UInt16), SetCapScope.CurrentValue, RequestSource.TWAIN)
 
                                 SetResult(TWRC.TWRC_SUCCESS)
                                 Return MyResult
@@ -3536,11 +3547,10 @@ Namespace TWAIN_VB
                                     Return MyResult
                                 End If
 
-                                SetCap(ReqCap.Capability, CType(oneval.Item, UInt16), RequestSource.TWAIN)
+                                SetCap(ReqCap.Capability, CType(oneval.Item, UInt16), SetCapScope.CurrentValue, RequestSource.TWAIN)
                                 SetResult(TWRC.TWRC_SUCCESS)
                                 Return MyResult
                             End If
-
 
                         Case CAP.CAP_FEEDERENABLED
                             If tw_cap.ConType <> TWON.TWON_ONEVALUE Then
@@ -3560,7 +3570,7 @@ Namespace TWAIN_VB
 
                                 Logger.Write(DebugLogger.Level.Debug, False, "app sent value '" & oneval.Item.ToString & "'")
 
-                                SetCap(ReqCap.Capability, CType(oneval.Item, UInt16), RequestSource.TWAIN)
+                                SetCap(ReqCap.Capability, CType(oneval.Item, UInt16), SetCapScope.CurrentValue, RequestSource.TWAIN)
 
                                 CurrentSettings.ScanContinuously = CBool(Caps(CAP.CAP_FEEDERENABLED).CurrentValue)
                                 MyForm.CheckBoxBatchMode.Checked = CurrentSettings.ScanContinuously 'XXX this may cause the cap to be set again through the CheckedChanged event
@@ -3584,7 +3594,7 @@ Namespace TWAIN_VB
                                     Me.SetResult(TWRC.TWRC_FAILURE)
                                     Return MyResult
                                 End If
-                                SetCap(ReqCap.Capability, CType(oneval.Item, Int16), RequestSource.TWAIN)
+                                SetCap(ReqCap.Capability, CType(oneval.Item, Int16), SetCapScope.CurrentValue, RequestSource.TWAIN)
                                 SetResult(TWRC.TWRC_SUCCESS)
                                 Return MyResult
                             End If
@@ -3604,7 +3614,7 @@ Namespace TWAIN_VB
                                     SetResult(TWRC.TWRC_FAILURE)
                                     Return MyResult
                                 Else
-                                    SetCap(ReqCap.Capability, CType(oneval.Item, UInt16), RequestSource.TWAIN)
+                                    SetCap(ReqCap.Capability, CType(oneval.Item, UInt16), SetCapScope.CurrentValue, RequestSource.TWAIN)
                                     SetResult(TWRC.TWRC_SUCCESS)
                                     Return MyResult
                                 End If
@@ -3635,7 +3645,7 @@ Namespace TWAIN_VB
                                 Else
                                     Select Case oneval.Item
                                         Case TWPT.TWPT_BW, TWPT.TWPT_GRAY, TWPT.TWPT_RGB
-                                            SetCap(ReqCap.Capability, CType(oneval.Item, TWPT), RequestSource.TWAIN)
+                                            SetCap(ReqCap.Capability, CType(oneval.Item, TWPT), SetCapScope.CurrentValue, RequestSource.TWAIN)
                                             SetResult(TWRC.TWRC_SUCCESS)
                                         Case Else
                                             SetCondition(TWCC.TWCC_BADVALUE)
@@ -3662,7 +3672,7 @@ Namespace TWAIN_VB
                                 Else
                                     Dim NewSize As TWSS = CType(oneval.Item, TWSS)
                                     If SupportedSizes.Contains(NewSize) Then
-                                        SetCap(CAP.ICAP_SUPPORTEDSIZES, NewSize, RequestSource.TWAIN)
+                                        SetCap(CAP.ICAP_SUPPORTEDSIZES, NewSize, SetCapScope.CurrentValue, RequestSource.TWAIN)
                                         SetResult(TWRC.TWRC_SUCCESS)
                                         Return MyResult
                                     Else
@@ -3688,7 +3698,7 @@ Namespace TWAIN_VB
                                     Me.SetResult(TWRC.TWRC_FAILURE)
                                     Return MyResult
                                 End If
-                                SetCap(ReqCap.Capability, CType(oneval.Item, TWUN), RequestSource.TWAIN)
+                                SetCap(ReqCap.Capability, CType(oneval.Item, TWUN), SetCapScope.CurrentValue, RequestSource.TWAIN)
                                 SetResult(TWRC.TWRC_SUCCESS)
                                 Return MyResult
                             End If
@@ -3710,7 +3720,7 @@ Namespace TWAIN_VB
                                 Else
                                     Select Case oneval.Item
                                         Case TWSX.TWSX_NATIVE, TWSX.TWSX_MEMORY
-                                            SetCap(ReqCap.Capability, CType(oneval.Item, TWSX), RequestSource.TWAIN)
+                                            SetCap(ReqCap.Capability, CType(oneval.Item, TWSX), SetCapScope.CurrentValue, RequestSource.TWAIN)
                                             SetResult(TWRC.TWRC_SUCCESS)
                                         Case Else
                                             SetCondition(TWCC.TWCC_BADVALUE)
@@ -3735,7 +3745,7 @@ Namespace TWAIN_VB
                                     SetResult(TWRC.TWRC_FAILURE)
                                     Return MyResult
                                 Else
-                                    SetCap(ReqCap.Capability, oneval.Item, RequestSource.TWAIN)
+                                    SetCap(ReqCap.Capability, oneval.Item, SetCapScope.CurrentValue, RequestSource.TWAIN)
                                     SetResult(TWRC.TWRC_SUCCESS)
                                     Return MyResult
                                 End If
@@ -4233,9 +4243,9 @@ Namespace TWAIN_VB
 
         Private Sub GUI_CheckBoxBatchMode_CheckedChanged(ByVal sender As Object, ByVal e As System.EventArgs)
             If sender.Checked Then
-                Me.SetCap(CAP.CAP_FEEDERENABLED, TW_TRUE, RequestSource.TWAIN)
+                Me.SetCap(CAP.CAP_FEEDERENABLED, TW_TRUE, SetCapScope.CurrentValue, RequestSource.TWAIN)
             Else
-                Me.SetCap(CAP.CAP_FEEDERENABLED, TW_FALSE, RequestSource.TWAIN)
+                Me.SetCap(CAP.CAP_FEEDERENABLED, TW_FALSE, SetCapScope.CurrentValue, RequestSource.TWAIN)
             End If
         End Sub
 
@@ -4244,7 +4254,7 @@ Namespace TWAIN_VB
         '    Return obj
         'End Function
 
-        Public Sub SetCap(ByVal Capability As CAP, ByVal NewValue As Object, ByVal Source As RequestSource)
+        Public Sub SetCap(ByVal Capability As CAP, ByVal NewValue As Object, ByVal Scope As SetCapScope, ByVal Source As RequestSource)
             Try
                 Dim ReqCap As TwainCapability = Caps(Capability)
                 Dim OldVal As Object = ReqCap.CurrentValue
@@ -4471,8 +4481,15 @@ Namespace TWAIN_VB
                         'XXX lots more data type conversions to code here
 
                 End Select
-
-                ReqCap.CurrentValue = NewValue
+                Select Case Scope
+                    Case SetCapScope.CurrentValue
+                        ReqCap.CurrentValue = NewValue
+                    Case SetCapScope.DefaultValue
+                        ReqCap.DefaultValue = NewValue
+                    Case SetCapScope.BothValues
+                        ReqCap.DefaultValue = NewValue
+                        ReqCap.CurrentValue = NewValue
+                End Select
                 Caps(ReqCap.Capability) = ReqCap
                 Logger.Write(DebugLogger.Level.Debug, False, ReqCap.Capability.ToString & ": " & OldValStr & " --> " & NewValStr)
 
@@ -4607,130 +4624,139 @@ Namespace TWAIN_VB
         Private Sub Import_SANE_Options()
             Logger.Write(DebugLogger.Level.Debug, False, "begin")
             Try
-                If Not CurrentSettings.ScanContinuouslyUserConfigured Then
-                    CurrentSettings.ScanContinuously = Device_Appears_To_Have_ADF() AndAlso Device_Appears_To_Have_ADF_Enabled()
-                    'MyForm.CheckBoxBatchMode.Checked = CurrentSettings.ScanContinuously
-                    SetCap(CAP.CAP_AUTOFEED, TW_TRUE, RequestSource.SANE) 'XXX applications should set this, but they don't seem to.
-                End If
-
-                If Device_Appears_To_Have_Duplex() Then 'XXX account for a setting in the ini file
-                    SetCap(CAP.CAP_DUPLEX, TWDX.TWDX_1PASSDUPLEX, RequestSource.SANE)
-                End If
-
                 'Map SANE Well-Known Options
                 Dim minx, maxx, miny, maxy, res_dpi As Double
                 Dim xyunit As SANE_API.SANE_Unit = SANE_API.SANE_Unit.SANE_UNIT_NONE
                 For i As Integer = 1 To SANE.CurrentDevice.OptionDescriptors.Count - 1 'skip the first option, which is just the option count
-                    Dim TWAINcap As String = Nothing
-                    Dim tlx, tly, brx, bry As Double
-                    Select Case SANE.CurrentDevice.OptionDescriptors(i).name.ToLower
-                        Case "resolution"
-                            'TWAINcap = CAP.ICAP_XRESOLUTION.ToString & ", " & CAP.ICAP_YRESOLUTION.ToString & ", " & CAP.ICAP_XNATIVERESOLUTION.ToString & ", " & CAP.ICAP_YNATIVERESOLUTION.ToString
-                            res_dpi = SANE.CurrentDevice.OptionValues(i)(0)
-                            Dim caparray() As CAP = {CAP.ICAP_XRESOLUTION, CAP.ICAP_YRESOLUTION, CAP.ICAP_XNATIVERESOLUTION, CAP.ICAP_YNATIVERESOLUTION}
-                            For Each icap As CAP In caparray
-                                If Caps.ContainsKey(icap) Then
-                                    SetCap(icap, FloatToFIX32(res_dpi), RequestSource.SANE)
-                                    Dim cap As TwainCapability = Caps(icap)
-                                    Logger.Write(DebugLogger.Level.Debug, False, "Value type: " & SANE.CurrentDevice.OptionDescriptors(i).type.ToString)
-                                    Logger.Write(DebugLogger.Level.Debug, False, "Constraint type: " & SANE.CurrentDevice.OptionDescriptors(i).constraint_type.ToString)
+                    If (SANE.CurrentDevice.OptionDescriptors(i).type <> SANE_API.SANE_Value_Type.SANE_TYPE_GROUP) And (SANE.CurrentDevice.OptionDescriptors(i).type <> SANE_API.SANE_Value_Type.SANE_TYPE_BUTTON) Then
+                        If SANE.SANE_OPTION_IS_READABLE(SANE.CurrentDevice.OptionDescriptors(i).cap) Then
+                            Dim logstr As String = "Option '" & SANE.CurrentDevice.OptionDescriptors(i).name & "'"
+                            If (SANE.CurrentDevice.OptionValues(i).Length > 0) AndAlso (SANE.CurrentDevice.OptionValues(i)(0) IsNot Nothing) Then
+                                logstr += ", Value '" & SANE.CurrentDevice.OptionValues(i)(0).ToString & "'"
+                            End If
+                            Logger.Write(DebugLogger.Level.Debug, False, logstr)
+                            Dim TWAINcap As String = Nothing
+                            Dim tlx, tly, brx, bry As Double
+                            Select Case SANE.CurrentDevice.OptionDescriptors(i).name.ToLower
+                                Case "resolution"
+                                    'TWAINcap = CAP.ICAP_XRESOLUTION.ToString & ", " & CAP.ICAP_YRESOLUTION.ToString & ", " & CAP.ICAP_XNATIVERESOLUTION.ToString & ", " & CAP.ICAP_YNATIVERESOLUTION.ToString
+                                    res_dpi = SANE.CurrentDevice.OptionValues(i)(0)
+                                    Dim caparray() As CAP = {CAP.ICAP_XRESOLUTION, CAP.ICAP_YRESOLUTION, CAP.ICAP_XNATIVERESOLUTION, CAP.ICAP_YNATIVERESOLUTION}
+                                    For Each icap As CAP In caparray
+                                        If Caps.ContainsKey(icap) Then
+                                            SetCap(icap, FloatToFIX32(res_dpi), SetCapScope.BothValues, RequestSource.SANE)
+                                            Dim cap As TwainCapability = Caps(icap)
+                                            Logger.Write(DebugLogger.Level.Debug, False, "Value type: " & SANE.CurrentDevice.OptionDescriptors(i).type.ToString)
+                                            Logger.Write(DebugLogger.Level.Debug, False, "Constraint type: " & SANE.CurrentDevice.OptionDescriptors(i).constraint_type.ToString)
+                                            Select Case SANE.CurrentDevice.OptionDescriptors(i).constraint_type
+                                                Case SANE_API.SANE_Constraint_Type.SANE_CONSTRAINT_RANGE
+                                                    Try
+                                                        cap.ConstraintType = TWON.TWON_RANGE
+                                                        With cap.ConstraintRange.FIX32
+                                                            .ItemType = cap.DataType 'should always be TWTY_FIX32
+                                                            Select Case SANE.CurrentDevice.OptionDescriptors(i).type
+                                                                Case SANE_API.SANE_Value_Type.SANE_TYPE_FIXED
+                                                                    .MinValue = FloatToFIX32(SANE.SANE_UNFIX(SANE.CurrentDevice.OptionDescriptors(i).constraint.range.min))
+                                                                    .MaxValue = FloatToFIX32(SANE.SANE_UNFIX(SANE.CurrentDevice.OptionDescriptors(i).constraint.range.max))
+                                                                    .StepSize = FloatToFIX32(SANE.SANE_UNFIX(SANE.CurrentDevice.OptionDescriptors(i).constraint.range.quant))
+                                                                    .CurrentValue = cap.CurrentValue
+                                                                    .DefaultValue = cap.DefaultValue
+                                                                Case SANE_API.SANE_Value_Type.SANE_TYPE_INT
+                                                                    .MinValue = FloatToFIX32(CDbl(SANE.CurrentDevice.OptionDescriptors(i).constraint.range.min))
+                                                                    .MaxValue = FloatToFIX32(CDbl(SANE.CurrentDevice.OptionDescriptors(i).constraint.range.max))
+                                                                    .StepSize = FloatToFIX32(CDbl(SANE.CurrentDevice.OptionDescriptors(i).constraint.range.quant))
+                                                                    .CurrentValue = cap.CurrentValue
+                                                                    .DefaultValue = cap.DefaultValue
+                                                                Case Else
+                                                                    Throw New Exception("Invalid data type '" & SANE.CurrentDevice.OptionDescriptors(i).type & "'")
+                                                            End Select
+                                                            Logger.Write(DebugLogger.Level.Debug, False, "Min value: " & FIX32ToFloat(.MinValue).ToString)
+                                                            Logger.Write(DebugLogger.Level.Debug, False, "Max value: " & FIX32ToFloat(.MaxValue).ToString)
+                                                            Logger.Write(DebugLogger.Level.Debug, False, "Step size: " & FIX32ToFloat(.StepSize).ToString)
+                                                            Logger.Write(DebugLogger.Level.Debug, False, "Current value: " & FIX32ToFloat(.CurrentValue).ToString)
+                                                            Logger.Write(DebugLogger.Level.Debug, False, "Default value: " & FIX32ToFloat(.DefaultValue).ToString)
+                                                        End With
+                                                    Catch ex As Exception
+                                                        Logger.Write(DebugLogger.Level.Warn, False, "Error translating SANE range constraint for resolution: " & ex.Message)
+                                                    End Try
+                                                Case SANE_API.SANE_Constraint_Type.SANE_CONSTRAINT_WORD_LIST
+                                                    Try
+                                                        cap.ConstraintType = TWON.TWON_ENUMERATION
+                                                        cap.ConstraintValues = New ArrayList
+                                                        Select Case SANE.CurrentDevice.OptionDescriptors(i).type
+                                                            Case SANE_API.SANE_Value_Type.SANE_TYPE_FIXED, SANE_API.SANE_Value_Type.SANE_TYPE_INT
+                                                                For idx As Integer = 0 To SANE.CurrentDevice.OptionDescriptors(i).constraint.word_list.Length - 1
+                                                                    Dim val As TW_FIX32
+                                                                    If SANE.CurrentDevice.OptionDescriptors(i).type = SANE_API.SANE_Value_Type.SANE_TYPE_FIXED Then
+                                                                        val = FloatToFIX32(SANE.SANE_UNFIX(SANE.CurrentDevice.OptionDescriptors(i).constraint.word_list(idx)))
+                                                                    Else
+                                                                        val = FloatToFIX32(CDbl(SANE.CurrentDevice.OptionDescriptors(i).constraint.word_list(idx)))
+                                                                    End If
+                                                                    Logger.Write(DebugLogger.Level.Debug, False, "Adding value '" & FIX32ToFloat(val).ToString & "'")
+                                                                    cap.ConstraintValues.Add(val)
+                                                                Next
+                                                            Case Else
+                                                                Throw New Exception("Invalid data type '" & SANE.CurrentDevice.OptionDescriptors(i).type & "'")
+                                                        End Select
+                                                    Catch ex As Exception
+                                                        Logger.Write(DebugLogger.Level.Warn, False, "Error translating SANE word list constraint for resolution: " & ex.Message)
+                                                    End Try
+                                            End Select
+                                            Caps(icap) = cap
+                                        End If
+                                    Next
+
+                                    'ICAP_UNITS must be set to TWUN_INCHES since SANE 'resolution' is always in DPI.
+                                    SetCap(CAP.ICAP_UNITS, TWUN.TWUN_INCHES, SetCapScope.BothValues, RequestSource.SANE)
+                                Case "preview"  'No reason to map this
+                                Case "tl-x"
+                                    tlx = SANE.CurrentDevice.OptionValues(i)(0)
+                                Case "tl-y"
+                                    tly = SANE.CurrentDevice.OptionValues(i)(0)
+                                Case "br-x"
+                                    brx = SANE.CurrentDevice.OptionValues(i)(0)
                                     Select Case SANE.CurrentDevice.OptionDescriptors(i).constraint_type
                                         Case SANE_API.SANE_Constraint_Type.SANE_CONSTRAINT_RANGE
-                                            Try
-                                                cap.ConstraintType = TWON.TWON_RANGE
-                                                With cap.ConstraintRange.FIX32
-                                                    .ItemType = cap.DataType 'should always be TWTY_FIX32
-                                                    Select Case SANE.CurrentDevice.OptionDescriptors(i).type
-                                                        Case SANE_API.SANE_Value_Type.SANE_TYPE_FIXED
-                                                            .MinValue = FloatToFIX32(SANE.SANE_UNFIX(SANE.CurrentDevice.OptionDescriptors(i).constraint.range.min))
-                                                            .MaxValue = FloatToFIX32(SANE.SANE_UNFIX(SANE.CurrentDevice.OptionDescriptors(i).constraint.range.max))
-                                                            .StepSize = FloatToFIX32(SANE.SANE_UNFIX(SANE.CurrentDevice.OptionDescriptors(i).constraint.range.quant))
-                                                            .CurrentValue = cap.CurrentValue
-                                                            .DefaultValue = cap.DefaultValue
-                                                        Case SANE_API.SANE_Value_Type.SANE_TYPE_INT
-                                                            .MinValue = FloatToFIX32(CDbl(SANE.CurrentDevice.OptionDescriptors(i).constraint.range.min))
-                                                            .MaxValue = FloatToFIX32(CDbl(SANE.CurrentDevice.OptionDescriptors(i).constraint.range.max))
-                                                            .StepSize = FloatToFIX32(CDbl(SANE.CurrentDevice.OptionDescriptors(i).constraint.range.quant))
-                                                            .CurrentValue = cap.CurrentValue
-                                                            .DefaultValue = cap.DefaultValue
-                                                        Case Else
-                                                            Throw New Exception("Invalid data type '" & SANE.CurrentDevice.OptionDescriptors(i).type & "'")
-                                                    End Select
-                                                    Logger.Write(DebugLogger.Level.Debug, False, "Min value: " & FIX32ToFloat(.MinValue).ToString)
-                                                    Logger.Write(DebugLogger.Level.Debug, False, "Max value: " & FIX32ToFloat(.MaxValue).ToString)
-                                                    Logger.Write(DebugLogger.Level.Debug, False, "Step size: " & FIX32ToFloat(.StepSize).ToString)
-                                                    Logger.Write(DebugLogger.Level.Debug, False, "Current value: " & FIX32ToFloat(.CurrentValue).ToString)
-                                                    Logger.Write(DebugLogger.Level.Debug, False, "Default value: " & FIX32ToFloat(.DefaultValue).ToString)
-                                                End With
-                                            Catch ex As Exception
-                                                Logger.Write(DebugLogger.Level.Warn, False, "Error translating SANE range constraint for resolution: " & ex.Message)
-                                            End Try
+                                            Dim n As Integer = SANE.CurrentDevice.OptionDescriptors(i).constraint.range.min
+                                            minx = IIf(SANE.CurrentDevice.OptionDescriptors(i).type = SANE_API.SANE_Value_Type.SANE_TYPE_FIXED, SANE.SANE_UNFIX(n), n)
+                                            n = SANE.CurrentDevice.OptionDescriptors(i).constraint.range.max
+                                            maxx = IIf(SANE.CurrentDevice.OptionDescriptors(i).type = SANE_API.SANE_Value_Type.SANE_TYPE_FIXED, SANE.SANE_UNFIX(n), n)
                                         Case SANE_API.SANE_Constraint_Type.SANE_CONSTRAINT_WORD_LIST
-                                            Try
-                                                cap.ConstraintType = TWON.TWON_ENUMERATION
-                                                cap.ConstraintValues = New ArrayList
-                                                Select Case SANE.CurrentDevice.OptionDescriptors(i).type
-                                                    Case SANE_API.SANE_Value_Type.SANE_TYPE_FIXED, SANE_API.SANE_Value_Type.SANE_TYPE_INT
-                                                        For idx As Integer = 0 To SANE.CurrentDevice.OptionDescriptors(i).constraint.word_list.Length - 1
-                                                            Dim val As TW_FIX32
-                                                            If SANE.CurrentDevice.OptionDescriptors(i).type = SANE_API.SANE_Value_Type.SANE_TYPE_FIXED Then
-                                                                val = FloatToFIX32(SANE.SANE_UNFIX(SANE.CurrentDevice.OptionDescriptors(i).constraint.word_list(idx)))
-                                                            Else
-                                                                val = FloatToFIX32(CDbl(SANE.CurrentDevice.OptionDescriptors(i).constraint.word_list(idx)))
-                                                            End If
-                                                            Logger.Write(DebugLogger.Level.Debug, False, "Adding value '" & FIX32ToFloat(val).ToString & "'")
-                                                            cap.ConstraintValues.Add(val)
-                                                        Next
-                                                    Case Else
-                                                        Throw New Exception("Invalid data type '" & SANE.CurrentDevice.OptionDescriptors(i).type & "'")
-                                                End Select
-                                            Catch ex As Exception
-                                                Logger.Write(DebugLogger.Level.Warn, False, "Error translating SANE word list constraint for resolution: " & ex.Message)
-                                            End Try
+                                            Dim Words(SANE.CurrentDevice.OptionDescriptors(i).constraint.word_list.Length - 1) As Integer
+                                            Array.Copy(SANE.CurrentDevice.OptionDescriptors(i).constraint.word_list, Words, Words.Length)
+                                            Array.Sort(Words)
+                                            minx = IIf(SANE.CurrentDevice.OptionDescriptors(i).type = SANE_API.SANE_Value_Type.SANE_TYPE_FIXED, SANE.SANE_UNFIX(Words(0)), Words(0))
+                                            maxx = IIf(SANE.CurrentDevice.OptionDescriptors(i).type = SANE_API.SANE_Value_Type.SANE_TYPE_FIXED, SANE.SANE_UNFIX(Words(Words.Length - 1)), Words(Words.Length - 1))
                                     End Select
-                                    Caps(icap) = cap
-                                End If
-                            Next
-
-                            'ICAP_UNITS must be set to TWUN_INCHES since SANE 'resolution' is always in DPI.
-                            SetCap(CAP.ICAP_UNITS, TWUN.TWUN_INCHES, RequestSource.SANE)
-                        Case "preview"  'No reason to map this
-                        Case "tl-x"
-                            tlx = SANE.CurrentDevice.OptionValues(i)(0)
-                        Case "tl-y"
-                            tly = SANE.CurrentDevice.OptionValues(i)(0)
-                        Case "br-x"
-                            brx = SANE.CurrentDevice.OptionValues(i)(0)
-                            Select Case SANE.CurrentDevice.OptionDescriptors(i).constraint_type
-                                Case SANE_API.SANE_Constraint_Type.SANE_CONSTRAINT_RANGE
-                                    Dim n As Integer = SANE.CurrentDevice.OptionDescriptors(i).constraint.range.min
-                                    minx = IIf(SANE.CurrentDevice.OptionDescriptors(i).type = SANE_API.SANE_Value_Type.SANE_TYPE_FIXED, SANE.SANE_UNFIX(n), n)
-                                    n = SANE.CurrentDevice.OptionDescriptors(i).constraint.range.max
-                                    maxx = IIf(SANE.CurrentDevice.OptionDescriptors(i).type = SANE_API.SANE_Value_Type.SANE_TYPE_FIXED, SANE.SANE_UNFIX(n), n)
-                                Case SANE_API.SANE_Constraint_Type.SANE_CONSTRAINT_WORD_LIST
-                                    Dim Words(SANE.CurrentDevice.OptionDescriptors(i).constraint.word_list.Length - 1) As Integer
-                                    Array.Copy(SANE.CurrentDevice.OptionDescriptors(i).constraint.word_list, Words, Words.Length)
-                                    Array.Sort(Words)
-                                    minx = IIf(SANE.CurrentDevice.OptionDescriptors(i).type = SANE_API.SANE_Value_Type.SANE_TYPE_FIXED, SANE.SANE_UNFIX(Words(0)), Words(0))
-                                    maxx = IIf(SANE.CurrentDevice.OptionDescriptors(i).type = SANE_API.SANE_Value_Type.SANE_TYPE_FIXED, SANE.SANE_UNFIX(Words(Words.Length - 1)), Words(Words.Length - 1))
+                                    xyunit = SANE.CurrentDevice.OptionDescriptors(i).unit
+                                Case "br-y"
+                                    bry = SANE.CurrentDevice.OptionValues(i)(0)
+                                    Select Case SANE.CurrentDevice.OptionDescriptors(i).constraint_type
+                                        Case SANE_API.SANE_Constraint_Type.SANE_CONSTRAINT_RANGE
+                                            Dim n As Integer = SANE.CurrentDevice.OptionDescriptors(i).constraint.range.min
+                                            miny = IIf(SANE.CurrentDevice.OptionDescriptors(i).type = SANE_API.SANE_Value_Type.SANE_TYPE_FIXED, SANE.SANE_UNFIX(n), n)
+                                            n = SANE.CurrentDevice.OptionDescriptors(i).constraint.range.max
+                                            maxy = IIf(SANE.CurrentDevice.OptionDescriptors(i).type = SANE_API.SANE_Value_Type.SANE_TYPE_FIXED, SANE.SANE_UNFIX(n), n)
+                                        Case SANE_API.SANE_Constraint_Type.SANE_CONSTRAINT_WORD_LIST
+                                            Dim Words(SANE.CurrentDevice.OptionDescriptors(i).constraint.word_list.Length - 1) As Integer
+                                            Array.Copy(SANE.CurrentDevice.OptionDescriptors(i).constraint.word_list, Words, Words.Length)
+                                            Array.Sort(Words)
+                                            miny = IIf(SANE.CurrentDevice.OptionDescriptors(i).type = SANE_API.SANE_Value_Type.SANE_TYPE_FIXED, SANE.SANE_UNFIX(Words(0)), Words(0))
+                                            miny = IIf(SANE.CurrentDevice.OptionDescriptors(i).type = SANE_API.SANE_Value_Type.SANE_TYPE_FIXED, SANE.SANE_UNFIX(Words(Words.Length - 1)), Words(Words.Length - 1))
+                                    End Select
+                                Case Else
+                                    'process any SANE-->TWAIN mappings to make TWAIN defaults match SANE defaults
+                                    'Select Case SANE.CurrentDevice.OptionDescriptors(i).type
+                                    '   Case SANE_API.SANE_Value_Type.SANE_TYPE_GROUP, SANE_API.SANE_Value_Type.SANE_TYPE_BUTTON
+                                    'ignore
+                                    'Case Else
+                                    MyForm.SetTWAINCaps(SANE.CurrentDevice.OptionDescriptors(i), SANE.CurrentDevice.OptionValues(i), True)
+                                    'End Select
                             End Select
-                            xyunit = SANE.CurrentDevice.OptionDescriptors(i).unit
-                        Case "br-y"
-                            bry = SANE.CurrentDevice.OptionValues(i)(0)
-                            Select Case SANE.CurrentDevice.OptionDescriptors(i).constraint_type
-                                Case SANE_API.SANE_Constraint_Type.SANE_CONSTRAINT_RANGE
-                                    Dim n As Integer = SANE.CurrentDevice.OptionDescriptors(i).constraint.range.min
-                                    miny = IIf(SANE.CurrentDevice.OptionDescriptors(i).type = SANE_API.SANE_Value_Type.SANE_TYPE_FIXED, SANE.SANE_UNFIX(n), n)
-                                    n = SANE.CurrentDevice.OptionDescriptors(i).constraint.range.max
-                                    maxy = IIf(SANE.CurrentDevice.OptionDescriptors(i).type = SANE_API.SANE_Value_Type.SANE_TYPE_FIXED, SANE.SANE_UNFIX(n), n)
-                                Case SANE_API.SANE_Constraint_Type.SANE_CONSTRAINT_WORD_LIST
-                                    Dim Words(SANE.CurrentDevice.OptionDescriptors(i).constraint.word_list.Length - 1) As Integer
-                                    Array.Copy(SANE.CurrentDevice.OptionDescriptors(i).constraint.word_list, Words, Words.Length)
-                                    Array.Sort(Words)
-                                    miny = IIf(SANE.CurrentDevice.OptionDescriptors(i).type = SANE_API.SANE_Value_Type.SANE_TYPE_FIXED, SANE.SANE_UNFIX(Words(0)), Words(0))
-                                    miny = IIf(SANE.CurrentDevice.OptionDescriptors(i).type = SANE_API.SANE_Value_Type.SANE_TYPE_FIXED, SANE.SANE_UNFIX(Words(Words.Length - 1)), Words(Words.Length - 1))
-                            End Select
-                    End Select
+                        Else
+                            Logger.Write(DebugLogger.Level.Debug, False, "Unreadable Option '" & SANE.CurrentDevice.OptionDescriptors(i).name & "'")
+                        End If
+                    End If
                 Next
 
                 If (maxx > 0) And (maxy > 0) And ((xyunit = SANE_API.SANE_Unit.SANE_UNIT_PIXEL) Or (xyunit = SANE_API.SANE_Unit.SANE_UNIT_MM)) Then
@@ -4754,9 +4780,19 @@ Namespace TWAIN_VB
                     End Select
                     Logger.Write(DebugLogger.Level.Debug, False, "physical size = " & PhysicalWidth.ToString & " x " & PhysicalLength.ToString & " inches")
 
-                    SetCap(CAP.ICAP_UNITS, TWUN.TWUN_INCHES, RequestSource.SANE)
-                    SetCap(CAP.ICAP_PHYSICALWIDTH, FloatToFIX32(PhysicalWidth), RequestSource.SANE)
-                    SetCap(CAP.ICAP_PHYSICALHEIGHT, FloatToFIX32(PhysicalLength), RequestSource.SANE)
+                    SetCap(CAP.ICAP_UNITS, TWUN.TWUN_INCHES, SetCapScope.BothValues, RequestSource.SANE)
+                    SetCap(CAP.ICAP_PHYSICALWIDTH, FloatToFIX32(PhysicalWidth), SetCapScope.BothValues, RequestSource.SANE)
+                    SetCap(CAP.ICAP_PHYSICALHEIGHT, FloatToFIX32(PhysicalLength), SetCapScope.BothValues, RequestSource.SANE)
+                End If
+
+                If Not CurrentSettings.ScanContinuouslyUserConfigured Then
+                    CurrentSettings.ScanContinuously = Device_Appears_To_Have_ADF() AndAlso Device_Appears_To_Have_ADF_Enabled()
+                    'MyForm.CheckBoxBatchMode.Checked = CurrentSettings.ScanContinuously
+                    SetCap(CAP.CAP_AUTOFEED, TW_TRUE, SetCapScope.CurrentValue, RequestSource.SANE) 'XXX applications should set this, but they don't seem to.
+                End If
+
+                If Device_Appears_To_Have_Duplex() Then 'XXX account for a setting in the ini file
+                    SetCap(CAP.CAP_DUPLEX, TWDX.TWDX_1PASSDUPLEX, SetCapScope.CurrentValue, RequestSource.SANE)
                 End If
 
             Catch ex As Exception

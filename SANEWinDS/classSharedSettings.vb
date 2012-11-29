@@ -54,10 +54,13 @@ Public Class SharedSettings
     Public SANE As SANESettings
     Public TWAIN As TWAINSettings
 
+    Public PageSizes As New ArrayList
+
     Public Sub New(ByVal _UseRoamingAppData As Boolean)
         If Not Initialized Then
             UseRoamingAppData = _UseRoamingAppData
             ReadSettings()
+            InitPageSizes()
             Initialized = True
         End If
     End Sub
@@ -434,6 +437,71 @@ Public Class SharedSettings
             If fs IsNot Nothing Then fs.Close()
         End Try
         '
+    End Sub
 
+    Private Sub InitPageSizes()
+        Me.PageSizes.Clear()
+        With Me.PageSizes
+            .Add(New PageSize(0, 0, "None", TWAIN_VB.TWSS.TWSS_NONE))
+            .Add(New PageSize(-1, -1, "Maximum", TWAIN_VB.TWSS.TWSS_MAXSIZE))
+
+            .Add(New PageSize(8.5, 11.0, "Letter", TWAIN_VB.TWSS.TWSS_USLETTER))
+            .Add(New PageSize(8.5, 14.0, "Legal", TWAIN_VB.TWSS.TWSS_USLEGAL))
+            .Add(New PageSize(11.0, 17.0, "Ledger", TWAIN_VB.TWSS.TWSS_USLEDGER))
+            .Add(New PageSize(7.25, 10.5, "Executive", TWAIN_VB.TWSS.TWSS_USEXECUTIVE))
+            .Add(New PageSize(5.5, 8.5, "Statement", TWAIN_VB.TWSS.TWSS_USSTATEMENT))
+            .Add(New PageSize(2.0, 3.5, "Business Card", TWAIN_VB.TWSS.TWSS_BUSINESSCARD))
+
+            .Add(New PageSize(33.11, 46.81, "A0", TWAIN_VB.TWSS.TWSS_A0))
+            .Add(New PageSize(23.39, 33.11, "A1", TWAIN_VB.TWSS.TWSS_A1))
+            .Add(New PageSize(16.54, 23.39, "A2", TWAIN_VB.TWSS.TWSS_A2))
+            .Add(New PageSize(11.69, 16.54, "A3", TWAIN_VB.TWSS.TWSS_A3))
+            .Add(New PageSize(8.27, 11.69, "A4", TWAIN_VB.TWSS.TWSS_A4))
+            .Add(New PageSize(5.83, 8.27, "A5", TWAIN_VB.TWSS.TWSS_A5))
+            .Add(New PageSize(4.13, 5.83, "A6", TWAIN_VB.TWSS.TWSS_A6))
+            .Add(New PageSize(2.91, 4.13, "A7", TWAIN_VB.TWSS.TWSS_A7))
+            .Add(New PageSize(2.05, 2.91, "A8", TWAIN_VB.TWSS.TWSS_A8))
+            .Add(New PageSize(1.46, 2.05, "A9", TWAIN_VB.TWSS.TWSS_A9))
+            .Add(New PageSize(1.02, 1.46, "A10", TWAIN_VB.TWSS.TWSS_A10))
+
+            .Add(New PageSize(39.37, 55.67, "B0", TWAIN_VB.TWSS.TWSS_ISOB0))
+            .Add(New PageSize(27.83, 39.37, "B1", TWAIN_VB.TWSS.TWSS_ISOB1))
+            .Add(New PageSize(19.69, 27.83, "B2", TWAIN_VB.TWSS.TWSS_ISOB2))
+            .Add(New PageSize(13.9, 19.69, "B3", TWAIN_VB.TWSS.TWSS_ISOB3))
+            .Add(New PageSize(9.84, 13.9, "B4", TWAIN_VB.TWSS.TWSS_ISOB4))
+            .Add(New PageSize(6.93, 9.84, "B5", TWAIN_VB.TWSS.TWSS_ISOB5))
+            .Add(New PageSize(4.92, 6.93, "B6", TWAIN_VB.TWSS.TWSS_ISOB6))
+            .Add(New PageSize(3.46, 4.92, "B7", TWAIN_VB.TWSS.TWSS_ISOB7))
+            .Add(New PageSize(2.44, 3.46, "B8", TWAIN_VB.TWSS.TWSS_ISOB8))
+            .Add(New PageSize(1.73, 2.44, "B9", TWAIN_VB.TWSS.TWSS_ISOB9))
+            .Add(New PageSize(1.22, 1.73, "B10", TWAIN_VB.TWSS.TWSS_ISOB10))
+
+            .Add(New PageSize(36.1, 51.06, "C0", TWAIN_VB.TWSS.TWSS_C0))
+            .Add(New PageSize(25.51, 36.1, "C1", TWAIN_VB.TWSS.TWSS_C1))
+            .Add(New PageSize(18.03, 25.51, "C2", TWAIN_VB.TWSS.TWSS_C2))
+            .Add(New PageSize(12.76, 18.03, "C3", TWAIN_VB.TWSS.TWSS_C3))
+            .Add(New PageSize(9.02, 12.76, "C4", TWAIN_VB.TWSS.TWSS_C4))
+            .Add(New PageSize(6.38, 9.02, "C5", TWAIN_VB.TWSS.TWSS_C5))
+            .Add(New PageSize(4.49, 6.38, "C6", TWAIN_VB.TWSS.TWSS_C6))
+            .Add(New PageSize(3.19, 4.49, "C7", TWAIN_VB.TWSS.TWSS_C7))
+            .Add(New PageSize(2.24, 3.19, "C8", TWAIN_VB.TWSS.TWSS_C8))
+            .Add(New PageSize(1.57, 2.24, "C9", TWAIN_VB.TWSS.TWSS_C9))
+            .Add(New PageSize(1.1, 1.57, "C10", TWAIN_VB.TWSS.TWSS_C10))
+
+            .Add(New PageSize(40.55, 57.32, "JIS B0", TWAIN_VB.TWSS.TWSS_JISB0))
+            .Add(New PageSize(28.66, 40.55, "JIS B1", TWAIN_VB.TWSS.TWSS_JISB1))
+            .Add(New PageSize(20.28, 28.66, "JIS B2", TWAIN_VB.TWSS.TWSS_JISB2))
+            .Add(New PageSize(14.33, 20.28, "JIS B3", TWAIN_VB.TWSS.TWSS_JISB3))
+            .Add(New PageSize(10.12, 14.33, "JIS B4", TWAIN_VB.TWSS.TWSS_JISB4))
+            .Add(New PageSize(7.17, 10.12, "JIS B5", TWAIN_VB.TWSS.TWSS_JISB5))
+            .Add(New PageSize(5.04, 7.17, "JIS B6", TWAIN_VB.TWSS.TWSS_JISB6))
+            .Add(New PageSize(3.58, 5.04, "JIS B7", TWAIN_VB.TWSS.TWSS_JISB7))
+            .Add(New PageSize(2.52, 3.58, "JIS B8", TWAIN_VB.TWSS.TWSS_JISB8))
+            .Add(New PageSize(1.77, 2.52, "JIS B9", TWAIN_VB.TWSS.TWSS_JISB9))
+            .Add(New PageSize(1.26, 1.77, "JIS B10", TWAIN_VB.TWSS.TWSS_JISB10))
+
+            .Add(New PageSize(66.22, 93.62, "4A0", TWAIN_VB.TWSS.TWSS_4A0))
+            .Add(New PageSize(46.81, 66.22, "2A0", TWAIN_VB.TWSS.TWSS_2A0))
+        End With
     End Sub
 End Class

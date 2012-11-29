@@ -18,7 +18,7 @@
 '
 Imports System.Runtime.InteropServices
 Namespace TWAIN_VB
-
+#Region "TWAIN.h"
     ' /****************************************************************************
     ' * Structure Definitions                                                    *
     ' ****************************************************************************/
@@ -2063,27 +2063,9 @@ Namespace TWAIN_VB
         Dim ProductName As String
     End Structure
     ' Imports System.Runtime.InteropServices
-
+#End Region
 
     Public Class DS_Entry_Pump
-        'Public Structure TW_VERSION
-        '    Dim MajorNum As UInt16      '/* Major revision number of the software. */
-        '    Dim MinorNum As UInt16      '/* Incremental revision number of the software. */
-        '    Dim Language As UInt16      '/* e.g. TWLG_SWISSFRENCH */
-        '    Dim Country As UInt16       '/* e.g. TWCY_SWITZERLAND */
-        '    Dim Info As String '*32     '/* e.g. "1.0b3 Beta release" */  
-        'End Structure
-
-        'Public Structure TW_IDENTITY
-        '    Dim Id As UInt32
-        '    Dim Version As TW_VERSION
-        '    Dim ProtocolMajor As UInt16
-        '    Dim ProtocolMinor As UInt16
-        '    Dim SupportedGroups As UInt32
-        '    Dim Manufacturer As String
-        '    Dim ProductFamily As String
-        '    Dim ProductName As String
-        'End Structure
         Private Enum TwainState As Integer
             None = 0
             DSM_Pre_Session = 1
@@ -2232,6 +2214,7 @@ Namespace TWAIN_VB
             Logger.Write(DebugLogger.Level.Info, False, message)
         End Sub
 
+#Region "TWAIN Message handler"
         '        Public Function Message_To_DS(ByVal _Origin As TW_IDENTITY, ByVal _DG As UInt32, ByVal _DAT As UInt32, ByVal _MSG As UInt16, ByVal _pData As IntPtr) As Int16
         Public Function Message_To_DS(ByVal _pOrigin As IntPtr, ByVal _DG As UInt32, ByVal _DAT As UInt32, ByVal _MSG As UInt16, ByVal _pData As IntPtr) As Int16
             '/**********************************************************************
@@ -4140,6 +4123,7 @@ Namespace TWAIN_VB
                     Return MyResult
             End Select
         End Function
+#End Region
 
         Private Function SafeString(ByVal o As Object) As String
             If o Is Nothing Then Return "Nothing"
@@ -4498,13 +4482,13 @@ Namespace TWAIN_VB
                 'End If
 
                 If (ReqCap.Capability = CAP.ICAP_PHYSICALHEIGHT) Or (ReqCap.Capability = CAP.ICAP_PHYSICALWIDTH) Then
-                    PageSizes(TWSS.TWSS_NONE).Width = Me.FIX32ToFloat(Caps(CAP.ICAP_PHYSICALWIDTH).CurrentValue)
-                    PageSizes(TWSS.TWSS_MAXSIZE).Width = Me.FIX32ToFloat(Caps(CAP.ICAP_PHYSICALWIDTH).CurrentValue)
-                    PageSizes(TWSS.TWSS_NONE).Height = Me.FIX32ToFloat(Caps(CAP.ICAP_PHYSICALHEIGHT).CurrentValue)
-                    PageSizes(TWSS.TWSS_MAXSIZE).Height = Me.FIX32ToFloat(Caps(CAP.ICAP_PHYSICALHEIGHT).CurrentValue)
+                    Me.PageSizes(TWSS.TWSS_NONE).Width = Me.FIX32ToFloat(Caps(CAP.ICAP_PHYSICALWIDTH).CurrentValue)
+                    Me.PageSizes(TWSS.TWSS_MAXSIZE).Width = Me.FIX32ToFloat(Caps(CAP.ICAP_PHYSICALWIDTH).CurrentValue)
+                    Me.PageSizes(TWSS.TWSS_NONE).Height = Me.FIX32ToFloat(Caps(CAP.ICAP_PHYSICALHEIGHT).CurrentValue)
+                    Me.PageSizes(TWSS.TWSS_MAXSIZE).Height = Me.FIX32ToFloat(Caps(CAP.ICAP_PHYSICALHEIGHT).CurrentValue)
 
                     SupportedSizes = New ArrayList
-                    For Each ss In PageSizes
+                    For Each ss In Me.PageSizes
                         Select Case ss.Key
                             Case TWSS.TWSS_NONE, TWSS.TWSS_MAXSIZE
                                 SupportedSizes.Add(ss.Key)
@@ -4834,70 +4818,9 @@ Namespace TWAIN_VB
 
         Private Sub InitPageSizes()
             Me.PageSizes = New System.Collections.Generic.SortedDictionary(Of TWSS, PageSize)
-
-            With Me.PageSizes
-                .Add(TWSS.TWSS_NONE, New PageSize(0, 0))
-                .Add(TWSS.TWSS_MAXSIZE, New PageSize(-1, -1))
-
-                .Add(TWSS.TWSS_USLETTER, New PageSize(8.5, 11.0))
-                .Add(TWSS.TWSS_USLEGAL, New PageSize(8.5, 14.0))
-                .Add(TWSS.TWSS_USLEDGER, New PageSize(11.0, 17.0))
-                .Add(TWSS.TWSS_USEXECUTIVE, New PageSize(7.25, 10.5))
-                .Add(TWSS.TWSS_USSTATEMENT, New PageSize(5.5, 8.5))
-                .Add(TWSS.TWSS_BUSINESSCARD, New PageSize(2.0, 3.5))
-
-                .Add(TWSS.TWSS_A0, New PageSize(33.11, 46.81))
-                .Add(TWSS.TWSS_A1, New PageSize(23.39, 33.11))
-                .Add(TWSS.TWSS_A2, New PageSize(16.54, 23.39))
-                .Add(TWSS.TWSS_A3, New PageSize(11.69, 16.54))
-                .Add(TWSS.TWSS_A4, New PageSize(8.27, 11.69))
-                .Add(TWSS.TWSS_A5, New PageSize(5.83, 8.27))
-                .Add(TWSS.TWSS_A6, New PageSize(4.13, 5.83))
-                .Add(TWSS.TWSS_A7, New PageSize(2.91, 4.13))
-                .Add(TWSS.TWSS_A8, New PageSize(2.05, 2.91))
-                .Add(TWSS.TWSS_A9, New PageSize(1.46, 2.05))
-                .Add(TWSS.TWSS_A10, New PageSize(1.02, 1.46))
-
-                .Add(TWSS.TWSS_ISOB0, New PageSize(39.37, 55.67))
-                .Add(TWSS.TWSS_ISOB1, New PageSize(27.83, 39.37))
-                .Add(TWSS.TWSS_ISOB2, New PageSize(19.69, 27.83))
-                .Add(TWSS.TWSS_ISOB3, New PageSize(13.9, 19.69))
-                .Add(TWSS.TWSS_ISOB4, New PageSize(9.84, 13.9))
-                .Add(TWSS.TWSS_ISOB5, New PageSize(6.93, 9.84))
-                .Add(TWSS.TWSS_ISOB6, New PageSize(4.92, 6.93))
-                .Add(TWSS.TWSS_ISOB7, New PageSize(3.46, 4.92))
-                .Add(TWSS.TWSS_ISOB8, New PageSize(2.44, 3.46))
-                .Add(TWSS.TWSS_ISOB9, New PageSize(1.73, 2.44))
-                .Add(TWSS.TWSS_ISOB10, New PageSize(1.22, 1.73))
-
-                .Add(TWSS.TWSS_C0, New PageSize(36.1, 51.06))
-                .Add(TWSS.TWSS_C1, New PageSize(25.51, 36.1))
-                .Add(TWSS.TWSS_C2, New PageSize(18.03, 25.51))
-                .Add(TWSS.TWSS_C3, New PageSize(12.76, 18.03))
-                .Add(TWSS.TWSS_C4, New PageSize(9.02, 12.76))
-                .Add(TWSS.TWSS_C5, New PageSize(6.38, 9.02))
-                .Add(TWSS.TWSS_C6, New PageSize(4.49, 6.38))
-                .Add(TWSS.TWSS_C7, New PageSize(3.19, 4.49))
-                .Add(TWSS.TWSS_C8, New PageSize(2.24, 3.19))
-                .Add(TWSS.TWSS_C9, New PageSize(1.57, 2.24))
-                .Add(TWSS.TWSS_C10, New PageSize(1.1, 1.57))
-
-                .Add(TWSS.TWSS_JISB0, New PageSize(40.55, 57.32))
-                .Add(TWSS.TWSS_JISB1, New PageSize(28.66, 40.55))
-                .Add(TWSS.TWSS_JISB2, New PageSize(20.28, 28.66))
-                .Add(TWSS.TWSS_JISB3, New PageSize(14.33, 20.28))
-                .Add(TWSS.TWSS_JISB4, New PageSize(10.12, 14.33))
-                .Add(TWSS.TWSS_JISB5, New PageSize(7.17, 10.12))
-                .Add(TWSS.TWSS_JISB6, New PageSize(5.04, 7.17))
-                .Add(TWSS.TWSS_JISB7, New PageSize(3.58, 5.04))
-                .Add(TWSS.TWSS_JISB8, New PageSize(2.52, 3.58))
-                .Add(TWSS.TWSS_JISB9, New PageSize(1.77, 2.52))
-                .Add(TWSS.TWSS_JISB10, New PageSize(1.26, 1.77))
-
-                .Add(TWSS.TWSS_4A0, New PageSize(66.22, 93.62))
-                .Add(TWSS.TWSS_2A0, New PageSize(46.81, 66.22))
-            End With
-
+            For Each ps As PageSize In CurrentSettings.PageSizes
+                Me.PageSizes.Add(ps.TWAIN_TWSS, ps)
+            Next
         End Sub
 
         Private Sub InitCaps()

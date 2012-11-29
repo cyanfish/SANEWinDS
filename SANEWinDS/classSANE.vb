@@ -17,7 +17,7 @@
 '   along with SANEWinDS.  If not, see <http://www.gnu.org/licenses/>.
 '
 Class SANE_API
-
+#Region "SANE.h"
     Friend Const SANE_FALSE = 0
     Friend Const SANE_TRUE = 1
 
@@ -113,6 +113,7 @@ Class SANE_API
     Private Function SANE_VERSION_CODE(ByVal major As Int32, ByVal minor As Int32, ByVal build As Int32) As Int32
         Return ((major And &HFF) << 24) Or ((minor And &HFF) << 16) Or ((build And &HFFFF) << 0)
     End Function
+
     Public Function SANE_VERSION_MAJOR(ByVal code As Int32) As Int32
         Return (code >> 24) And &HFF
     End Function
@@ -176,6 +177,14 @@ Class SANE_API
         SANE_UNIT_MICROSECOND = 6   '/* value is micro seconds */
     End Enum
 
+    Friend Structure SANE_Device
+        Dim name As String          '/* unique device name */
+        Dim vendor As String        '/* device vendor string */
+        Dim model As String     '/* device model name */
+        Dim type As String          '/* device type (e.g., "flatbed scanner") */
+    End Structure
+#End Region
+
     Friend Function UnitString(ByVal Unit As SANE_Unit) As String
         Select Case Unit
             Case SANE_Unit.SANE_UNIT_NONE
@@ -196,13 +205,6 @@ Class SANE_API
                 Return Nothing
         End Select
     End Function
-
-    Friend Structure SANE_Device
-        Dim name As String          '/* unique device name */
-        Dim vendor As String        '/* device vendor string */
-        Dim model As String     '/* device model name */
-        Dim type As String          '/* device type (e.g., "flatbed scanner") */
-    End Structure
 
     Private Enum SANE_Net_Procedure_Number
         SANE_NET_INIT = 0
@@ -239,6 +241,7 @@ Class SANE_API
         Dim OptionDescriptors() As SANE_Option_Descriptor
         Dim OptionValues() As Object
         Dim ScanUntilError As Boolean 'Use ADF
+        Dim SupportedPageSizes As ArrayList
     End Structure
     'Friend TCP_Timeout_ms As Integer = 5000
     Friend CurrentDevice As CurrentDeviceInfo

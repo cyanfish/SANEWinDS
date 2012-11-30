@@ -284,6 +284,7 @@ Class SANE_API
 
         If CurrentSettings Is Nothing Then CurrentSettings = New SharedSettings(UseRoamingAppData)
 
+        'CurrentDevice.SupportedPageSizes = New ArrayList
     End Sub
 
     Friend Function OptionValueArrayLength(ByVal Option_Size As Int32, ByVal Option_Type As SANE_Value_Type) As Int32
@@ -304,24 +305,6 @@ Class SANE_API
                 Return 0
         End Select
     End Function
-
-    'Private Function GetBytes(ByVal int As Int32) As Byte()
-    '    Dim ptr As IntPtr
-    '    Dim bytes(0 To 3) As Byte
-    '    Try
-    '        ptr = System.Runtime.InteropServices.Marshal.AllocHGlobal(4)
-    '        System.Runtime.InteropServices.Marshal.WriteInt32(ptr, int)
-    '        For offs As Integer = 0 To 3
-    '            bytes(offs) = System.Runtime.InteropServices.Marshal.ReadByte(ptr, offs)
-    '        Next
-    '        GetBytes = bytes
-    '    Catch ex As Exception
-    '        'XXX
-    '        Throw
-    '    Finally
-    '        If ptr <> IntPtr.Zero Then System.Runtime.InteropServices.Marshal.FreeHGlobal(ptr)
-    '    End Try
-    'End Function
 
     Friend Sub Serialize(ByVal Data As Object, ByRef Buffer() As Byte, ByRef Offset As Integer, ByVal DataType As Sane_DataType)
         Select Case DataType
@@ -380,58 +363,6 @@ Class SANE_API
         Me.Serialize(Data, Buffer, Buffer.Length, DataType)
     End Sub
 
-    'Friend Function DeSerialize(ByRef Stream As System.Net.Sockets.NetworkStream, ByRef Buffer() As Byte, ByRef Offset As Integer, ByVal DataType As Sane_DataType) As Object
-    '    Select Case DataType
-    '        Case Sane_DataType.SANE_Word
-    '            Dim int As Int32 = 0
-    '            If CheckBuffer(Stream, Buffer, Offset, 4) Then
-    '                int = BitConverter.ToInt32(Buffer, Offset)
-    '                Offset += 4
-    '                Return Me.SwapEndian(int)
-    '            Else
-    '                Throw New Exception("Server sent incomplete data")
-    '            End If
-    '        Case Sane_DataType.SANE_Byte
-    '            Dim byt As Byte = 0
-    '            If CheckBuffer(Stream, Buffer, Offset, 1) Then
-    '                byt = Buffer(Offset)
-    '                Offset += 1
-    '                Return byt
-    '            Else
-    '                Throw New Exception("Server sent incomplete data")
-    '            End If
-    '        Case Sane_DataType.SANE_Char
-    '            Dim c As String
-    '            If CheckBuffer(Stream, Buffer, Offset, 1) Then
-    '                c = BytesToString(Buffer, Offset, 1)
-    '                Offset += 1
-    '                Return c
-    '            Else
-    '                Throw New Exception("Server sent incomplete data")
-    '            End If
-    '        Case Sane_DataType.SANE_String
-    '            Dim strlen As Int32
-    '            Dim str As String
-    '            If CheckBuffer(Stream, Buffer, Offset, 4) Then
-    '                strlen = Me.DeSerialize(Stream, Buffer, Offset, Sane_DataType.SANE_Word)
-    '                If CheckBuffer(Stream, Buffer, Offset, strlen) Then
-    '                    str = BytesToString(Buffer, Offset, strlen - 1) 'ignore the terminating null
-    '                    Offset += strlen
-    '                    Return str
-    '                Else
-    '                    Throw New Exception("Server sent incomplete data")
-    '                End If
-    '            Else
-    '                Throw New Exception("Server sent incomplete data")
-    '            End If
-    '        Case Sane_DataType.SANE_Boolean
-    '            Dim bool As Boolean
-    '            bool = CBool(Me.DeSerialize(Stream, Buffer, Offset, Sane_DataType.SANE_Word))
-    '            Return bool
-    '        Case Else
-    '            Throw New ArgumentException("Unimplemented Sane_DataType: " & DataType)
-    '    End Select
-    'End Function
     Friend Function DeSerialize(ByRef Stream As System.Net.Sockets.NetworkStream, ByRef Buffer As System.IO.MemoryStream, ByVal DataType As Sane_DataType) As Object
         Select Case DataType
             Case Sane_DataType.SANE_Word
@@ -482,22 +413,6 @@ Class SANE_API
         End Select
     End Function
 
-    'Private Function CheckBuffer(ByRef Stream As System.Net.Sockets.NetworkStream, ByRef Buffer() As Byte, ByRef Offset As Integer, ByVal DataLen As Integer) As Boolean
-    '    If Offset + DataLen < Buffer.Length Then
-    '        Return True
-    '    Else
-    '        Dim OriginalBufferLen As Integer = Buffer.Length
-    '        Dim BufferLengthIncrement As Integer = 8096
-    '        ReDim Preserve Buffer(Buffer.Length + BufferLengthIncrement - 1)
-    '        Dim bytes As Integer
-    '        Try
-    '            bytes = Stream.Read(Buffer, OriginalBufferLen, Buffer.Length - OriginalBufferLen)
-    '        Catch ex As Exception
-    '            Debug.Print("CheckBuffer(): " & ex.Message)
-    '        End Try
-    '        Return CBool(Offset + DataLen < OriginalBufferLen + bytes)
-    '    End If
-    'End Function
     Private Function CheckBuffer(ByRef Stream As System.Net.Sockets.NetworkStream, ByRef Buffer As System.IO.MemoryStream, ByVal DataLen As Integer) As Boolean
         If Buffer.Position + DataLen <= Buffer.Length Then
             Return True
@@ -507,13 +422,6 @@ Class SANE_API
         End If
     End Function
 
-    'Private Function BytesToString(ByRef buffer As Byte(), ByVal offset As Integer, ByVal length As Integer) As String
-    '    Dim s As String = Nothing
-    '    For i = offset To offset + length - 1
-    '        s += Chr(buffer(i))
-    '    Next
-    '    Return s
-    'End Function
     Private Function BytesToString(ByRef buffer As System.IO.MemoryStream, ByVal length As Integer) As String
         Dim s As String = Nothing
         For i = 0 To length - 1
@@ -534,45 +442,11 @@ Class SANE_API
     Private Function ReadEntireStream(ByRef stream As System.Net.Sockets.NetworkStream, ByRef rstream As System.IO.MemoryStream) As Integer
         Do
             StreamReadAndCopy(stream, rstream)
-
-            'XXX isn't there a better way to handle a slow network?
-            'For i As Integer = 0 To 5
-            '    If stream.DataAvailable Then
-            '        Exit For
-            '    Else
-            '        System.Threading.Thread.Sleep(100)
-            '    End If
-            'Next
-
         Loop While stream.DataAvailable
         Return rstream.Length
     End Function
-    'Private Function ReadEntireStream(ByRef stream As System.Net.Sockets.NetworkStream, ByRef Buffer As Byte()) As Integer
-    '    Dim BufferLength As Integer = Buffer.Length
-    '    Dim BufferLengthIncrement As Integer = BufferLength 'grow it in increments of its original size
-    '    Dim offs As Integer = 0
-    '    Do
-    '        Dim bytes As Integer = stream.Read(Buffer, offs, Buffer.Length - offs)
-    '        offs += bytes
-    '        If offs >= Buffer.Length Then
-    '            ReDim Preserve Buffer(Buffer.Length + BufferLengthIncrement - 1)
-    '        End If
-
-    '        'XXX isn't there a better way to handle a slow network?
-    '        For i As Integer = 0 To 5
-    '            If Not stream.DataAvailable Then
-    '                System.Threading.Thread.Sleep(100)
-    '            End If
-    '        Next
-
-    '    Loop While stream.DataAvailable
-    '    Return offs
-    'End Function
 
     Friend Function Net_Init(ByRef TCPClient As System.Net.Sockets.TcpClient, ByVal Username As String) As SANE_Status
-        'IN: TCPClient, UserName
-        'OUT: SANE_STATUS (as result)
-
         Logger.Write(DebugLogger.Level.Debug, False, "")
         Dim stream As System.Net.Sockets.NetworkStream = Nothing
         Dim rstream As New System.IO.MemoryStream
@@ -615,9 +489,6 @@ Class SANE_API
     End Function
 
     Friend Function Net_Get_Devices(ByRef TCPClient As System.Net.Sockets.TcpClient, ByRef DeviceList() As SANE_Device) As SANE_Status
-        'IN: TCPClient
-        'OUT: DeviceList, SANE_STATUS (as result)
-
         Logger.Write(DebugLogger.Level.Debug, False, "")
 
         Dim stream As System.Net.Sockets.NetworkStream = Nothing
@@ -929,7 +800,6 @@ Class SANE_API
                                 Dim ArrayLen As Int32 = Me.DeSerialize(stream, rstream, Sane_DataType.SANE_Word)
                                 ReDim Reply.values(ArrayLen - 1)
                             Case SANE_Value_Type.SANE_TYPE_FIXED
-                                'XXX
                                 Dim ArrayLen As Int32 = Me.DeSerialize(stream, rstream, Sane_DataType.SANE_Word)
                                 ReDim Reply.values(ArrayLen - 1)
                                 For i As Integer = 0 To ArrayLen - 1

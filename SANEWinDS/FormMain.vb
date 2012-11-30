@@ -745,6 +745,10 @@ Public Class FormMain
     Public Sub SetUserDefaults()
         'read all DefaultValue= settings from the backend.ini and set live values
         Logger.Write(DebugLogger.Level.Debug, False, "begin")
+
+        SANE.CurrentDevice.SupportedPageSizes = New ArrayList
+        Me.ComboBoxPageSize.Items.Clear()
+
         If CurrentSettings.SANE.CurrentDeviceINI IsNot Nothing Then
             Try
                 Dim opt As String = CurrentSettings.SANE.CurrentDeviceINI.GetKeyValue("General", "ScanContinuously")
@@ -761,44 +765,7 @@ Public Class FormMain
             Me.CheckBoxBatchMode.Checked = CurrentSettings.ScanContinuously
             'XXX need to set CAP_FEEDERENABLED here or does an event fire?
 
-            Try
-                Dim opt As String = CurrentSettings.SANE.CurrentDeviceINI.GetKeyValue("General", "MaxPaperWidth")
-                If opt IsNot Nothing Then
-                    If opt.Length Then
-                        Dim d As Double
-                        If Double.TryParse(opt, d) Then
-                            'XXX populate currentdevice.supportedpapersizes
-                            If TWAIN_Is_Active Then
-                                Me.TWAINInstance.SetCap(TWAIN_VB.CAP.ICAP_PHYSICALWIDTH, d, TWAIN_VB.DS_Entry_Pump.SetCapScope.BothValues, TWAIN_VB.DS_Entry_Pump.RequestSource.SANE)
-                            End If
-                        Else
-                            Throw New Exception("Unable to interpret '" & opt & "' as a decimal number")
-                        End If
-                    End If
-                End If
-            Catch ex As Exception
-                Logger.Write(DebugLogger.Level.Error_, False, "Exception reading MaxPaperWidth setting from backend.ini: " & ex.Message)
-            End Try
-            Try
-                Dim opt As String = CurrentSettings.SANE.CurrentDeviceINI.GetKeyValue("General", "MaxPaperHeight")
-                If opt IsNot Nothing Then
-                    If opt.Length Then
-                        Dim d As Double
-                        If Double.TryParse(opt, d) Then
-                            'XXX populate currentdevice.supportedpapersizes
-                            If TWAIN_Is_Active Then
-                                Me.TWAINInstance.SetCap(TWAIN_VB.CAP.ICAP_PHYSICALHEIGHT, d, TWAIN_VB.DS_Entry_Pump.SetCapScope.BothValues, TWAIN_VB.DS_Entry_Pump.RequestSource.SANE)
-                            End If
-                        Else
-                            Throw New Exception("Unable to interpret '" & opt & "' as a decimal number")
-                        End If
-                    End If
-                End If
-            Catch ex As Exception
-                Logger.Write(DebugLogger.Level.Error_, False, "Exception reading MaxPaperHeight setting from backend.ini: " & ex.Message)
-            End Try
-     
-            For i As Integer = 1 To SANE.CurrentDevice.OptionDescriptors.Count - 1 'skip the first option, which is just the option count
+             For i As Integer = 1 To SANE.CurrentDevice.OptionDescriptors.Count - 1 'skip the first option, which is just the option count
                 Select Case SANE.CurrentDevice.OptionDescriptors(i).type
                     Case SANE_API.SANE_Value_Type.SANE_TYPE_GROUP, SANE_API.SANE_Value_Type.SANE_TYPE_BUTTON
                         'no need to map these options
@@ -821,6 +788,87 @@ Public Class FormMain
                         End If
                 End Select
             Next
+
+            'Set user-specified maximum page dimensions.
+            'It's important to do this after iterating through the options and setting user-specified defaults because some backends have their own 
+            '   page size options that constrain br-x and br-y values, which would prevent us from setting br-x and br-y to their maximum supported sizes.
+            '   In that case the backend.ini should set the page size options to their maximum values so br-x and br-y can be set to their maximums.
+            Dim MaxWidth As Double = 0
+            Dim MaxHeight As Double = 0
+            Try
+                Dim opt As String = CurrentSettings.SANE.CurrentDeviceINI.GetKeyValue("General", "MaxPaperWidth")
+                If opt IsNot Nothing Then
+                    If opt.Length Then
+                        If Double.TryParse(opt, MaxWidth) Then
+                            If TWAIN_Is_Active Then
+                                Me.TWAINInstance.SetCap(TWAIN_VB.CAP.ICAP_PHYSICALWIDTH, MaxWidth, TWAIN_VB.DS_Entry_Pump.SetCapScope.BothValues, TWAIN_VB.DS_Entry_Pump.RequestSource.SANE)
+                            End If
+                        Else
+                            Throw New Exception("Unable to interpret '" & opt & "' as a decimal number")
+                        End If
+                    End If
+                End If
+            Catch ex As Exception
+                Logger.Write(DebugLogger.Level.Error_, False, "Exception reading MaxPaperWidth setting from backend.ini: " & ex.Message)
+            End Try
+            Try
+                Dim opt As String = CurrentSettings.SANE.CurrentDeviceINI.GetKeyValue("General", "MaxPaperHeight")
+                If opt IsNot Nothing Then
+                    If opt.Length Then
+                        If Double.TryParse(opt, MaxHeight) Then
+                            If TWAIN_Is_Active Then
+                                Me.TWAINInstance.SetCap(TWAIN_VB.CAP.ICAP_PHYSICALHEIGHT, MaxHeight, TWAIN_VB.DS_Entry_Pump.SetCapScope.BothValues, TWAIN_VB.DS_Entry_Pump.RequestSource.SANE)
+                            End If
+                        Else
+                            Throw New Exception("Unable to interpret '" & opt & "' as a decimal number")
+                        End If
+                    End If
+                End If
+            Catch ex As Exception
+                Logger.Write(DebugLogger.Level.Error_, False, "Exception reading MaxPaperHeight setting from backend.ini: " & ex.Message)
+            End Try
+            If (MaxWidth = 0) And (MaxHeight = 0) Then
+                Try
+                    Select Case Me.GetSANEOptionUnit("br-x")
+                        Case SANE_API.SANE_Unit.SANE_UNIT_MM
+                            MaxWidth = MMToInches(Me.GetSANEOption("br-x")(0))
+                            MaxHeight = MMToInches(Me.GetSANEOption("br-y")(0))
+                        Case SANE_API.SANE_Unit.SANE_UNIT_PIXEL
+                            'XXX this should be recalculated whenever the resolution changes
+                            Dim res_dpi As Double = Me.GetSANEOption("resolution")(0)
+                            If res_dpi > 0 Then
+                                MaxWidth = Me.GetSANEOption("br-x")(0) / res_dpi
+                                MaxHeight = Me.GetSANEOption("br-y")(0) / res_dpi
+                            End If
+                        Case Else
+                            Throw New Exception("'br-x' unit must be either SANE_UNIT_MM or SANE_UNIT_PIXEL")
+                    End Select
+                Catch ex As Exception
+                    Logger.Write(DebugLogger.Level.Warn, False, "'MaxPaperWidth' and 'MaxPaperHeight' are not configured in backend.ini and backend doesn't properly support 'br-x' and 'br-y'; unable to determine which page sizes are supported.")
+                End Try
+            End If
+
+            If (MaxWidth > 0) And (MaxHeight > 0) Then
+                For Each ps As PageSize In CurrentSettings.PageSizes
+                    Select Case ps.TWAIN_TWSS 'We may not be using TWAIN, but this is a more reliable property than .Name.
+                        Case TWAIN_VB.TWSS.TWSS_NONE, TWAIN_VB.TWSS.TWSS_MAXSIZE
+                            ps.Width = MaxWidth
+                            ps.Height = MaxHeight
+                            Logger.Write(DebugLogger.Level.Info, False, "Supported page size: '" & ps.Name & "'")
+                            SANE.CurrentDevice.SupportedPageSizes.Add(ps)
+                            Me.ComboBoxPageSize.Items.Add(ps.Name)
+                        Case Else
+                            If ps.Width <= Math.Round(MaxWidth, 2, MidpointRounding.AwayFromZero) Then
+                                If ps.Height <= Math.Round(MaxHeight, 2, MidpointRounding.AwayFromZero) Then
+                                    Logger.Write(DebugLogger.Level.Info, False, "Supported page size: '" & ps.Name & "'")
+                                    SANE.CurrentDevice.SupportedPageSizes.Add(ps)
+                                    Me.ComboBoxPageSize.Items.Add(ps.Name)
+                                End If
+                            End If
+                    End Select
+                Next
+            End If
+            '
             Me.PanelOpt.Controls.Clear()
         Else
             Logger.Write(DebugLogger.Level.Warn, False, "Backend configuration file uninitialized; backend-specific default values were not configured")
@@ -866,6 +914,16 @@ Public Class FormMain
             Logger.Write(DebugLogger.Level.Warn, False, "Backend configuration file uninitialized; SANE to TWAIN capability mappings were not configured")
         End If
     End Sub
+
+    Public Function GetSANEOptionUnit(ByVal OptionName As String) As Integer
+        For Index As Integer = 1 To SANE.CurrentDevice.OptionDescriptors.Length - 1
+            Dim od As SANE_API.SANE_Option_Descriptor = SANE.CurrentDevice.OptionDescriptors(Index)
+            If od.name.ToUpper.Trim = OptionName.ToUpper.Trim Then
+                Return SANE.CurrentDevice.OptionDescriptors(Index).unit
+            End If
+        Next
+        Return SANE_API.SANE_Unit.SANE_UNIT_NONE
+    End Function
 
     Public Function GetSANEOption(ByVal OptionName As String) As Object()
         For Index As Integer = 0 To SANE.CurrentDevice.OptionDescriptors.Length - 1
@@ -1074,5 +1132,49 @@ Public Class FormMain
 
     End Sub
 
+    Private Sub ComboBoxPageSize_SelectedIndexChanged(sender As Object, e As EventArgs) Handles ComboBoxPageSize.SelectedIndexChanged
+        Dim br_x, br_y As Double
+        Try
+            Dim ps As PageSize = Nothing
+            For i As Integer = 0 To SANE.CurrentDevice.SupportedPageSizes.Count - 1
+                If SANE.CurrentDevice.SupportedPageSizes(i).Name = Me.ComboBoxPageSize.SelectedItem Then
+                    ps = SANE.CurrentDevice.SupportedPageSizes(i)
+                End If
+            Next
+
+            If ps Is Nothing Then Throw New Exception("Selected page size is missing from the collection")
+
+            If TWAIN_Is_Active Then
+                'Setting this cap will cause tl-x, tl-y, br-x, and br-y to be set.
+                Me.TWAINInstance.SetCap(TWAIN_VB.CAP.ICAP_SUPPORTEDSIZES, ps.TWAIN_TWSS, TWAIN_VB.DS_Entry_Pump.SetCapScope.CurrentValue, TWAIN_VB.DS_Entry_Pump.RequestSource.TWAIN)
+            Else
+                br_x = ps.Width
+                br_y = ps.Height
+
+                Select Case Me.GetSANEOptionUnit("br-x")
+                    Case SANE_API.SANE_Unit.SANE_UNIT_MM
+                        br_x = InchesToMM(br_x)
+                        br_y = InchesToMM(br_y)
+                    Case SANE_API.SANE_Unit.SANE_UNIT_PIXEL
+                        Dim res_dpi As Double = CDbl(Me.GetSANEOption("resolution")(0))
+                        br_x = br_x * res_dpi
+                        br_y = br_y * res_dpi
+                    Case Else
+                        Throw New Exception("Page coordinates must use unit SANE_UNIT_MM or SANE_UNIT_PIXEL")
+                End Select
+
+                If Me.SetSANEOption("tl-x", {0}) AndAlso _
+                    Me.SetSANEOption("tl-y", {0}) AndAlso _
+                    Me.SetSANEOption("br-x", {br_x}) AndAlso _
+                    Me.SetSANEOption("br-y", {br_y}) Then
+                    'ok
+                Else
+                    Throw New Exception("Unable to set SANE option")
+                End If
+            End If
+        Catch ex As Exception
+            Logger.Write(DebugLogger.Level.Error_, True, "Error setting page dimensions: " & ex.Message)
+        End Try
+    End Sub
 End Class
 

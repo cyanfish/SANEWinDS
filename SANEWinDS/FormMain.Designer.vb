@@ -39,6 +39,8 @@ Partial Class FormMain
         Me.SplitContainerOptions = New System.Windows.Forms.SplitContainer()
         Me.ComboBoxDestination = New System.Windows.Forms.ComboBox()
         Me.Label1 = New System.Windows.Forms.Label()
+        Me.ComboBoxPageSize = New System.Windows.Forms.ComboBox()
+        Me.Label4 = New System.Windows.Forms.Label()
         CType(Me.SplitContainerOptions, System.ComponentModel.ISupportInitialize).BeginInit()
         Me.SplitContainerOptions.Panel1.SuspendLayout()
         Me.SplitContainerOptions.Panel2.SuspendLayout()
@@ -183,11 +185,32 @@ Partial Class FormMain
         Me.Label1.TabIndex = 30
         Me.Label1.Text = "Destination"
         '
+        'ComboBoxPageSize
+        '
+        Me.ComboBoxPageSize.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList
+        Me.ComboBoxPageSize.FormattingEnabled = True
+        Me.ComboBoxPageSize.Location = New System.Drawing.Point(293, 314)
+        Me.ComboBoxPageSize.Name = "ComboBoxPageSize"
+        Me.ComboBoxPageSize.Size = New System.Drawing.Size(133, 21)
+        Me.ComboBoxPageSize.TabIndex = 8
+        '
+        'Label4
+        '
+        Me.Label4.Anchor = CType((System.Windows.Forms.AnchorStyles.Bottom Or System.Windows.Forms.AnchorStyles.Left), System.Windows.Forms.AnchorStyles)
+        Me.Label4.AutoSize = True
+        Me.Label4.Location = New System.Drawing.Point(232, 317)
+        Me.Label4.Name = "Label4"
+        Me.Label4.Size = New System.Drawing.Size(55, 13)
+        Me.Label4.TabIndex = 53
+        Me.Label4.Text = "Page Size"
+        '
         'FormMain
         '
         Me.AutoScaleDimensions = New System.Drawing.SizeF(6.0!, 13.0!)
         Me.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font
         Me.ClientSize = New System.Drawing.Size(617, 377)
+        Me.Controls.Add(Me.Label4)
+        Me.Controls.Add(Me.ComboBoxPageSize)
         Me.Controls.Add(Me.Label1)
         Me.Controls.Add(Me.ComboBoxDestination)
         Me.Controls.Add(Me.ButtonHost)
@@ -226,5 +249,7 @@ Partial Class FormMain
     Friend WithEvents SplitContainerOptions As System.Windows.Forms.SplitContainer
     Friend WithEvents Label1 As System.Windows.Forms.Label
     Friend WithEvents ComboBoxDestination As System.Windows.Forms.ComboBox
+    Friend WithEvents ComboBoxPageSize As System.Windows.Forms.ComboBox
+    Friend WithEvents Label4 As System.Windows.Forms.Label
 
 End Class

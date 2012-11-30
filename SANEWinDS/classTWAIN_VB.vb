@@ -2358,15 +2358,7 @@ Namespace TWAIN_VB
                             .FrameNumber = 1
                             '
                             Dim tl_x, tl_y, br_x, br_y As Double
-                            Dim unit As SANE_API.SANE_Unit = SANE_API.SANE_Unit.SANE_UNIT_NONE
-
-                            For i As Integer = 1 To SANE.CurrentDevice.OptionDescriptors.Length - 1
-                                If SANE.CurrentDevice.OptionDescriptors(i).name.ToLower = "tl-x" Then
-                                    unit = SANE.CurrentDevice.OptionDescriptors(i).unit
-                                    Exit For
-                                End If
-                            Next
-
+                            Dim unit As SANE_API.SANE_Unit = MyForm.GetSANEOptionUnit("tl-x")
                             Dim o As Object
                             o = MyForm.GetSANEOption("tl-x")
                             If o IsNot Nothing Then
@@ -2492,13 +2484,7 @@ Namespace TWAIN_VB
                         End If
 
                         'XXX should consider SANE constraints and snap up to the next larger increment.
-                        Dim unit As SANE_API.SANE_Unit
-                        For i As Integer = 1 To SANE.CurrentDevice.OptionDescriptors.Length - 1
-                            If SANE.CurrentDevice.OptionDescriptors(i).name.ToLower = "tl-x" Then
-                                unit = SANE.CurrentDevice.OptionDescriptors(i).unit
-                                Exit For
-                            End If
-                        Next
+                        Dim unit As SANE_API.SANE_Unit = MyForm.GetSANEOptionUnit("tl-x")
                         Select Case unit
                             Case SANE_API.SANE_Unit.SANE_UNIT_MM
                                 tl_x = InchesToMM(tl_x)
@@ -4488,18 +4474,21 @@ Namespace TWAIN_VB
                     Me.PageSizes(TWSS.TWSS_MAXSIZE).Height = Me.FIX32ToFloat(Caps(CAP.ICAP_PHYSICALHEIGHT).CurrentValue)
 
                     SupportedSizes = New ArrayList
-                    For Each ss In Me.PageSizes
-                        Select Case ss.Key
-                            Case TWSS.TWSS_NONE, TWSS.TWSS_MAXSIZE
-                                SupportedSizes.Add(ss.Key)
-                            Case Else
-                                If ss.Value.Width <= Math.Round(Me.FIX32ToFloat(Caps(CAP.ICAP_PHYSICALWIDTH).CurrentValue), 2, MidpointRounding.AwayFromZero) Then
-                                    If ss.Value.Height <= Math.Round(Me.FIX32ToFloat(Caps(CAP.ICAP_PHYSICALHEIGHT).CurrentValue), 2, MidpointRounding.AwayFromZero) Then
-                                        SupportedSizes.Add(ss.Key)
-                                    End If
-                                End If
-                        End Select
+                    For Each ps As PageSize In SANE.CurrentDevice.SupportedPageSizes
+                        SupportedSizes.Add(ps.TWAIN_TWSS)
                     Next
+                    '    For Each ss In Me.PageSizes
+                    '        Select Case ss.Key
+                    '            Case TWSS.TWSS_NONE, TWSS.TWSS_MAXSIZE
+                    '                SupportedSizes.Add(ss.Key)
+                    '            Case Else
+                    '                If ss.Value.Width <= Math.Round(Me.FIX32ToFloat(Caps(CAP.ICAP_PHYSICALWIDTH).CurrentValue), 2, MidpointRounding.AwayFromZero) Then
+                    '                    If ss.Value.Height <= Math.Round(Me.FIX32ToFloat(Caps(CAP.ICAP_PHYSICALHEIGHT).CurrentValue), 2, MidpointRounding.AwayFromZero) Then
+                    '                        SupportedSizes.Add(ss.Key)
+                    '                    End If
+                    '                End If
+                    '        End Select
+                    '    Next
                 End If
 
                 If Source <> RequestSource.SANE Then 'if it came from SANE we don't want to give it back or we'll have an endless loop
@@ -4552,16 +4541,7 @@ Namespace TWAIN_VB
                         If Me.PageSizes.ContainsKey(NewValue) Then
                             If Me.PageSizes(NewValue).Width > 0 AndAlso Me.PageSizes(NewValue).Height > 0 Then
                                 Dim br_x, br_y As Double
-                                Dim unit As SANE_API.SANE_Unit = SANE_API.SANE_Unit.SANE_UNIT_NONE
-
-                                'the unit is required to be the same on all of tl-x, tl-y, br-x, br-y.
-                                For i = 1 To SANE.CurrentDevice.OptionDescriptors.Length - 1
-                                    If SANE.CurrentDevice.OptionDescriptors(i).name.ToLower = "tl-x" Then
-                                        unit = SANE.CurrentDevice.OptionDescriptors(i).unit
-                                        Exit For
-                                    End If
-                                Next
-
+                                Dim unit As SANE_API.SANE_Unit = MyForm.GetSANEOptionUnit("tl-x")
                                 Select Case unit
                                     Case SANE_API.SANE_Unit.SANE_UNIT_PIXEL
                                         'XXX no way to test this without a backend that reports dimensions in pixels
@@ -4610,7 +4590,6 @@ Namespace TWAIN_VB
             Try
                 'Map SANE Well-Known Options
                 Dim minx, maxx, miny, maxy, res_dpi As Double
-                Dim xyunit As SANE_API.SANE_Unit = SANE_API.SANE_Unit.SANE_UNIT_NONE
                 For i As Integer = 1 To SANE.CurrentDevice.OptionDescriptors.Count - 1 'skip the first option, which is just the option count
                     If (SANE.CurrentDevice.OptionDescriptors(i).type <> SANE_API.SANE_Value_Type.SANE_TYPE_GROUP) And (SANE.CurrentDevice.OptionDescriptors(i).type <> SANE_API.SANE_Value_Type.SANE_TYPE_BUTTON) Then
                         If SANE.SANE_OPTION_IS_READABLE(SANE.CurrentDevice.OptionDescriptors(i).cap) Then
@@ -4712,7 +4691,6 @@ Namespace TWAIN_VB
                                             minx = IIf(SANE.CurrentDevice.OptionDescriptors(i).type = SANE_API.SANE_Value_Type.SANE_TYPE_FIXED, SANE.SANE_UNFIX(Words(0)), Words(0))
                                             maxx = IIf(SANE.CurrentDevice.OptionDescriptors(i).type = SANE_API.SANE_Value_Type.SANE_TYPE_FIXED, SANE.SANE_UNFIX(Words(Words.Length - 1)), Words(Words.Length - 1))
                                     End Select
-                                    xyunit = SANE.CurrentDevice.OptionDescriptors(i).unit
                                 Case "br-y"
                                     bry = SANE.CurrentDevice.OptionValues(i)(0)
                                     Select Case SANE.CurrentDevice.OptionDescriptors(i).constraint_type
@@ -4743,6 +4721,7 @@ Namespace TWAIN_VB
                     End If
                 Next
 
+                Dim xyunit As SANE_API.SANE_Unit = MyForm.GetSANEOptionUnit("tl-x")
                 If (maxx > 0) And (maxy > 0) And ((xyunit = SANE_API.SANE_Unit.SANE_UNIT_PIXEL) Or (xyunit = SANE_API.SANE_Unit.SANE_UNIT_MM)) Then
                     Dim PhysicalWidth As Double = maxx - minx
                     Dim PhysicalLength As Double = maxy - miny
@@ -4786,22 +4765,6 @@ Namespace TWAIN_VB
             End Try
             Logger.Write(DebugLogger.Level.Debug, False, "end")
         End Sub
-
-        Private Function InchesToMM(ByVal Inches As Double) As Double
-            Return Inches * 25.4
-        End Function
-
-        Private Function MMToInches(ByVal mm As Double) As Double
-            Return mm / 25.4
-        End Function
-
-        Private Function InchesToCM(ByVal Inches As Double) As Double
-            Return Inches * 2.54
-        End Function
-
-        Private Function CMToInches(ByVal cm As Double) As Double
-            Return cm / 2.54
-        End Function
 
         Public Function FloatToFIX32(ByVal floater As Double) As TW_FIX32
             Dim Fix32_value As TW_FIX32

@@ -24,6 +24,22 @@ Module modGlobals
     Public Logger As DebugLogger
     Public net As System.Net.Sockets.TcpClient
 
+    Public Function InchesToMM(ByVal Inches As Double) As Double
+        Return Inches * 25.4
+    End Function
+
+    Public Function MMToInches(ByVal mm As Double) As Double
+        Return mm / 25.4
+    End Function
+
+    Public Function InchesToCM(ByVal Inches As Double) As Double
+        Return Inches * 2.54
+    End Function
+
+    Public Function CMToInches(ByVal cm As Double) As Double
+        Return cm / 2.54
+    End Function
+
     Public Function AcquireImage(ByRef bmp As Bitmap) As SANE_API.SANE_Status
         Logger.Write(DebugLogger.Level.Debug, False, "")
         Dim Status As SANE_API.SANE_Status = 0

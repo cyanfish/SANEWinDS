@@ -4234,7 +4234,7 @@ Namespace TWAIN_VB
                 Else
                     EnumTypeStr = "Nothing"
                 End If
-                Logger.Write(DebugLogger.Level.Debug, False, "Capability: '" & Capability.ToString & "', Target Type = '" & ReqCap.DataType.ToString & "', Target Enum = '" & EnumTypeStr & "', NewValue Type = '" & NewValue.GetType.ToString & "', NewValue = '" & NewValue.ToString & "'")
+                Logger.Write(DebugLogger.Level.Debug, False, "Capability: '" & Capability.ToString & ", Scope = '" & Scope.ToString & "', Target Type = '" & ReqCap.DataType.ToString & "', Target Enum = '" & EnumTypeStr & "', NewValue Type = '" & NewValue.GetType.ToString & "', NewValue = '" & NewValue.ToString & "'")
 
                 Dim OldValStr As String = Nothing
                 Dim NewValStr As String = Nothing

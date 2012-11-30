@@ -868,6 +868,31 @@ Public Class FormMain
                     End Select
                 Next
             End If
+
+            Try
+                Dim opt As String = CurrentSettings.SANE.CurrentDeviceINI.GetKeyValue("General", "DefaultPaperSize")
+                If opt IsNot Nothing Then
+                    If opt.Length Then
+                        Dim Found_Default As Boolean = False
+                        For Each ps As PageSize In SANE.CurrentDevice.SupportedPageSizes
+                            If ps.Name.ToUpper.Trim = opt.ToUpper.Trim Then
+                                Found_Default = True
+                                Logger.Write(DebugLogger.Level.Info, False, "Setting default page size to '" & opt.Trim & "'")
+                                Me.ComboBoxPageSize.SelectedItem = ps.Name
+                                If TWAIN_Is_Active Then
+                                    Me.TWAINInstance.SetCap(TWAIN_VB.CAP.ICAP_SUPPORTEDSIZES, ps.TWAIN_TWSS, TWAIN_VB.DS_Entry_Pump.SetCapScope.DefaultValue, TWAIN_VB.DS_Entry_Pump.RequestSource.SANE)
+                                End If
+                                Exit For
+                            End If
+                        Next
+                        If Not Found_Default Then
+                            Logger.Write(DebugLogger.Level.Warn, False, "Default page size '" & opt.Trim & "' is not in the list of supported sizes for this device")
+                        End If
+                    End If
+                End If
+            Catch ex As Exception
+                Logger.Write(DebugLogger.Level.Error_, False, "Exception reading MaxPaperWidth setting from backend.ini: " & ex.Message)
+            End Try
             '
             Me.PanelOpt.Controls.Clear()
         Else

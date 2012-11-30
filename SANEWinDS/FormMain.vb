@@ -765,7 +765,7 @@ Public Class FormMain
             Me.CheckBoxBatchMode.Checked = CurrentSettings.ScanContinuously
             'XXX need to set CAP_FEEDERENABLED here or does an event fire?
 
-             For i As Integer = 1 To SANE.CurrentDevice.OptionDescriptors.Count - 1 'skip the first option, which is just the option count
+            For i As Integer = 1 To SANE.CurrentDevice.OptionDescriptors.Count - 1 'skip the first option, which is just the option count
                 Select Case SANE.CurrentDevice.OptionDescriptors(i).type
                     Case SANE_API.SANE_Value_Type.SANE_TYPE_GROUP, SANE_API.SANE_Value_Type.SANE_TYPE_BUTTON
                         'no need to map these options
@@ -1009,17 +1009,13 @@ Public Class FormMain
 
                 Array.Copy(OptReply.values, SANE.CurrentDevice.OptionValues(OptionIndex), OptReply.values.Length)
 
-                If OptReply.info And SANE_API.SANE_INFO_RELOAD_OPTIONS Then
-                    GetOpts(False)
-                Else
-                    'Me.DisplayOption(Me.PanelOpt, OptionIndex)
-                    If Me.TreeViewOptions.SelectedNode IsNot Nothing Then
-                        If Me.TreeViewOptions.SelectedNode.Tag IsNot Nothing Then
-                            Me.DisplayOption(Me.PanelOpt, Me.TreeViewOptions.SelectedNode.Tag)
-                        End If
-                    Else
-                        Me.PanelOpt.Controls.Clear()
+                If OptReply.info And SANE_API.SANE_INFO_RELOAD_OPTIONS Then Me.GetOpts(False)
+                If Me.TreeViewOptions.SelectedNode IsNot Nothing Then
+                    If Me.TreeViewOptions.SelectedNode.Tag IsNot Nothing Then
+                        Me.DisplayOption(Me.PanelOpt, Me.TreeViewOptions.SelectedNode.Tag)
                     End If
+                Else
+                    Me.PanelOpt.Controls.Clear()
                 End If
 
                 If Me.TWAIN_Is_Active Then
@@ -1139,6 +1135,7 @@ Public Class FormMain
             For i As Integer = 0 To SANE.CurrentDevice.SupportedPageSizes.Count - 1
                 If SANE.CurrentDevice.SupportedPageSizes(i).Name = Me.ComboBoxPageSize.SelectedItem Then
                     ps = SANE.CurrentDevice.SupportedPageSizes(i)
+                    Exit For
                 End If
             Next
 
@@ -1163,9 +1160,9 @@ Public Class FormMain
                         Throw New Exception("Page coordinates must use unit SANE_UNIT_MM or SANE_UNIT_PIXEL")
                 End Select
 
-                If Me.SetSANEOption("tl-x", {0}) AndAlso _
-                    Me.SetSANEOption("tl-y", {0}) AndAlso _
-                    Me.SetSANEOption("br-x", {br_x}) AndAlso _
+                If Me.SetSANEOption("tl-x", {0}) And _
+                    Me.SetSANEOption("tl-y", {0}) And _
+                    Me.SetSANEOption("br-x", {br_x}) And _
                     Me.SetSANEOption("br-y", {br_y}) Then
                     'ok
                 Else

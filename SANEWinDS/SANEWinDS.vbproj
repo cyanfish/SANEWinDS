@@ -97,6 +97,9 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="classDIB.vb" />
+    <Compile Include="classDoubleBufferedPanel.vb">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="classINIFile.vb" />
     <Compile Include="classLogger.vb" />
     <Compile Include="classPageSize.vb" />

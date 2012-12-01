@@ -24,7 +24,7 @@ Partial Class FormMain
     Private Sub InitializeComponent()
         Me.components = New System.ComponentModel.Container()
         Dim resources As System.ComponentModel.ComponentResourceManager = New System.ComponentModel.ComponentResourceManager(GetType(FormMain))
-        Me.PanelOpt = New DoubleBufferedPanel 'System.Windows.Forms.Panel()
+        Me.PanelOpt = New SANEWinDS.DoubleBufferedPanel 'System.Windows.Forms.Panel()
         Me.TreeViewOptions = New System.Windows.Forms.TreeView()
         Me.CheckBoxBatchMode = New System.Windows.Forms.CheckBox()
         Me.ToolTip1 = New System.Windows.Forms.ToolTip(Me.components)
@@ -234,7 +234,7 @@ Partial Class FormMain
         Me.PerformLayout()
 
     End Sub
-    Friend WithEvents PanelOpt As DoubleBufferedPanel 'System.Windows.Forms.Panel
+    Friend WithEvents PanelOpt As SANEWinDS.DoubleBufferedPanel 'System.Windows.Forms.Panel
     Friend WithEvents CheckBoxBatchMode As System.Windows.Forms.CheckBox
     Friend WithEvents ToolTip1 As System.Windows.Forms.ToolTip
     Friend WithEvents TreeViewOptions As System.Windows.Forms.TreeView

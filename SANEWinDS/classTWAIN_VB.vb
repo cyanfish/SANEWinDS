@@ -3211,45 +3211,51 @@ Namespace TWAIN_VB
                         Case CAP.ICAP_SUPPORTEDSIZES
                             Select Case _MSG
                                 Case MSG.MSG_GET
-                                    Dim cap_enum As TW_ENUMERATION
-                                    cap_enum.ItemType = TWTY.TWTY_UINT16
-                                    cap_enum.NumItems = SupportedSizes.Count
-                                    Try
-                                        cap_enum.CurrentIndex = SupportedSizes.IndexOf(Caps(tw_cap.Cap).CurrentValue)
-                                    Catch
-                                        cap_enum.CurrentIndex = SupportedSizes.IndexOf(TWSS.TWSS_NONE)
-                                    End Try
-                                    Try
-                                        cap_enum.DefaultIndex = SupportedSizes.IndexOf(Caps(tw_cap.Cap).DefaultValue)
-                                    Catch
-                                        cap_enum.DefaultIndex = SupportedSizes.IndexOf(TWSS.TWSS_NONE)
-                                    End Try
-                                    Logger.Write(DebugLogger.Level.Debug, False, "cap_enum.currentindex=" & cap_enum.CurrentIndex.ToString)
-                                    Logger.Write(DebugLogger.Level.Debug, False, "cap_enum.defaultindex=" & cap_enum.DefaultIndex.ToString)
-
-                                    Dim ItemOffset As Integer = Marshal.SizeOf(cap_enum.ItemType) + Marshal.SizeOf(cap_enum.NumItems) + Marshal.SizeOf(cap_enum.CurrentIndex) + Marshal.SizeOf(cap_enum.DefaultIndex)
-                                    Dim pContainer As IntPtr = WinAPI.GlobalAlloc(WinAPI.GlobalAllocFlags.GHND, CInt(ItemOffset + (2 * cap_enum.NumItems)))
-                                    Marshal.WriteInt16(pContainer, cap_enum.ItemType)
-                                    Marshal.WriteInt32(pContainer + 2, cap_enum.NumItems)
-                                    Marshal.WriteInt32(pContainer + 6, cap_enum.CurrentIndex)
-                                    Marshal.WriteInt32(pContainer + 10, cap_enum.DefaultIndex)
-                                    '
-                                    Dim i As Integer = 0
-                                    For Each ps As TWSS In SupportedSizes
-                                        Logger.Write(DebugLogger.Level.Debug, False, "  Supported size: " & ps.ToString)
+                                    If Me.SupportedSizes IsNot Nothing AndAlso Me.SupportedSizes.Count > 0 Then
+                                        Dim cap_enum As TW_ENUMERATION
+                                        cap_enum.ItemType = TWTY.TWTY_UINT16
+                                        cap_enum.NumItems = Me.SupportedSizes.Count
                                         Try
-                                            Marshal.WriteInt16(pContainer + ItemOffset + i, ps)
-                                        Catch ex As Exception
-                                            Logger.Write(DebugLogger.Level.Error_, True, ex.Message)
+                                            cap_enum.CurrentIndex = Me.SupportedSizes.IndexOf(Caps(tw_cap.Cap).CurrentValue)
+                                        Catch
+                                            cap_enum.CurrentIndex = Me.SupportedSizes.IndexOf(TWSS.TWSS_NONE)
                                         End Try
-                                        i += 2
-                                    Next
-                                    '
-                                    tw_cap.ConType = TWON.TWON_ENUMERATION
-                                    tw_cap.hContainer = pContainer
-                                    Marshal.StructureToPtr(tw_cap, _pData, True)
-                                    SetResult(TWRC.TWRC_SUCCESS)
-                                    Return MyResult
+                                        Try
+                                            cap_enum.DefaultIndex = Me.SupportedSizes.IndexOf(Caps(tw_cap.Cap).DefaultValue)
+                                        Catch
+                                            cap_enum.DefaultIndex = Me.SupportedSizes.IndexOf(TWSS.TWSS_NONE)
+                                        End Try
+                                        Logger.Write(DebugLogger.Level.Debug, False, "cap_enum.currentindex=" & cap_enum.CurrentIndex.ToString)
+                                        Logger.Write(DebugLogger.Level.Debug, False, "cap_enum.defaultindex=" & cap_enum.DefaultIndex.ToString)
+
+                                        Dim ItemOffset As Integer = Marshal.SizeOf(cap_enum.ItemType) + Marshal.SizeOf(cap_enum.NumItems) + Marshal.SizeOf(cap_enum.CurrentIndex) + Marshal.SizeOf(cap_enum.DefaultIndex)
+                                        Dim pContainer As IntPtr = WinAPI.GlobalAlloc(WinAPI.GlobalAllocFlags.GHND, CInt(ItemOffset + (2 * cap_enum.NumItems)))
+                                        Marshal.WriteInt16(pContainer, cap_enum.ItemType)
+                                        Marshal.WriteInt32(pContainer + 2, cap_enum.NumItems)
+                                        Marshal.WriteInt32(pContainer + 6, cap_enum.CurrentIndex)
+                                        Marshal.WriteInt32(pContainer + 10, cap_enum.DefaultIndex)
+                                        '
+                                        Dim i As Integer = 0
+                                        For Each ps As TWSS In Me.SupportedSizes
+                                            Logger.Write(DebugLogger.Level.Debug, False, "  Supported size: " & ps.ToString)
+                                            Try
+                                                Marshal.WriteInt16(pContainer + ItemOffset + i, ps)
+                                            Catch ex As Exception
+                                                Logger.Write(DebugLogger.Level.Error_, True, ex.Message)
+                                            End Try
+                                            i += 2
+                                        Next
+                                        '
+                                        tw_cap.ConType = TWON.TWON_ENUMERATION
+                                        tw_cap.hContainer = pContainer
+                                        Marshal.StructureToPtr(tw_cap, _pData, True)
+                                        SetResult(TWRC.TWRC_SUCCESS)
+                                        Return MyResult
+                                    Else
+                                        SetCondition(TWCC.TWCC_BUMMER)
+                                        SetResult(TWRC.TWRC_FAILURE)
+                                        Return MyResult
+                                    End If
 
                                 Case MSG.MSG_GETCURRENT, MSG.MSG_GETDEFAULT
                                     Dim oneval As TW_ONEVALUE
@@ -3640,8 +3646,14 @@ Namespace TWAIN_VB
                                     Return MyResult
                                 Else
                                     Dim NewSize As TWSS = CType(oneval.Item, TWSS)
-                                    If SupportedSizes.Contains(NewSize) Then
-                                        SetCap(CAP.ICAP_SUPPORTEDSIZES, NewSize, SetCapScope.CurrentValue, RequestSource.TWAIN)
+                                    If Me.SupportedSizes.Contains(NewSize) Then
+                                        'SetCap(CAP.ICAP_SUPPORTEDSIZES, NewSize, SetCapScope.CurrentValue, RequestSource.TWAIN)
+                                        Try
+                                            MyForm.ComboBoxPageSize.SelectedItem = Me.PageSizes(NewSize).Name
+                                        Catch ex As Exception
+
+                                        End Try
+                                        MyForm.ComboBoxPageSize.Enabled = False 'prevent user from changing page size if TWAIN app is controlling it.
                                         SetResult(TWRC.TWRC_SUCCESS)
                                         Return MyResult
                                     Else
@@ -3951,6 +3963,7 @@ Namespace TWAIN_VB
 
                                             Import_SANE_Options()
                                             MyForm.SetUserDefaults()
+                                            'Me.InitPageSizes()
                                             'MyForm.ButtonOK.Enabled = True
                                         End If
                                     End If
@@ -4172,7 +4185,6 @@ Namespace TWAIN_VB
             MyTWAINversion = MyIdentity.ProtocolMajor + (MyIdentity.ProtocolMinor / 10)
             Logger.Write(DebugLogger.Level.Info, False, "Reporting my TWAIN version as '" & MyTWAINversion.ToString & "'")
 
-            Me.InitPageSizes()
             Me.InitCaps()
         End Sub
 
@@ -4473,9 +4485,10 @@ Namespace TWAIN_VB
                     Me.PageSizes(TWSS.TWSS_NONE).Height = Me.FIX32ToFloat(Caps(CAP.ICAP_PHYSICALHEIGHT).CurrentValue)
                     Me.PageSizes(TWSS.TWSS_MAXSIZE).Height = Me.FIX32ToFloat(Caps(CAP.ICAP_PHYSICALHEIGHT).CurrentValue)
 
-                    SupportedSizes = New ArrayList
+                    Me.SupportedSizes = New ArrayList
                     For Each ps As PageSize In SANE.CurrentDevice.SupportedPageSizes
-                        SupportedSizes.Add(ps.TWAIN_TWSS)
+                        Logger.Write(DebugLogger.Level.Info, False, "Supported paper size: '" & ps.TWAIN_TWSS.ToString & "'")
+                        Me.SupportedSizes.Add(ps.TWAIN_TWSS)
                     Next
                     '    For Each ss In Me.PageSizes
                     '        Select Case ss.Key
@@ -4589,7 +4602,6 @@ Namespace TWAIN_VB
             Logger.Write(DebugLogger.Level.Debug, False, "begin")
             Try
                 'Map SANE Well-Known Options
-                Dim minx, maxx, miny, maxy, res_dpi As Double
                 For i As Integer = 1 To SANE.CurrentDevice.OptionDescriptors.Count - 1 'skip the first option, which is just the option count
                     If (SANE.CurrentDevice.OptionDescriptors(i).type <> SANE_API.SANE_Value_Type.SANE_TYPE_GROUP) And (SANE.CurrentDevice.OptionDescriptors(i).type <> SANE_API.SANE_Value_Type.SANE_TYPE_BUTTON) Then
                         If SANE.SANE_OPTION_IS_READABLE(SANE.CurrentDevice.OptionDescriptors(i).cap) Then
@@ -4599,11 +4611,10 @@ Namespace TWAIN_VB
                             End If
                             Logger.Write(DebugLogger.Level.Debug, False, logstr)
                             Dim TWAINcap As String = Nothing
-                            Dim tlx, tly, brx, bry As Double
                             Select Case SANE.CurrentDevice.OptionDescriptors(i).name.ToLower
                                 Case "resolution"
                                     'TWAINcap = CAP.ICAP_XRESOLUTION.ToString & ", " & CAP.ICAP_YRESOLUTION.ToString & ", " & CAP.ICAP_XNATIVERESOLUTION.ToString & ", " & CAP.ICAP_YNATIVERESOLUTION.ToString
-                                    res_dpi = SANE.CurrentDevice.OptionValues(i)(0)
+                                    Dim res_dpi As Double = SANE.CurrentDevice.OptionValues(i)(0)
                                     Dim caparray() As CAP = {CAP.ICAP_XRESOLUTION, CAP.ICAP_YRESOLUTION, CAP.ICAP_XNATIVERESOLUTION, CAP.ICAP_YNATIVERESOLUTION}
                                     For Each icap As CAP In caparray
                                         If Caps.ContainsKey(icap) Then
@@ -4672,81 +4683,15 @@ Namespace TWAIN_VB
                                     'ICAP_UNITS must be set to TWUN_INCHES since SANE 'resolution' is always in DPI.
                                     SetCap(CAP.ICAP_UNITS, TWUN.TWUN_INCHES, SetCapScope.BothValues, RequestSource.SANE)
                                 Case "preview"  'No reason to map this
-                                Case "tl-x"
-                                    tlx = SANE.CurrentDevice.OptionValues(i)(0)
-                                Case "tl-y"
-                                    tly = SANE.CurrentDevice.OptionValues(i)(0)
-                                Case "br-x"
-                                    brx = SANE.CurrentDevice.OptionValues(i)(0)
-                                    Select Case SANE.CurrentDevice.OptionDescriptors(i).constraint_type
-                                        Case SANE_API.SANE_Constraint_Type.SANE_CONSTRAINT_RANGE
-                                            Dim n As Integer = SANE.CurrentDevice.OptionDescriptors(i).constraint.range.min
-                                            minx = IIf(SANE.CurrentDevice.OptionDescriptors(i).type = SANE_API.SANE_Value_Type.SANE_TYPE_FIXED, SANE.SANE_UNFIX(n), n)
-                                            n = SANE.CurrentDevice.OptionDescriptors(i).constraint.range.max
-                                            maxx = IIf(SANE.CurrentDevice.OptionDescriptors(i).type = SANE_API.SANE_Value_Type.SANE_TYPE_FIXED, SANE.SANE_UNFIX(n), n)
-                                        Case SANE_API.SANE_Constraint_Type.SANE_CONSTRAINT_WORD_LIST
-                                            Dim Words(SANE.CurrentDevice.OptionDescriptors(i).constraint.word_list.Length - 1) As Integer
-                                            Array.Copy(SANE.CurrentDevice.OptionDescriptors(i).constraint.word_list, Words, Words.Length)
-                                            Array.Sort(Words)
-                                            minx = IIf(SANE.CurrentDevice.OptionDescriptors(i).type = SANE_API.SANE_Value_Type.SANE_TYPE_FIXED, SANE.SANE_UNFIX(Words(0)), Words(0))
-                                            maxx = IIf(SANE.CurrentDevice.OptionDescriptors(i).type = SANE_API.SANE_Value_Type.SANE_TYPE_FIXED, SANE.SANE_UNFIX(Words(Words.Length - 1)), Words(Words.Length - 1))
-                                    End Select
-                                Case "br-y"
-                                    bry = SANE.CurrentDevice.OptionValues(i)(0)
-                                    Select Case SANE.CurrentDevice.OptionDescriptors(i).constraint_type
-                                        Case SANE_API.SANE_Constraint_Type.SANE_CONSTRAINT_RANGE
-                                            Dim n As Integer = SANE.CurrentDevice.OptionDescriptors(i).constraint.range.min
-                                            miny = IIf(SANE.CurrentDevice.OptionDescriptors(i).type = SANE_API.SANE_Value_Type.SANE_TYPE_FIXED, SANE.SANE_UNFIX(n), n)
-                                            n = SANE.CurrentDevice.OptionDescriptors(i).constraint.range.max
-                                            maxy = IIf(SANE.CurrentDevice.OptionDescriptors(i).type = SANE_API.SANE_Value_Type.SANE_TYPE_FIXED, SANE.SANE_UNFIX(n), n)
-                                        Case SANE_API.SANE_Constraint_Type.SANE_CONSTRAINT_WORD_LIST
-                                            Dim Words(SANE.CurrentDevice.OptionDescriptors(i).constraint.word_list.Length - 1) As Integer
-                                            Array.Copy(SANE.CurrentDevice.OptionDescriptors(i).constraint.word_list, Words, Words.Length)
-                                            Array.Sort(Words)
-                                            miny = IIf(SANE.CurrentDevice.OptionDescriptors(i).type = SANE_API.SANE_Value_Type.SANE_TYPE_FIXED, SANE.SANE_UNFIX(Words(0)), Words(0))
-                                            miny = IIf(SANE.CurrentDevice.OptionDescriptors(i).type = SANE_API.SANE_Value_Type.SANE_TYPE_FIXED, SANE.SANE_UNFIX(Words(Words.Length - 1)), Words(Words.Length - 1))
-                                    End Select
                                 Case Else
                                     'process any SANE-->TWAIN mappings to make TWAIN defaults match SANE defaults
-                                    'Select Case SANE.CurrentDevice.OptionDescriptors(i).type
-                                    '   Case SANE_API.SANE_Value_Type.SANE_TYPE_GROUP, SANE_API.SANE_Value_Type.SANE_TYPE_BUTTON
-                                    'ignore
-                                    'Case Else
                                     MyForm.SetTWAINCaps(SANE.CurrentDevice.OptionDescriptors(i), SANE.CurrentDevice.OptionValues(i), True)
-                                    'End Select
                             End Select
                         Else
                             Logger.Write(DebugLogger.Level.Debug, False, "Unreadable Option '" & SANE.CurrentDevice.OptionDescriptors(i).name & "'")
                         End If
                     End If
                 Next
-
-                Dim xyunit As SANE_API.SANE_Unit = MyForm.GetSANEOptionUnit("tl-x")
-                If (maxx > 0) And (maxy > 0) And ((xyunit = SANE_API.SANE_Unit.SANE_UNIT_PIXEL) Or (xyunit = SANE_API.SANE_Unit.SANE_UNIT_MM)) Then
-                    Dim PhysicalWidth As Double = maxx - minx
-                    Dim PhysicalLength As Double = maxy - miny
-                    'internally we want to store everything as inches for TWAIN
-                    Select Case xyunit
-                        Case SANE_API.SANE_Unit.SANE_UNIT_MM
-                            PhysicalWidth = MMToInches(PhysicalWidth)
-                            PhysicalLength = MMToInches(PhysicalLength)
-                        Case SANE_API.SANE_Unit.SANE_UNIT_PIXEL
-                            'XXX no way to test this without a backend that reports dimensions in pixels
-                            If res_dpi > 0 Then
-                                PhysicalWidth = PhysicalWidth / res_dpi
-                                PhysicalLength = PhysicalLength / res_dpi
-                            Else
-                                Logger.Write(DebugLogger.Level.Warn, False, "Unable to convert pixels to inches because dpi is unknown; using defaults instead")
-                                PhysicalWidth = 8.5
-                                PhysicalLength = 11
-                            End If
-                    End Select
-                    Logger.Write(DebugLogger.Level.Debug, False, "physical size = " & PhysicalWidth.ToString & " x " & PhysicalLength.ToString & " inches")
-
-                    SetCap(CAP.ICAP_UNITS, TWUN.TWUN_INCHES, SetCapScope.BothValues, RequestSource.SANE)
-                    SetCap(CAP.ICAP_PHYSICALWIDTH, FloatToFIX32(PhysicalWidth), SetCapScope.BothValues, RequestSource.SANE)
-                    SetCap(CAP.ICAP_PHYSICALHEIGHT, FloatToFIX32(PhysicalLength), SetCapScope.BothValues, RequestSource.SANE)
-                End If
 
                 If Not CurrentSettings.ScanContinuouslyUserConfigured Then
                     CurrentSettings.ScanContinuously = Device_Appears_To_Have_ADF() AndAlso Device_Appears_To_Have_ADF_Enabled()
@@ -4779,7 +4724,8 @@ Namespace TWAIN_VB
             Return CType(_fix32.Whole, Double) + CType(_fix32.Frac / 65536.0, Double)
         End Function
 
-        Private Sub InitPageSizes()
+        Friend Sub InitPageSizes()
+            Logger.Write(DebugLogger.Level.Debug, False, "")
             Me.PageSizes = New System.Collections.Generic.SortedDictionary(Of TWSS, PageSize)
             For Each ps As PageSize In CurrentSettings.PageSizes
                 Me.PageSizes.Add(ps.TWAIN_TWSS, ps)

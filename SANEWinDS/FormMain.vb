@@ -780,11 +780,7 @@ Public Class FormMain
                                 Else
                                     Logger.Write(DebugLogger.Level.Warn, False, "Option '" & SANE.CurrentDevice.OptionDescriptors(i).title & "' is not currently settable")
                                 End If
-                            Else
-                                'If TWAIN_Is_Active Then SetTWAINCaps(SANE.CurrentDevice.OptionDescriptors(i), SANE.CurrentDevice.OptionValues(i))
                             End If
-                        Else
-                            'If TWAIN_Is_Active Then SetTWAINCaps(SANE.CurrentDevice.OptionDescriptors(i), SANE.CurrentDevice.OptionValues(i))
                         End If
                 End Select
             Next
@@ -799,11 +795,7 @@ Public Class FormMain
                 Dim opt As String = CurrentSettings.SANE.CurrentDeviceINI.GetKeyValue("General", "MaxPaperWidth")
                 If opt IsNot Nothing Then
                     If opt.Length Then
-                        If Double.TryParse(opt, MaxWidth) Then
-                            If TWAIN_Is_Active Then
-                                Me.TWAINInstance.SetCap(TWAIN_VB.CAP.ICAP_PHYSICALWIDTH, MaxWidth, TWAIN_VB.DS_Entry_Pump.SetCapScope.BothValues, TWAIN_VB.DS_Entry_Pump.RequestSource.SANE)
-                            End If
-                        Else
+                        If Not Double.TryParse(opt, MaxWidth) Then
                             Throw New Exception("Unable to interpret '" & opt & "' as a decimal number")
                         End If
                     End If
@@ -815,11 +807,7 @@ Public Class FormMain
                 Dim opt As String = CurrentSettings.SANE.CurrentDeviceINI.GetKeyValue("General", "MaxPaperHeight")
                 If opt IsNot Nothing Then
                     If opt.Length Then
-                        If Double.TryParse(opt, MaxHeight) Then
-                            If TWAIN_Is_Active Then
-                                Me.TWAINInstance.SetCap(TWAIN_VB.CAP.ICAP_PHYSICALHEIGHT, MaxHeight, TWAIN_VB.DS_Entry_Pump.SetCapScope.BothValues, TWAIN_VB.DS_Entry_Pump.RequestSource.SANE)
-                            End If
-                        Else
+                        If Not Double.TryParse(opt, MaxHeight) Then
                             Throw New Exception("Unable to interpret '" & opt & "' as a decimal number")
                         End If
                     End If
@@ -828,24 +816,7 @@ Public Class FormMain
                 Logger.Write(DebugLogger.Level.Error_, False, "Exception reading MaxPaperHeight setting from backend.ini: " & ex.Message)
             End Try
             If (MaxWidth = 0) And (MaxHeight = 0) Then
-                Try
-                    Select Case Me.GetSANEOptionUnit("br-x")
-                        Case SANE_API.SANE_Unit.SANE_UNIT_MM
-                            MaxWidth = MMToInches(Me.GetSANEOption("br-x")(0))
-                            MaxHeight = MMToInches(Me.GetSANEOption("br-y")(0))
-                        Case SANE_API.SANE_Unit.SANE_UNIT_PIXEL
-                            'XXX this should be recalculated whenever the resolution changes
-                            Dim res_dpi As Double = Me.GetSANEOption("resolution")(0)
-                            If res_dpi > 0 Then
-                                MaxWidth = Me.GetSANEOption("br-x")(0) / res_dpi
-                                MaxHeight = Me.GetSANEOption("br-y")(0) / res_dpi
-                            End If
-                        Case Else
-                            Throw New Exception("'br-x' unit must be either SANE_UNIT_MM or SANE_UNIT_PIXEL")
-                    End Select
-                Catch ex As Exception
-                    Logger.Write(DebugLogger.Level.Warn, False, "'MaxPaperWidth' and 'MaxPaperHeight' are not configured in backend.ini and backend doesn't properly support 'br-x' and 'br-y'; unable to determine which page sizes are supported.")
-                End Try
+                   Me.Get_Current_Device_Physical_Size_In_Inches(MaxWidth, MaxHeight)
             End If
 
             If (MaxWidth > 0) And (MaxHeight > 0) Then
@@ -867,6 +838,14 @@ Public Class FormMain
                             End If
                     End Select
                 Next
+                If TWAIN_Is_Active Then
+                    Me.TWAINInstance.InitPageSizes()
+                    Me.TWAINInstance.SetCap(TWAIN_VB.CAP.ICAP_PHYSICALWIDTH, MaxWidth, TWAIN_VB.DS_Entry_Pump.SetCapScope.BothValues, TWAIN_VB.DS_Entry_Pump.RequestSource.SANE)
+                    Me.TWAINInstance.SetCap(TWAIN_VB.CAP.ICAP_PHYSICALHEIGHT, MaxHeight, TWAIN_VB.DS_Entry_Pump.SetCapScope.BothValues, TWAIN_VB.DS_Entry_Pump.RequestSource.SANE)
+                End If
+
+            Else
+                Logger.Write(DebugLogger.Level.Warn, False, "'MaxPaperWidth' and 'MaxPaperHeight' are not configured in backend.ini and backend doesn't properly support 'br-x' and 'br-y'; unable to determine which page sizes are supported.")
             End If
 
             Try
@@ -891,8 +870,13 @@ Public Class FormMain
                     End If
                 End If
             Catch ex As Exception
-                Logger.Write(DebugLogger.Level.Error_, False, "Exception reading MaxPaperWidth setting from backend.ini: " & ex.Message)
+                Logger.Write(DebugLogger.Level.Error_, False, "Exception while attempting to set DefaultPaperSize value: " & ex.Message)
             End Try
+            If Me.ComboBoxPageSize.SelectedItem Is Nothing Then
+                If Me.ComboBoxPageSize.Items.Contains("Maximum") Then
+                    Me.ComboBoxPageSize.SelectedItem = "Maximum"
+                End If
+            End If
             '
             Me.PanelOpt.Controls.Clear()
         Else
@@ -900,6 +884,92 @@ Public Class FormMain
         End If
         Logger.Write(DebugLogger.Level.Debug, False, "end")
     End Sub
+
+    Friend Sub Get_Current_Device_Physical_Size_In_Inches(ByRef Width As Double, ByRef Height As Double)
+        Dim minx, maxx, miny, maxy As Double
+        'Dim tlx, tly, brx, bry As Double
+        Dim xyunit As SANE_API.SANE_Unit = SANE_API.SANE_Unit.SANE_UNIT_NONE
+
+        Width = 0
+        Height = 0
+
+        Try
+            For i As Integer = 1 To SANE.CurrentDevice.OptionDescriptors.Count - 1 'skip the first option, which is just the option count
+                If (SANE.CurrentDevice.OptionDescriptors(i).type <> SANE_API.SANE_Value_Type.SANE_TYPE_GROUP) And (SANE.CurrentDevice.OptionDescriptors(i).type <> SANE_API.SANE_Value_Type.SANE_TYPE_BUTTON) Then
+                    If SANE.SANE_OPTION_IS_READABLE(SANE.CurrentDevice.OptionDescriptors(i).cap) Then
+                        Select Case SANE.CurrentDevice.OptionDescriptors(i).name.ToLower
+                            Case "tl-x"
+                                xyunit = SANE.CurrentDevice.OptionDescriptors(i).unit
+                                'tlx = SANE.CurrentDevice.OptionValues(i)(0)
+                            Case "tl-y"
+                                xyunit = SANE.CurrentDevice.OptionDescriptors(i).unit
+                                'tly = SANE.CurrentDevice.OptionValues(i)(0)
+                            Case "br-x"
+                                xyunit = SANE.CurrentDevice.OptionDescriptors(i).unit
+                                'brx = SANE.CurrentDevice.OptionValues(i)(0)
+                                Select Case SANE.CurrentDevice.OptionDescriptors(i).constraint_type
+                                    Case SANE_API.SANE_Constraint_Type.SANE_CONSTRAINT_RANGE
+                                        Dim n As Integer = SANE.CurrentDevice.OptionDescriptors(i).constraint.range.min
+                                        minx = IIf(SANE.CurrentDevice.OptionDescriptors(i).type = SANE_API.SANE_Value_Type.SANE_TYPE_FIXED, SANE.SANE_UNFIX(n), n)
+                                        n = SANE.CurrentDevice.OptionDescriptors(i).constraint.range.max
+                                        maxx = IIf(SANE.CurrentDevice.OptionDescriptors(i).type = SANE_API.SANE_Value_Type.SANE_TYPE_FIXED, SANE.SANE_UNFIX(n), n)
+                                    Case SANE_API.SANE_Constraint_Type.SANE_CONSTRAINT_WORD_LIST
+                                        Dim Words(SANE.CurrentDevice.OptionDescriptors(i).constraint.word_list.Length - 1) As Integer
+                                        Array.Copy(SANE.CurrentDevice.OptionDescriptors(i).constraint.word_list, Words, Words.Length)
+                                        Array.Sort(Words)
+                                        minx = IIf(SANE.CurrentDevice.OptionDescriptors(i).type = SANE_API.SANE_Value_Type.SANE_TYPE_FIXED, SANE.SANE_UNFIX(Words(0)), Words(0))
+                                        maxx = IIf(SANE.CurrentDevice.OptionDescriptors(i).type = SANE_API.SANE_Value_Type.SANE_TYPE_FIXED, SANE.SANE_UNFIX(Words(Words.Length - 1)), Words(Words.Length - 1))
+                                End Select
+                            Case "br-y"
+                                xyunit = SANE.CurrentDevice.OptionDescriptors(i).unit
+                                'bry = SANE.CurrentDevice.OptionValues(i)(0)
+                                Select Case SANE.CurrentDevice.OptionDescriptors(i).constraint_type
+                                    Case SANE_API.SANE_Constraint_Type.SANE_CONSTRAINT_RANGE
+                                        Dim n As Integer = SANE.CurrentDevice.OptionDescriptors(i).constraint.range.min
+                                        miny = IIf(SANE.CurrentDevice.OptionDescriptors(i).type = SANE_API.SANE_Value_Type.SANE_TYPE_FIXED, SANE.SANE_UNFIX(n), n)
+                                        n = SANE.CurrentDevice.OptionDescriptors(i).constraint.range.max
+                                        maxy = IIf(SANE.CurrentDevice.OptionDescriptors(i).type = SANE_API.SANE_Value_Type.SANE_TYPE_FIXED, SANE.SANE_UNFIX(n), n)
+                                    Case SANE_API.SANE_Constraint_Type.SANE_CONSTRAINT_WORD_LIST
+                                        Dim Words(SANE.CurrentDevice.OptionDescriptors(i).constraint.word_list.Length - 1) As Integer
+                                        Array.Copy(SANE.CurrentDevice.OptionDescriptors(i).constraint.word_list, Words, Words.Length)
+                                        Array.Sort(Words)
+                                        miny = IIf(SANE.CurrentDevice.OptionDescriptors(i).type = SANE_API.SANE_Value_Type.SANE_TYPE_FIXED, SANE.SANE_UNFIX(Words(0)), Words(0))
+                                        maxy = IIf(SANE.CurrentDevice.OptionDescriptors(i).type = SANE_API.SANE_Value_Type.SANE_TYPE_FIXED, SANE.SANE_UNFIX(Words(Words.Length - 1)), Words(Words.Length - 1))
+                                End Select
+                        End Select
+                    End If
+                End If
+            Next
+            'Dim xyunit As SANE_API.SANE_Unit = MyForm.GetSANEOptionUnit("tl-x")
+            If (maxx > 0) And (maxy > 0) And ((xyunit = SANE_API.SANE_Unit.SANE_UNIT_PIXEL) Or (xyunit = SANE_API.SANE_Unit.SANE_UNIT_MM)) Then
+                Dim PhysicalWidth As Double = maxx '- minx
+                Dim PhysicalLength As Double = maxy '- miny
+                'internally we want to store everything as inches for TWAIN
+                Select Case xyunit
+                    Case SANE_API.SANE_Unit.SANE_UNIT_MM
+                        PhysicalWidth = MMToInches(PhysicalWidth)
+                        PhysicalLength = MMToInches(PhysicalLength)
+                    Case SANE_API.SANE_Unit.SANE_UNIT_PIXEL
+                        'XXX no way to test this without a backend that reports dimensions in pixels
+                        Dim res_dpi As Double = Me.GetSANEOption("resolution")(0)
+                        If res_dpi > 0 Then
+                            PhysicalWidth = PhysicalWidth / res_dpi
+                            PhysicalLength = PhysicalLength / res_dpi
+                        Else
+                            Logger.Write(DebugLogger.Level.Warn, False, "Unable to convert pixels to inches because dpi is unknown; using defaults instead")
+                            PhysicalWidth = 8.5
+                            PhysicalLength = 11
+                        End If
+                End Select
+                Logger.Write(DebugLogger.Level.Debug, False, "physical size = " & PhysicalWidth.ToString & " x " & PhysicalLength.ToString & " inches")
+                Width = PhysicalWidth
+                Height = PhysicalLength
+            End If
+        Catch ex As Exception
+            Logger.Write(DebugLogger.Level.Error_, False, ex.Message)
+        End Try
+    End Sub
+
 
     Friend Sub SetTWAINCaps(ByVal OptionDescriptor As SANE_API.SANE_Option_Descriptor, ByVal OptionValues() As Object, ByVal SetDefaultValue As Boolean)
         If OptionValues.Length > 1 Then Logger.Write(DebugLogger.Level.Warn, False, "Only the first value in the array will be evaluated for option '" & OptionDescriptor.title & "'")

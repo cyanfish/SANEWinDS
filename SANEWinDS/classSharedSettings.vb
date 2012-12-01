@@ -284,7 +284,7 @@ Public Class SharedSettings
             fs.WriteLine(";ScanContinuously is a boolean value that determines whether to scan a single page or continue until the ADF is empty.")
             fs.WriteLine(";In most cases the correct value will be guessed automatically.")
             fs.WriteLine(";ScanContinuously=True")
-            fs.WriteLine(";")
+            fs.WriteLine("")
             fs.WriteLine(";MaxPaperWidth and MaxPaperHeight values are in inches and determine the ICAP_SUPPORTEDSIZES values for TWAIN.")
             fs.WriteLine(";These values will be taken from the default br-x and br-y values if not specified here.")
             fs.WriteLine(";MaxPaperWidth=8.5")

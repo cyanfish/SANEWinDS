@@ -61,6 +61,24 @@ Public Class FormSANEHostWizard
                                                 Me.ComboBoxDevices.Items.Add(Devices(i).name)
                                             Next
                                             If Me.ComboBoxDevices.Items.Count > 0 Then Me.ComboBoxDevices.SelectedIndex = 0
+                                            Dim Host_Index As Integer = -1
+                                            For idx = 0 To CurrentSettings.SANE.Hosts.Count - 1
+                                                Dim hi As SharedSettings.HostInfo = CurrentSettings.SANE.Hosts(idx)
+                                                If hi.NameOrAddress.Trim = Host.NameOrAddress.Trim Then
+                                                    If hi.Port = Host.Port Then
+                                                        Host_Index = idx
+                                                        Exit For
+                                                    End If
+                                                End If
+                                            Next
+                                            If Host_Index > -1 Then
+                                                CurrentSettings.SANE.CurrentHostIndex = Host_Index
+                                            Else
+                                                ReDim Preserve CurrentSettings.SANE.Hosts(CurrentSettings.SANE.Hosts.Count)
+                                                CurrentSettings.SANE.Hosts(CurrentSettings.SANE.Hosts.Count - 1) = Host
+                                                CurrentSettings.SANE.CurrentHostIndex = CurrentSettings.SANE.Hosts.Count - 1
+                                                Me.ComboBoxHost.Items.Add(Host.NameOrAddress)
+                                            End If
                                         Else
                                             Throw New ApplicationException("SANE server returned status '" & Status.ToString & "'")
                                         End If
@@ -101,13 +119,13 @@ Public Class FormSANEHostWizard
         ElseIf Me.PanelDevice.Visible Then
             If Me.ComboBoxDevices.Text IsNot Nothing Then
                 If Me.ComboBoxDevices.Text.Trim.Length > 0 Then
-                    With CurrentSettings.SANE.CurrentHost
+                    With CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex)
                         .NameOrAddress = Me.ComboBoxHost.Text
                         .Port = CInt(Me.TextBoxPort.Text)
                         .TCP_Timeout_ms = CInt(Me.TextBoxTimeout.Text)
                         .Username = Me.TextBoxUserName.Text
                     End With
-                    CurrentSettings.SANE.CurrentDevice = Me.ComboBoxDevices.Text.Trim
+                    CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Device = Me.ComboBoxDevices.Text.Trim
                     Me.DialogResult = Windows.Forms.DialogResult.OK
                     Me.Close()
                 End If
@@ -121,12 +139,25 @@ Public Class FormSANEHostWizard
     Private Sub FormSANEHostWizard_Load(ByVal sender As Object, ByVal e As System.EventArgs) Handles Me.Load
         Me.PanelHost.Visible = True
         Me.PanelDevice.Visible = False
-        With CurrentSettings.SANE.CurrentHost
-            If .NameOrAddress IsNot Nothing Then Me.ComboBoxHost.Text = .NameOrAddress
-            If .Port > 0 Then Me.TextBoxPort.Text = .Port.ToString Else Me.TextBoxPort.Text = "6566"
-            If .TCP_Timeout_ms > 1000 Then Me.TextBoxTimeout.Text = .TCP_Timeout_ms.ToString Else Me.TextBoxTimeout.Text = "5000"
-            If .Username IsNot Nothing AndAlso .Username.Trim.Length Then Me.TextBoxUserName.Text = .Username.Trim Else Me.TextBoxUserName.Text = CurrentSettings.ProductName.Name
-        End With
+
+        For Each host As SharedSettings.HostInfo In CurrentSettings.SANE.Hosts
+            Me.ComboBoxHost.Items.Add(host.NameOrAddress)
+        Next
+        If (CurrentSettings.SANE.CurrentHostIndex > -1) AndAlso (CurrentSettings.SANE.CurrentHostIndex < CurrentSettings.SANE.Hosts.Length) Then
+            Me.ComboBoxHost.SelectedItem = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).NameOrAddress
+        Else
+            Me.TextBoxPort.Text = "6566"
+            Me.TextBoxTimeout.Text = "5000"
+            Me.TextBoxUserName.Text = CurrentSettings.ProductName.Name
+        End If
+
+        'With CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex)
+        '    If .NameOrAddress IsNot Nothing Then Me.ComboBoxHost.Text = .NameOrAddress
+        '    If .Port > 0 Then Me.TextBoxPort.Text = .Port.ToString Else Me.TextBoxPort.Text = "6566"
+        '    If .TCP_Timeout_ms > 1000 Then Me.TextBoxTimeout.Text = .TCP_Timeout_ms.ToString Else Me.TextBoxTimeout.Text = "5000"
+        '    If .Username IsNot Nothing AndAlso .Username.Trim.Length Then Me.TextBoxUserName.Text = .Username.Trim Else Me.TextBoxUserName.Text = CurrentSettings.ProductName.Name
+        'End With
+
 
         Me.SetControlStatus()
 
@@ -159,4 +190,14 @@ Public Class FormSANEHostWizard
     End Sub
 
 
+    Private Sub ComboBoxHost_SelectedIndexChanged(sender As Object, e As EventArgs) Handles ComboBoxHost.SelectedIndexChanged
+        If (CurrentSettings.SANE.CurrentHostIndex > -1) AndAlso (CurrentSettings.SANE.CurrentHostIndex < CurrentSettings.SANE.Hosts.Count) Then
+            With CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex)
+                If .NameOrAddress IsNot Nothing Then Me.ComboBoxHost.Text = .NameOrAddress
+                If .Port > 0 Then Me.TextBoxPort.Text = .Port.ToString Else Me.TextBoxPort.Text = "6566"
+                If .TCP_Timeout_ms > 1000 Then Me.TextBoxTimeout.Text = .TCP_Timeout_ms.ToString Else Me.TextBoxTimeout.Text = "5000"
+                If .Username IsNot Nothing AndAlso .Username.Trim.Length Then Me.TextBoxUserName.Text = .Username.Trim Else Me.TextBoxUserName.Text = CurrentSettings.ProductName.Name
+            End With
+        End If
+    End Sub
 End Class

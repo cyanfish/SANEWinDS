@@ -43,11 +43,14 @@ Public Class FormMain
         Try
             Me.CloseCurrentDevice()
             If net IsNot Nothing Then
-                If net.Connected Then SANE.Net_Exit(net)
-                Dim stream As System.Net.Sockets.NetworkStream = net.GetStream
-                stream.Close()
-                stream = Nothing
-                If net.Connected Then net.Close()
+                If net.Connected Then
+                    SANE.Net_Exit(net)
+                    Dim stream As System.Net.Sockets.NetworkStream = net.GetStream
+                    stream.Close()
+                    stream = Nothing
+                    net.Close()
+                End If
+                'If net.Connected Then net.Close()
                 net = Nothing
             End If
         Catch ex As Exception
@@ -216,6 +219,10 @@ Public Class FormMain
 
     End Sub
 
+    Private Sub FormMain_FormClosed(sender As Object, e As FormClosedEventArgs) Handles Me.FormClosed
+        If CurrentSettings IsNot Nothing Then CurrentSettings.Save()
+    End Sub
+
     Private Sub Form1_FormClosing(ByVal sender As Object, ByVal e As System.Windows.Forms.FormClosingEventArgs) Handles Me.FormClosing
         Me.CloseCurrentHost()
         If net IsNot Nothing Then
@@ -244,8 +251,11 @@ Public Class FormMain
         If SANE Is Nothing Then SANE = New SANE_API
 
         If Not TWAIN_Is_Active Then
-            'If SANE Is Nothing Then SANE = New SANE_API
-            If Not (CurrentSettings.HostIsValid(CurrentSettings.SANE.CurrentHost) AndAlso (CurrentSettings.SANE.CurrentDevice IsNot Nothing) AndAlso CurrentSettings.SANE.CurrentDevice.Length) Then
+            If Not ((CurrentSettings.SANE.CurrentHostIndex > -1) AndAlso _
+                    (CurrentSettings.SANE.CurrentHostIndex < CurrentSettings.SANE.Hosts.Length) _
+                    AndAlso CurrentSettings.HostIsValid(CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex)) _
+                    AndAlso (CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Device IsNot Nothing) _
+                    AndAlso CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Device.Length) Then
                 Dim f As New FormSANEHostWizard
                 If f.ShowDialog <> Windows.Forms.DialogResult.OK Then
                     Logger.Write(DebugLogger.Level.Debug, False, "User cancelled SANE host wizard")
@@ -255,8 +265,9 @@ Public Class FormMain
             Try_Init_SANE()
         End If
 
-        If CurrentSettings.SANE.CurrentHost.NameOrAddress IsNot Nothing Then
-            Host = CurrentSettings.SANE.CurrentHost
+        'If CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).NameOrAddress IsNot Nothing Then
+        If (CurrentSettings.SANE.CurrentHostIndex > -1) AndAlso (CurrentSettings.SANE.CurrentHostIndex < CurrentSettings.SANE.Hosts.Length) Then
+            Host = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex)
         Else
 
         End If
@@ -295,72 +306,75 @@ Public Class FormMain
         Try
             If net Is Nothing Then net = New System.Net.Sockets.TcpClient
             If net IsNot Nothing Then
-                If CurrentSettings.SANE.CurrentHost.NameOrAddress IsNot Nothing Then
-                    net.ReceiveTimeout = CurrentSettings.SANE.CurrentHost.TCP_Timeout_ms
-                    net.SendTimeout = CurrentSettings.SANE.CurrentHost.TCP_Timeout_ms
-                    Logger.Write(DebugLogger.Level.Debug, False, "TCPClient Send buffer length is " & net.SendBufferSize)
-                    Logger.Write(DebugLogger.Level.Debug, False, "TCPClient Receive buffer length is " & net.ReceiveBufferSize)
-                    net.Connect(CurrentSettings.SANE.CurrentHost.NameOrAddress, CurrentSettings.SANE.CurrentHost.Port)
-                    Dim Status As SANE_API.SANE_Status = SANE.Net_Init(net, CurrentSettings.SANE.CurrentHost.Username)
-                    Logger.Write(DebugLogger.Level.Debug, False, "Net_Init returned status '" & Status.ToString & "'")
-                    If Status = SANE_API.SANE_Status.SANE_STATUS_GOOD Then CurrentSettings.SANE.CurrentHost.Open = True
-                    If CurrentSettings.SANE.CurrentHost.Open Then
-                        SANE.CurrentDevice = New SANE_API.CurrentDeviceInfo
+                If (CurrentSettings.SANE.CurrentHostIndex > -1) And (CurrentSettings.SANE.CurrentHostIndex < CurrentSettings.SANE.Hosts.Count) Then
+                    If CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).NameOrAddress IsNot Nothing Then
+                        net.ReceiveTimeout = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).TCP_Timeout_ms
+                        net.SendTimeout = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).TCP_Timeout_ms
+                        Logger.Write(DebugLogger.Level.Debug, False, "TCPClient Send buffer length is " & net.SendBufferSize)
+                        Logger.Write(DebugLogger.Level.Debug, False, "TCPClient Receive buffer length is " & net.ReceiveBufferSize)
+                        net.Connect(CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).NameOrAddress, CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Port)
+                        Dim Status As SANE_API.SANE_Status = SANE.Net_Init(net, CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Username)
+                        Logger.Write(DebugLogger.Level.Debug, False, "Net_Init returned status '" & Status.ToString & "'")
+                        If Status = SANE_API.SANE_Status.SANE_STATUS_GOOD Then CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Open = True
+                        If CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Open Then
+                            SANE.CurrentDevice = New SANE_API.CurrentDeviceInfo
 
-                        Dim DeviceHandle As Integer
-                        Status = SANE.Net_Open(net, CurrentSettings.SANE.CurrentDevice, DeviceHandle)
-                        Logger.Write(DebugLogger.Level.Debug, False, "Net_Open returned status '" & Status.ToString & "'")
+                            Dim DeviceHandle As Integer
+                            Status = SANE.Net_Open(net, CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Device, DeviceHandle)
+                            Logger.Write(DebugLogger.Level.Debug, False, "Net_Open returned status '" & Status.ToString & "'")
 
 
-                        If Status = SANE_API.SANE_Status.SANE_STATUS_INVAL Then  'Auto-Locate
-                            If CurrentSettings.SANE.AutoLocateDevice IsNot Nothing AndAlso CurrentSettings.SANE.AutoLocateDevice.Length > 0 Then
-                                Logger.Write(DebugLogger.Level.Debug, False, "Attempting to auto-locate devices matching '" & CurrentSettings.SANE.AutoLocateDevice & "'")
-                                Dim Devices(-1) As SANE_API.SANE_Device
-                                Status = SANE.Net_Get_Devices(net, Devices)
-                                If Status = SANE_API.SANE_Status.SANE_STATUS_GOOD Then
-                                    For i As Integer = 0 To Devices.Length - 1
-                                        Status = SANE_API.SANE_Status.SANE_STATUS_INVAL
-                                        If Devices(i).name.Trim.Length >= CurrentSettings.SANE.AutoLocateDevice.Length Then
-                                            If Devices(i).name.Trim.Substring(0, CurrentSettings.SANE.AutoLocateDevice.Length) = CurrentSettings.SANE.AutoLocateDevice Then
-                                                Logger.Write(DebugLogger.Level.Debug, False, "Auto-located device '" & Devices(i).name & "'; attempting to open...")
-                                                Status = SANE.Net_Open(net, Devices(i).name, DeviceHandle)
-                                                Logger.Write(DebugLogger.Level.Debug, False, "Net_Open returned status '" & Status.ToString & "'")
-                                                If Status = SANE_API.SANE_Status.SANE_STATUS_GOOD Then CurrentSettings.SANE.CurrentDevice = Devices(i).name
-                                                Exit For
+                            If Status = SANE_API.SANE_Status.SANE_STATUS_INVAL Then  'Auto-Locate
+                                If CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).AutoLocateDevice IsNot Nothing AndAlso CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).AutoLocateDevice.Length > 0 Then
+                                    Logger.Write(DebugLogger.Level.Debug, False, "Attempting to auto-locate devices matching '" & CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).AutoLocateDevice & "'")
+                                    Dim Devices(-1) As SANE_API.SANE_Device
+                                    Status = SANE.Net_Get_Devices(net, Devices)
+                                    If Status = SANE_API.SANE_Status.SANE_STATUS_GOOD Then
+                                        For i As Integer = 0 To Devices.Length - 1
+                                            Status = SANE_API.SANE_Status.SANE_STATUS_INVAL
+                                            If Devices(i).name.Trim.Length >= CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).AutoLocateDevice.Length Then
+                                                If Devices(i).name.Trim.Substring(0, CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).AutoLocateDevice.Length) = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).AutoLocateDevice Then
+                                                    Logger.Write(DebugLogger.Level.Debug, False, "Auto-located device '" & Devices(i).name & "'; attempting to open...")
+                                                    Status = SANE.Net_Open(net, Devices(i).name, DeviceHandle)
+                                                    Logger.Write(DebugLogger.Level.Debug, False, "Net_Open returned status '" & Status.ToString & "'")
+                                                    If Status = SANE_API.SANE_Status.SANE_STATUS_GOOD Then CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Device = Devices(i).name
+                                                    Exit For
+                                                End If
                                             End If
-                                        End If
-                                    Next
+                                        Next
+                                    End If
                                 End If
                             End If
-                        End If
 
-                        If Status = SANE_API.SANE_Status.SANE_STATUS_GOOD Then
-                            SANE.CurrentDevice.Name = CurrentSettings.SANE.CurrentDevice
-                            SANE.CurrentDevice.Handle = DeviceHandle
-                            SANE.CurrentDevice.Open = True
-                        Else
-                            'XXX
+                            If Status = SANE_API.SANE_Status.SANE_STATUS_GOOD Then
+                                SANE.CurrentDevice.Name = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Device
+                                SANE.CurrentDevice.Handle = DeviceHandle
+                                SANE.CurrentDevice.Open = True
+                            Else
+                                'XXX
+                            End If
                         End If
+                    Else
+                        Logger.Write(DebugLogger.Level.Warn, True, "No host is configured")
+                    End If
+
+                    If SANE.CurrentDevice.Open Then
+
+                        Me.GetOpts(True)  'must occur prior to reading GetDeviceConfigFileName()!
+
+                        CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI = New IniFile
+                        Dim s As String = CurrentSettings.GetDeviceConfigFileName()
+                        If s IsNot Nothing AndAlso s.Length > 0 Then CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.Load(s)
+
+                        Me.SetUserDefaults()
+
+                        Me.ButtonOK.Enabled = True
+                    Else
+                        'XXX
                     End If
                 Else
-                    Logger.Write(DebugLogger.Level.Warn, True, "No host is configured")
+                    Logger.Write(DebugLogger.Level.Warn, False, "Current host index is out of range")
                 End If
-
-                If SANE.CurrentDevice.Open Then
-
-                    Me.GetOpts(True)  'must occur prior to reading GetDeviceConfigFileName()!
-
-                    CurrentSettings.SANE.CurrentDeviceINI = New IniFile
-                    Dim s As String = CurrentSettings.GetDeviceConfigFileName()
-                    If s IsNot Nothing AndAlso s.Length > 0 Then CurrentSettings.SANE.CurrentDeviceINI.Load(s)
-
-                    Me.SetUserDefaults()
-
-                    Me.ButtonOK.Enabled = True
-                Else
-                    'XXX
-                End If
-
             End If
         Catch ex As Exception
             Logger.Write(DebugLogger.Level.Error_, True, ex.Message)
@@ -749,9 +763,9 @@ Public Class FormMain
         SANE.CurrentDevice.SupportedPageSizes = New ArrayList
         Me.ComboBoxPageSize.Items.Clear()
 
-        If CurrentSettings.SANE.CurrentDeviceINI IsNot Nothing Then
+        If CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI IsNot Nothing Then
             Try
-                Dim opt As String = CurrentSettings.SANE.CurrentDeviceINI.GetKeyValue("General", "ScanContinuously")
+                Dim opt As String = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.GetKeyValue("General", "ScanContinuously")
                 If opt IsNot Nothing Then
                     If opt.Length Then
                         CurrentSettings.ScanContinuously = Convert.ToBoolean(opt)
@@ -770,7 +784,7 @@ Public Class FormMain
                     Case SANE_API.SANE_Value_Type.SANE_TYPE_GROUP, SANE_API.SANE_Value_Type.SANE_TYPE_BUTTON
                         'no need to map these options
                     Case Else
-                        Dim optval As String = CurrentSettings.SANE.CurrentDeviceINI.GetKeyValue("Option." & SANE.CurrentDevice.OptionDescriptors(i).name, "DefaultValue")
+                        Dim optval As String = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.GetKeyValue("Option." & SANE.CurrentDevice.OptionDescriptors(i).name, "DefaultValue")
                         If optval IsNot Nothing Then
                             If optval.Length Then
                                 If SANE.SANE_OPTION_IS_ACTIVE(SANE.CurrentDevice.OptionDescriptors(i).cap) And SANE.SANE_OPTION_IS_SETTABLE(SANE.CurrentDevice.OptionDescriptors(i).cap) Then
@@ -792,7 +806,7 @@ Public Class FormMain
             Dim MaxWidth As Double = 0
             Dim MaxHeight As Double = 0
             Try
-                Dim opt As String = CurrentSettings.SANE.CurrentDeviceINI.GetKeyValue("General", "MaxPaperWidth")
+                Dim opt As String = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.GetKeyValue("General", "MaxPaperWidth")
                 If opt IsNot Nothing Then
                     If opt.Length Then
                         If Not Double.TryParse(opt, MaxWidth) Then
@@ -804,7 +818,7 @@ Public Class FormMain
                 Logger.Write(DebugLogger.Level.Error_, False, "Exception reading MaxPaperWidth setting from backend.ini: " & ex.Message)
             End Try
             Try
-                Dim opt As String = CurrentSettings.SANE.CurrentDeviceINI.GetKeyValue("General", "MaxPaperHeight")
+                Dim opt As String = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.GetKeyValue("General", "MaxPaperHeight")
                 If opt IsNot Nothing Then
                     If opt.Length Then
                         If Not Double.TryParse(opt, MaxHeight) Then
@@ -816,7 +830,7 @@ Public Class FormMain
                 Logger.Write(DebugLogger.Level.Error_, False, "Exception reading MaxPaperHeight setting from backend.ini: " & ex.Message)
             End Try
             If (MaxWidth = 0) And (MaxHeight = 0) Then
-                   Me.Get_Current_Device_Physical_Size_In_Inches(MaxWidth, MaxHeight)
+                Me.Get_Current_Device_Physical_Size_In_Inches(MaxWidth, MaxHeight)
             End If
 
             If (MaxWidth > 0) And (MaxHeight > 0) Then
@@ -849,7 +863,7 @@ Public Class FormMain
             End If
 
             Try
-                Dim opt As String = CurrentSettings.SANE.CurrentDeviceINI.GetKeyValue("General", "DefaultPaperSize")
+                Dim opt As String = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.GetKeyValue("General", "DefaultPaperSize")
                 If opt IsNot Nothing Then
                     If opt.Length Then
                         Dim Found_Default As Boolean = False
@@ -973,12 +987,12 @@ Public Class FormMain
 
     Friend Sub SetTWAINCaps(ByVal OptionDescriptor As SANE_API.SANE_Option_Descriptor, ByVal OptionValues() As Object, ByVal SetDefaultValue As Boolean)
         If OptionValues.Length > 1 Then Logger.Write(DebugLogger.Level.Warn, False, "Only the first value in the array will be evaluated for option '" & OptionDescriptor.title & "'")
-        If (CurrentSettings.SANE.CurrentDeviceINI IsNot Nothing) Then
+        If (CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI IsNot Nothing) Then
             If OptionValues.Length > 0 Then
                 If OptionValues(0) IsNot Nothing Then
-                    Dim s As String = CurrentSettings.SANE.CurrentDeviceINI.GetKeyValue("Option." & OptionDescriptor.name, "TWAIN." & OptionValues(0).ToString.Replace(" ", ""))
+                    Dim s As String = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.GetKeyValue("Option." & OptionDescriptor.name, "TWAIN." & OptionValues(0).ToString.Replace(" ", ""))
                     'If there wasn't a TWAIN mapping for the specific value that was set, look for a general mapping.
-                    If (s Is Nothing) OrElse (s.Length = 0) Then s = CurrentSettings.SANE.CurrentDeviceINI.GetKeyValue("Option." & OptionDescriptor.name, "TWAIN")
+                    If (s Is Nothing) OrElse (s.Length = 0) Then s = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.GetKeyValue("Option." & OptionDescriptor.name, "TWAIN")
                     If s IsNot Nothing AndAlso s.Length Then
                         Dim caps() As String = s.Split(";")
                         Dim capName(caps.Length - 1) As String
@@ -1189,10 +1203,11 @@ Public Class FormMain
     End Sub
 
     Private Sub Update_Host_GUI()
-        Me.TextBoxHost.Text = CurrentSettings.SANE.CurrentHost.NameOrAddress
-        Me.TextBoxPort.Text = CurrentSettings.SANE.CurrentHost.Port
-        Me.TextBoxDevice.Text = CurrentSettings.SANE.CurrentDevice
-
+        If (CurrentSettings.SANE.CurrentHostIndex > -1) AndAlso (CurrentSettings.SANE.CurrentHostIndex < CurrentSettings.SANE.Hosts.Length) Then
+            Me.TextBoxHost.Text = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).NameOrAddress
+            Me.TextBoxPort.Text = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Port
+            Me.TextBoxDevice.Text = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Device
+        End If
     End Sub
 
     Private Sub ButtonCancel_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles ButtonCancel.Click

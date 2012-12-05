@@ -54,7 +54,7 @@ Module modGlobals
             If Status = SANE_API.SANE_Status.SANE_STATUS_GOOD Then
                 ReDim Preserve SANEImage.Frames(CurrentFrame)
                 Try
-                    SANEImage.Frames(CurrentFrame) = SANE.AcquireFrame(net, Port, ByteOrder, CurrentSettings.SANE.CurrentHost.TCP_Timeout_ms)
+                    SANEImage.Frames(CurrentFrame) = SANE.AcquireFrame(net, Port, ByteOrder, CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).TCP_Timeout_ms)
                 Catch ex As Exception
                     Logger.Write(DebugLogger.Level.Error_, True, "AcquireFrame returned exception: " & ex.Message)
                     Status = SANE_API.SANE_Status.SANE_STATUS_IO_ERROR
@@ -282,9 +282,11 @@ Module modGlobals
                 SANE.CurrentDevice.Open = False
                 SANE.Net_Close(net, SANE.CurrentDevice.Handle)
             End If
-            If CurrentSettings.SANE.CurrentHost.Open Then
-                CurrentSettings.SANE.CurrentHost.Open = False
-                SANE.Net_Exit(net)
+            If (CurrentSettings.SANE.CurrentHostIndex > -1) AndAlso (CurrentSettings.SANE.CurrentHostIndex < CurrentSettings.SANE.Hosts.Length) Then
+                If CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Open Then
+                    CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Open = False
+                    SANE.Net_Exit(net)
+                End If
             End If
         Catch exx As Exception
         End Try
@@ -292,15 +294,17 @@ Module modGlobals
 
     Public Sub Close_Net()
         Try
-            If Not CurrentSettings.SANE.CurrentHost.Open Then
-                If net IsNot Nothing Then
-                    If net.Connected Then
-                        Dim stream As System.Net.Sockets.NetworkStream = net.GetStream
-                        stream.Close()
-                        stream = Nothing
+            If (CurrentSettings.SANE.CurrentHostIndex > -1) AndAlso (CurrentSettings.SANE.CurrentHostIndex < CurrentSettings.SANE.Hosts.Length) Then
+                If Not CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Open Then
+                    If net IsNot Nothing Then
+                        If net.Connected Then
+                            Dim stream As System.Net.Sockets.NetworkStream = net.GetStream
+                            stream.Close()
+                            stream = Nothing
+                        End If
+                        If net.Connected Then net.Close()
+                        net = Nothing
                     End If
-                    If net.Connected Then net.Close()
-                    net = Nothing
                 End If
             End If
         Catch ex As Exception

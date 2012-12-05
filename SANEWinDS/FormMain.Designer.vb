@@ -24,7 +24,6 @@ Partial Class FormMain
     Private Sub InitializeComponent()
         Me.components = New System.ComponentModel.Container()
         Dim resources As System.ComponentModel.ComponentResourceManager = New System.ComponentModel.ComponentResourceManager(GetType(FormMain))
-        Me.PanelOpt = New SANEWinDS.DoubleBufferedPanel 'System.Windows.Forms.Panel()
         Me.TreeViewOptions = New System.Windows.Forms.TreeView()
         Me.CheckBoxBatchMode = New System.Windows.Forms.CheckBox()
         Me.ToolTip1 = New System.Windows.Forms.ToolTip(Me.components)
@@ -41,19 +40,12 @@ Partial Class FormMain
         Me.Label1 = New System.Windows.Forms.Label()
         Me.ComboBoxPageSize = New System.Windows.Forms.ComboBox()
         Me.Label4 = New System.Windows.Forms.Label()
+        Me.PanelOpt = New SANEWinDS.DoubleBufferedPanel()
         CType(Me.SplitContainerOptions, System.ComponentModel.ISupportInitialize).BeginInit()
         Me.SplitContainerOptions.Panel1.SuspendLayout()
         Me.SplitContainerOptions.Panel2.SuspendLayout()
         Me.SplitContainerOptions.SuspendLayout()
         Me.SuspendLayout()
-        '
-        'PanelOpt
-        '
-        Me.PanelOpt.Dock = System.Windows.Forms.DockStyle.Fill
-        Me.PanelOpt.Location = New System.Drawing.Point(0, 0)
-        Me.PanelOpt.Name = "PanelOpt"
-        Me.PanelOpt.Size = New System.Drawing.Size(394, 261)
-        Me.PanelOpt.TabIndex = 6
         '
         'TreeViewOptions
         '
@@ -91,7 +83,7 @@ Partial Class FormMain
         Me.ButtonCancel.Name = "ButtonCancel"
         Me.ButtonCancel.Size = New System.Drawing.Size(75, 23)
         Me.ButtonCancel.TabIndex = 50
-        Me.ButtonCancel.Text = "Cancel"
+        Me.ButtonCancel.Text = "Close"
         Me.ButtonCancel.UseVisualStyleBackColor = True
         '
         'Label2
@@ -203,6 +195,14 @@ Partial Class FormMain
         Me.Label4.Size = New System.Drawing.Size(55, 13)
         Me.Label4.TabIndex = 53
         Me.Label4.Text = "Page Size"
+        '
+        'PanelOpt
+        '
+        Me.PanelOpt.Dock = System.Windows.Forms.DockStyle.Fill
+        Me.PanelOpt.Location = New System.Drawing.Point(0, 0)
+        Me.PanelOpt.Name = "PanelOpt"
+        Me.PanelOpt.Size = New System.Drawing.Size(394, 261)
+        Me.PanelOpt.TabIndex = 6
         '
         'FormMain
         '

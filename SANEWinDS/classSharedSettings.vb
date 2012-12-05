@@ -24,18 +24,41 @@ Public Class SharedSettings
     'End Enum
     Public Structure HostInfo
         Dim NameOrAddress As String
+        Dim UseTSClientIP As Boolean 'Are we currently using the TS client ip as the NameOrAddress?
         Dim Port As Integer
         Dim Username As String
         Dim TCP_Timeout_ms As Integer
         Dim Open As Boolean
+        Dim Device As String
+        Dim DeviceINI As IniFile
+        Dim AutoLocateDevice As String 'SANE backend name of device to auto-choose from list of devices on CurrentHost (example: "canon_dr")
     End Structure
     Public Structure SANESettings
         Dim Hosts() As HostInfo
-        Dim CurrentHost As HostInfo
-        Dim CurrentDevice As String    'Full SANE device name on CurrentHost (example: "canon_dr:libusb:008:005")
-        Dim CurrentDeviceINI As IniFile
-        Dim AutoLocateDevice As String 'SANE backend name of device to auto-choose from list of devices on CurrentHost (example: "canon_dr")
+        'Dim CurrentHost As HostInfo
+        Dim CurrentHostIndex As Integer
+        'Dim CurrentDevice As String    'Full SANE device name on CurrentHost (example: "canon_dr:libusb:008:005")
+        'Dim CurrentDeviceINI As IniFile
+        'Dim AutoLocateDevice As String 'SANE backend name of device to auto-choose from list of devices on CurrentHost (example: "canon_dr")
     End Structure
+    'Public Class SANESettings
+    '    Public Hosts() As HostInfo
+    '    'Dim CurrentHost As HostInfo
+    '    Public CurrentHostIndex As Integer
+    '    Public CurrentDevice As String    'Full SANE device name on CurrentHost (example: "canon_dr:libusb:008:005")
+    '    Public CurrentDeviceINI As IniFile
+    '    Public AutoLocateDevice As String 'SANE backend name of device to auto-choose from list of devices on CurrentHost (example: "canon_dr")
+    '    Public ReadOnly Property CurrentHost As HostInfo
+    '        Get
+    '            If (Me.CurrentHostIndex >= 0) And (Me.CurrentHostIndex < Me.Hosts.Length) Then
+    '                Return Me.Hosts(Me.CurrentHostIndex)
+    '            Else
+    '                Return Nothing
+    '            End If
+    '        End Get
+    '    End Property
+    'End Class
+
     Public Structure TWAINSettings
         'Dim Enabled As Boolean
 
@@ -55,6 +78,7 @@ Public Class SharedSettings
     Public TWAIN As TWAINSettings
 
     Public PageSizes As New ArrayList
+    Private Const MAX_HOSTS As Integer = 50
 
     Public Sub New(ByVal _UseRoamingAppData As Boolean)
         If Not Initialized Then
@@ -63,6 +87,10 @@ Public Class SharedSettings
             InitPageSizes()
             Initialized = True
         End If
+    End Sub
+
+    Public Sub Save()
+        Me.WriteSettings()
     End Sub
 
     Private Sub WriteSettings()
@@ -89,6 +117,47 @@ Public Class SharedSettings
         '    INI.Save(UserSettingsFileName)
         'End If
 
+        'If Me.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).NameOrAddress IsNot Nothing Then
+        '    If Me.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Port > 0 Then
+        '        Dim CurrentHostString As String = Me.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).NameOrAddress.Trim & ":" & Me.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Port.ToString
+        '        Dim Current_Host_Is_In_The_List As Boolean = False
+        '        Dim hostlist As String = INI.GetKeyValue("SANE", "Hosts")
+        '        If Not String.IsNullOrEmpty(hostlist) Then
+        '            Dim hosts() As HostInfo = Me.GetSANEHostsFromString(hostlist)
+        '            For Each host As HostInfo In hosts
+        '                If host.NameOrAddress.ToLower = Me.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).NameOrAddress.ToLower Then
+        '                    If host.Port = Me.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Port Then
+        '                        Current_Host_Is_In_The_List = True
+        '                        Exit For
+        '                    End If
+        '                End If
+        '            Next
+        '        End If
+        '        If Not Current_Host_Is_In_The_List Then
+
+        '        End If
+        '    End If
+        'End If
+
+        Dim HostList As String = Nothing
+        For idx As Integer = 0 To MAX_HOSTS
+            Dim SectionName As String = "Host." & idx.ToString
+            INI.RemoveSection(SectionName)
+            If idx < SANE.Hosts.Length Then
+                INI.AddSection(SectionName)
+                With SANE.Hosts(idx)
+                    INI.SetKeyValue(SectionName, "NameOrAddress", .NameOrAddress)
+                    INI.SetKeyValue(SectionName, "UseTSClientIP", .UseTSClientIP.ToString)
+                    INI.SetKeyValue(SectionName, "Port", .Port.ToString)
+                    INI.SetKeyValue(SectionName, "Username", .Username)
+                    INI.SetKeyValue(SectionName, "Timeout_ms", .TCP_Timeout_ms.ToString)
+                    INI.SetKeyValue(SectionName, "Device", .Device)
+                    INI.SetKeyValue(SectionName, "AutoLocateDevice", .AutoLocateDevice)
+                End With
+            End If
+        Next
+
+        INI.SetKeyValue("SANE", "DefaultHost", CurrentSettings.SANE.CurrentHostIndex)
 
         'If String.IsNullOrEmpty(INI.GetKeyValue("SANE", "DefaultHost")) Then
         '    INI.SetKeyValue("SANE", "DefaultHost", "0")
@@ -102,6 +171,8 @@ Public Class SharedSettings
         '    INI.SetKeyValue("SANE", "AutoLocateDevice", " ")
         '    INI.Save(UserSettingsFileName)
         'End If
+
+        INI.Save(UserSettingsFileName)
 
     End Sub
 
@@ -133,35 +204,44 @@ Public Class SharedSettings
             f.WriteLine("[Log]")
             f.WriteLine("RetainDays=3")
             f.WriteLine("")
-            f.WriteLine("[SANE]")
-            f.WriteLine("Hosts=")
-            f.WriteLine("DefaultHost=0")
-            f.WriteLine("Device=")
-            f.WriteLine("AutoLocateDevice=")
+            'f.WriteLine("[SANE]")
+            'f.WriteLine("Hosts=")
+            'f.WriteLine("DefaultHost=0")
+            'f.WriteLine("Device=")
+            'f.WriteLine("AutoLocateDevice=")
             f.Close()
             f = Nothing
         End If
 
         Dim INI As New IniFile
-        INI.Load(Me.GetUserConfigFileName)
+        INI.Load(UserSettingsFileName)
 
-        Dim Hosts() As HostInfo = GetSANEHostsFromString(INI.GetKeyValue("SANE", "Hosts"))
+        'SANE.Hosts = GetSANEHostsFromString(INI.GetKeyValue("SANE", "Hosts"))
+        SANE.Hosts = GetSANEHostsFromINI(INI)
+        SANE.CurrentHostIndex = -1
         Dim CurrentHostIndex As Integer = -1
         Dim s As String = INI.GetKeyValue("SANE", "DefaultHost")
-        Integer.TryParse(s, CurrentHostIndex)
-        If (CurrentHostIndex > -1) And (CurrentHostIndex < Hosts.Length) Then
-            'SANESettings.CurrentHost = Hosts(CurrentHostIndex)
-            SANE.CurrentHost.NameOrAddress = Hosts(CurrentHostIndex).NameOrAddress
-            SANE.CurrentHost.Port = Hosts(CurrentHostIndex).Port
-            SANE.CurrentHost.TCP_Timeout_ms = Hosts(CurrentHostIndex).TCP_Timeout_ms
-            SANE.CurrentHost.Username = Hosts(CurrentHostIndex).Username
+        If IsNumeric(s) Then Integer.TryParse(s, CurrentHostIndex)
+        If (CurrentHostIndex > -1) And (CurrentHostIndex < SANE.Hosts.Length) Then
+            ''SANESettings.CurrentHost = Hosts(CurrentHostIndex)
+            'SANE.CurrentHost.NameOrAddress = SANE.Hosts(CurrentHostIndex).NameOrAddress
+            'SANE.CurrentHost.Port = SANE.Hosts(CurrentHostIndex).Port
+            'SANE.CurrentHost.TCP_Timeout_ms = SANE.Hosts(CurrentHostIndex).TCP_Timeout_ms
+            'SANE.CurrentHost.Username = SANE.Hosts(CurrentHostIndex).Username
+            SANE.CurrentHostIndex = CurrentHostIndex
+        Else
+            If SANE.Hosts.Length > 0 Then SANE.CurrentHostIndex = 0
         End If
-        Logger.Write(DebugLogger.Level.Info, False, "CurrentHost is '" & SANE.CurrentHost.NameOrAddress & "' port '" & SANE.CurrentHost.Port & "'")
-        SANE.CurrentDevice = INI.GetKeyValue("SANE", "Device")
-        Logger.Write(DebugLogger.Level.Info, False, "CurrentDevice is '" & SANE.CurrentDevice & "'")
-        SANE.AutoLocateDevice = INI.GetKeyValue("SANE", "AutoLocateDevice").Trim
-        Logger.Write(DebugLogger.Level.Info, False, "AutoLocateDevice is '" & SANE.AutoLocateDevice & "'")
 
+        If (SANE.CurrentHostIndex > -1) AndAlso (SANE.CurrentHostIndex < SANE.Hosts.Length) Then
+            Logger.Write(DebugLogger.Level.Info, False, "Current host is '" & SANE.Hosts(SANE.CurrentHostIndex).NameOrAddress & "' port '" & SANE.Hosts(SANE.CurrentHostIndex).Port & "'")
+            'SANE.CurrentDevice = INI.GetKeyValue("SANE", "Device")
+            Logger.Write(DebugLogger.Level.Info, False, "Default device is '" & SANE.Hosts(SANE.CurrentHostIndex).Device & "'")
+            'SANE.AutoLocateDevice = INI.GetKeyValue("SANE", "AutoLocateDevice").Trim
+            Logger.Write(DebugLogger.Level.Info, False, "AutoLocateDevice is '" & SANE.Hosts(SANE.CurrentHostIndex).AutoLocateDevice & "'")
+        Else
+            Logger.Write(DebugLogger.Level.Warn, False, "No hosts are configured")
+        End If
         'clean up expired log files
         Dim DebugLogMaxAgeDays As Integer = 0 'never delete
         Try
@@ -200,42 +280,87 @@ Public Class SharedSettings
         Return False
     End Function
 
-    Private Function GetSANEHostsFromString(ByVal str As String) As HostInfo()
-        'str should be in the format "host0:port0;timeout_ms0;username0,host1:port1;timeout_ms1;username1,..."
-        Dim Hosts(-1) As HostInfo
-        If str IsNot Nothing Then
-            Dim h() As String = str.Split(",")
-            For Each s As String In h
-                'Try
-                If s IsNot Nothing AndAlso s.Length > 0 Then
-                    Dim p As Integer = s.IndexOf(":")
-                    If p > 0 And p < (s.Length - 1) Then
-                        ReDim Preserve Hosts(Hosts.Count)
-                        Hosts(Hosts.Count - 1).NameOrAddress = System.Environment.ExpandEnvironmentVariables(s.Substring(0, p))
-
-                        If Hosts(Hosts.Count - 1).NameOrAddress.ToUpper = "TSCLIENTIP" Then
-                            Try
-                                Dim ts As New TSAPI
-                                Hosts(Hosts.Count - 1).NameOrAddress = ts.GetCurrentSessionIP
-                                ts = Nothing
-                            Catch ex As Exception
-                                Logger.Write(DebugLogger.Level.Debug, False, "Error getting terminal server client IP address: " & ex.Message)
-                            End Try
-                        End If
-
-                        Hosts(Hosts.Count - 1).Port = s.Substring(p + 1)
-                        'XXX parse these out from the ini
-                        Hosts(Hosts.Count - 1).TCP_Timeout_ms = 5000
-                        Hosts(Hosts.Count - 1).Username = ProductName.Name
-                        '
+    Private Function GetSANEHostsFromINI(INI As IniFile) As HostInfo()
+        Dim hi(-1) As HostInfo
+        If INI IsNot Nothing Then
+            For idx As Integer = 0 To MAX_HOSTS - 1
+                Dim SectionName As String = "Host." & idx.ToString
+                If INI.GetSection(SectionName) IsNot Nothing Then
+                    Dim NameOrAddress As String = INI.GetKeyValue(SectionName, "NameOrAddress")
+                    Dim UseTSClientIP As Boolean
+                    Boolean.TryParse(INI.GetKeyValue(SectionName, "UseTSClientIP"), UseTSClientIP)
+                    If UseTSClientIP Then
+                        Try
+                            Dim ts As New TSAPI
+                            NameOrAddress = ts.GetCurrentSessionIP
+                            ts = Nothing
+                        Catch ex As Exception
+                            Logger.Write(DebugLogger.Level.Debug, False, "Error getting terminal server client IP address: " & ex.Message)
+                        End Try
                     End If
+                    If Not String.IsNullOrEmpty(NameOrAddress) Then
+                        Dim Port As Integer = 0
+                        Integer.TryParse(INI.GetKeyValue(SectionName, "Port"), Port)
+                        If Port = 0 Then Port = 6566
+                        If Port > 0 Then
+                            ReDim Preserve hi(hi.Count)
+                            With hi(hi.Count - 1)
+                                .NameOrAddress = NameOrAddress.Trim
+                                .UseTSClientIP = UseTSClientIP
+                                .Port = Port
+                                Integer.TryParse(INI.GetKeyValue(SectionName, "Timeout_ms"), .TCP_Timeout_ms)
+                                If .TCP_Timeout_ms = 0 Then .TCP_Timeout_ms = 5000
+                                If .TCP_Timeout_ms < 1000 Then .TCP_Timeout_ms = 1000
+                                .Username = INI.GetKeyValue(SectionName, "Username")
+                                .Device = INI.GetKeyValue(SectionName, "Device")
+                                .AutoLocateDevice = INI.GetKeyValue(SectionName, "AutoLocateDevice")
+                            End With
+                        End If
+                    End If
+                Else
+                    'Exit For
                 End If
-                'Catch ex As Exception
-                'End Try
             Next
         End If
-        Return Hosts
+        Return hi
     End Function
+
+    'Private Function GetSANEHostsFromString(ByVal str As String) As HostInfo()
+    '    'str should be in the format "host0:port0;timeout_ms0;username0,host1:port1;timeout_ms1;username1,..."
+    '    Dim Hosts(-1) As HostInfo
+    '    If str IsNot Nothing Then
+    '        Dim h() As String = str.Split(",")
+    '        For Each s As String In h
+    '            'Try
+    '            If s IsNot Nothing AndAlso s.Length > 0 Then
+    '                Dim p As Integer = s.IndexOf(":")
+    '                If p > 0 And p < (s.Length - 1) Then
+    '                    ReDim Preserve Hosts(Hosts.Count)
+    '                    Hosts(Hosts.Count - 1).NameOrAddress = System.Environment.ExpandEnvironmentVariables(s.Substring(0, p))
+
+    '                    If Hosts(Hosts.Count - 1).NameOrAddress.ToUpper = "TSCLIENTIP" Then
+    '                        Try
+    '                            Dim ts As New TSAPI
+    '                            Hosts(Hosts.Count - 1).NameOrAddress = ts.GetCurrentSessionIP
+    '                            ts = Nothing
+    '                        Catch ex As Exception
+    '                            Logger.Write(DebugLogger.Level.Debug, False, "Error getting terminal server client IP address: " & ex.Message)
+    '                        End Try
+    '                    End If
+
+    '                    Hosts(Hosts.Count - 1).Port = s.Substring(p + 1)
+    '                    'XXX parse these out from the ini
+    '                    Hosts(Hosts.Count - 1).TCP_Timeout_ms = 5000
+    '                    Hosts(Hosts.Count - 1).Username = ProductName.Name
+    '                    '
+    '                End If
+    '            End If
+    '            'Catch ex As Exception
+    '            'End Try
+    '        Next
+    '    End If
+    '    Return Hosts
+    'End Function
 
     Public Function GetUserConfigFileName() As String
         Return Me.UserConfigDirectory & "\" & Me.ProductName.Name & ".ini"

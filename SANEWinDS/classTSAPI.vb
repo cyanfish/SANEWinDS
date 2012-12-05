@@ -122,6 +122,6 @@ Public Class TSAPI
         Else
             Throw New ApplicationException("Call to WTSQuerySessionInformation failed.")
         End If
-            Return Nothing
+        Return Nothing
     End Function
 End Class

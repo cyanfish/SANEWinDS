@@ -3894,12 +3894,25 @@ Namespace TWAIN_VB
                         If SANE Is Nothing Then SANE = New SANE_API
 
                         'If SANE isn't configured, launch the wizard.
-                        If Not (CurrentSettings.HostIsValid(CurrentSettings.SANE.CurrentHost) AndAlso (CurrentSettings.SANE.CurrentDevice IsNot Nothing) AndAlso CurrentSettings.SANE.CurrentDevice.Length) Then
+                        If Not ((CurrentSettings.SANE.CurrentHostIndex > -1) AndAlso _
+                               (CurrentSettings.SANE.CurrentHostIndex < CurrentSettings.SANE.Hosts.Length) AndAlso _
+                               CurrentSettings.HostIsValid(CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex)) AndAlso _
+                               (CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Device IsNot Nothing) AndAlso _
+                               CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Device.Length) Then
                             Dim f As New FormSANEHostWizard
                             If f.ShowDialog <> Windows.Forms.DialogResult.OK Then
                                 Logger.Write(DebugLogger.Level.Debug, False, "User cancelled SANE host wizard")
                                 SetCondition(TWCC.TWCC_BUMMER)
-                                Return TWRC.TWRC_FAILURE
+                                SetResult(TWRC.TWRC_FAILURE)
+                                Return MyResult
+                                'Return TWRC.TWRC_FAILURE
+                            End If
+                            If (CurrentSettings.SANE.CurrentHostIndex < 0) OrElse (CurrentSettings.SANE.CurrentHostIndex >= CurrentSettings.SANE.Hosts.Length) Then
+                                Logger.Write(DebugLogger.Level.Warn, False, "Returned from SANE Host Wizard with an invalid CurrentHostIndex; aborting")
+                                SetCondition(TWCC.TWCC_BUMMER)
+                                SetResult(TWRC.TWRC_FAILURE)
+                                Return MyResult
+                                'Return TWRC.TWRC_FAILURE
                             End If
                         End If
 
@@ -3908,8 +3921,8 @@ Namespace TWAIN_VB
                             Try
                                 If net Is Nothing Then net = New System.Net.Sockets.TcpClient
                                 If net IsNot Nothing Then
-                                    net.ReceiveTimeout = CurrentSettings.SANE.CurrentHost.TCP_Timeout_ms
-                                    net.SendTimeout = CurrentSettings.SANE.CurrentHost.TCP_Timeout_ms
+                                    net.ReceiveTimeout = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).TCP_Timeout_ms
+                                    net.SendTimeout = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).TCP_Timeout_ms
 
                                     'net.SendBufferSize = 65536
                                     'net.ReceiveBufferSize = 65536
@@ -3919,29 +3932,29 @@ Namespace TWAIN_VB
 
                                     Dim status As SANE_API.SANE_Status
                                     SANE.CurrentDevice = New SANE_API.CurrentDeviceInfo
-                                    net.Connect(CurrentSettings.SANE.CurrentHost.NameOrAddress, CurrentSettings.SANE.CurrentHost.Port)
-                                    status = SANE.Net_Init(net, CurrentSettings.SANE.CurrentHost.Username)
+                                    net.Connect(CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).NameOrAddress, CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Port)
+                                    status = SANE.Net_Init(net, CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Username)
                                     Logger.Write(DebugLogger.Level.Debug, False, "Net_Init returned status '" & status.ToString & "'")
                                     If status = SANE_API.SANE_Status.SANE_STATUS_GOOD Then
-                                        CurrentSettings.SANE.CurrentHost.Open = True
+                                        CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Open = True
                                         Dim DeviceHandle As Integer
-                                        status = SANE.Net_Open(net, CurrentSettings.SANE.CurrentDevice, DeviceHandle)
+                                        status = SANE.Net_Open(net, CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Device, DeviceHandle)
                                         Logger.Write(DebugLogger.Level.Debug, False, "Net_Open returned status '" & status.ToString & "'")
 
                                         If status = SANE_API.SANE_Status.SANE_STATUS_INVAL Then  'Auto-Locate
-                                            If CurrentSettings.SANE.AutoLocateDevice IsNot Nothing AndAlso CurrentSettings.SANE.AutoLocateDevice.Length > 0 Then
-                                                Logger.Write(DebugLogger.Level.Debug, False, "Attempting to auto-locate devices matching '" & CurrentSettings.SANE.AutoLocateDevice & "'")
+                                            If CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).AutoLocateDevice IsNot Nothing AndAlso CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).AutoLocateDevice.Length > 0 Then
+                                                Logger.Write(DebugLogger.Level.Debug, False, "Attempting to auto-locate devices matching '" & CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).AutoLocateDevice & "'")
                                                 Dim Devices(-1) As SANE_API.SANE_Device
                                                 status = SANE.Net_Get_Devices(net, Devices)
                                                 If status = SANE_API.SANE_Status.SANE_STATUS_GOOD Then
                                                     For i As Integer = 0 To Devices.Length - 1
                                                         status = SANE_API.SANE_Status.SANE_STATUS_INVAL
-                                                        If Devices(i).name.Trim.Length >= CurrentSettings.SANE.AutoLocateDevice.Length Then
-                                                            If Devices(i).name.Trim.Substring(0, CurrentSettings.SANE.AutoLocateDevice.Length) = CurrentSettings.SANE.AutoLocateDevice Then
+                                                        If Devices(i).name.Trim.Length >= CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).AutoLocateDevice.Length Then
+                                                            If Devices(i).name.Trim.Substring(0, CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).AutoLocateDevice.Length) = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).AutoLocateDevice Then
                                                                 Logger.Write(DebugLogger.Level.Debug, False, "Auto-located device '" & Devices(i).name & "'; attempting to open...")
                                                                 status = SANE.Net_Open(net, Devices(i).name, DeviceHandle)
                                                                 Logger.Write(DebugLogger.Level.Debug, False, "Net_Open returned status '" & status.ToString & "'")
-                                                                If status = SANE_API.SANE_Status.SANE_STATUS_GOOD Then CurrentSettings.SANE.CurrentDevice = Devices(i).name
+                                                                If status = SANE_API.SANE_Status.SANE_STATUS_GOOD Then CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Device = Devices(i).name
                                                                 Exit For
                                                             End If
                                                         End If
@@ -3951,15 +3964,15 @@ Namespace TWAIN_VB
                                         End If
 
                                         If status = SANE_API.SANE_Status.SANE_STATUS_GOOD Then
-                                            SANE.CurrentDevice.Name = CurrentSettings.SANE.CurrentDevice
+                                            SANE.CurrentDevice.Name = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Device
                                             SANE.CurrentDevice.Handle = DeviceHandle
                                             SANE.CurrentDevice.Open = True
 
                                             MyForm.GetOpts(True) 'must occur prior to reading GetDeviceConfigFileName()!
 
-                                            CurrentSettings.SANE.CurrentDeviceINI = New IniFile
+                                            CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI = New IniFile
                                             Dim s As String = CurrentSettings.GetDeviceConfigFileName()
-                                            If s IsNot Nothing AndAlso s.Length > 0 Then CurrentSettings.SANE.CurrentDeviceINI.Load(s)
+                                            If s IsNot Nothing AndAlso s.Length > 0 Then CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.Load(s)
 
                                             Import_SANE_Options()
                                             MyForm.SetUserDefaults()
@@ -3970,7 +3983,7 @@ Namespace TWAIN_VB
 
                                     If Not SANE.CurrentDevice.Open Then
 
-                                        If CurrentSettings.SANE.CurrentHost.Open Then
+                                        If CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Open Then
                                             SANE.Net_Exit(net)
                                         End If
 
@@ -3999,18 +4012,22 @@ Namespace TWAIN_VB
                                         SANE.Net_Close(net, SANE.CurrentDevice.Handle)
                                         SANE.CurrentDevice.Open = False
                                     End If
-                                    If CurrentSettings.SANE.CurrentHost.Open Then
+                                    If CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Open Then
                                         SANE.Net_Exit(net)
                                     End If
                                     SetCondition(TWCC.TWCC_BUMMER)
-                                    Return TWRC.TWRC_FAILURE
+                                    SetResult(TWRC.TWRC_FAILURE)
+                                    Return MyResult
+                                    'Return TWRC.TWRC_FAILURE
                                 Catch exx As Exception
                                     SetCondition(TWCC.TWCC_BUMMER)
-                                    Return TWRC.TWRC_FAILURE
+                                    SetResult(TWRC.TWRC_FAILURE)
+                                    Return MyResult
+                                    'Return TWRC.TWRC_FAILURE
                                 End Try
                             Finally
                                 Try
-                                    If Not CurrentSettings.SANE.CurrentHost.Open Then
+                                    If Not CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Open Then
                                         If net IsNot Nothing Then
                                             If net.Connected Then
                                                 Dim stream As System.Net.Sockets.NetworkStream = net.GetStream
@@ -4060,7 +4077,7 @@ Namespace TWAIN_VB
                         Catch ex As Exception
                             Logger.Write(DebugLogger.Level.Error_, True, ex.Message)
                         Finally
-                            CurrentSettings.SANE.CurrentHost.Open = False
+                            CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Open = False
                             net = Nothing
                         End Try
 
@@ -4519,10 +4536,10 @@ Namespace TWAIN_VB
             'Return true if the cap was mapped, otherwise false
             SetSANECaps = False
             If NewValue.GetType Is GetType(TW_FIX32) Then NewValue = FIX32ToFloat(NewValue)
-            If CurrentSettings.SANE.CurrentDeviceINI IsNot Nothing Then
-                Dim s As String = CurrentSettings.SANE.CurrentDeviceINI.GetKeyValue("TWAIN." & Capability.ToString, "SANE." & NewValue.ToString.Replace(" ", ""))
+            If CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI IsNot Nothing Then
+                Dim s As String = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.GetKeyValue("TWAIN." & Capability.ToString, "SANE." & NewValue.ToString.Replace(" ", ""))
                 'If there wasn't a TWAIN mapping for the specific value that was set, look for a general mapping.
-                If (s Is Nothing) OrElse (s.Length = 0) Then s = CurrentSettings.SANE.CurrentDeviceINI.GetKeyValue("TWAIN." & Capability.ToString, "SANE")
+                If (s Is Nothing) OrElse (s.Length = 0) Then s = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.GetKeyValue("TWAIN." & Capability.ToString, "SANE")
                 If s IsNot Nothing AndAlso s.Length Then
                     Dim caps() As String = s.Split(";")
                     Dim capName(caps.Length - 1) As String

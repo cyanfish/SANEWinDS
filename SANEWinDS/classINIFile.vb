@@ -70,7 +70,7 @@ Public Class IniFile
                     oWriter.WriteLine(String.Format("{0}={1}", k.Name, k.Value))
                 Else
                     Trace.WriteLine(String.Format("Writing Key: {0}", k.Name))
-                    oWriter.WriteLine(String.Format("{0}", k.Name))
+                    oWriter.WriteLine(String.Format("{0}=", k.Name))
                 End If
             Next
         Next

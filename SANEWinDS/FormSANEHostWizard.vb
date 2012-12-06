@@ -193,7 +193,7 @@ Public Class FormSANEHostWizard
     Private Sub ComboBoxHost_SelectedIndexChanged(sender As Object, e As EventArgs) Handles ComboBoxHost.SelectedIndexChanged
         If (CurrentSettings.SANE.CurrentHostIndex > -1) AndAlso (CurrentSettings.SANE.CurrentHostIndex < CurrentSettings.SANE.Hosts.Count) Then
             With CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex)
-                If .NameOrAddress IsNot Nothing Then Me.ComboBoxHost.Text = .NameOrAddress
+                'If .NameOrAddress IsNot Nothing Then Me.ComboBoxHost.Text = .NameOrAddress
                 If .Port > 0 Then Me.TextBoxPort.Text = .Port.ToString Else Me.TextBoxPort.Text = "6566"
                 If .TCP_Timeout_ms > 1000 Then Me.TextBoxTimeout.Text = .TCP_Timeout_ms.ToString Else Me.TextBoxTimeout.Text = "5000"
                 If .Username IsNot Nothing AndAlso .Username.Trim.Length Then Me.TextBoxUserName.Text = .Username.Trim Else Me.TextBoxUserName.Text = CurrentSettings.ProductName.Name

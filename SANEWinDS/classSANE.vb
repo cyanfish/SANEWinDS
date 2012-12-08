@@ -1010,13 +1010,14 @@ Class SANE_API
             Loop
 
             Dim TransferredMbits As UInt64 = (TransferredBytes * 8UL) / 1024 / 1024
-            Dim ElapsedSeconds As Single = (Now - StartTime).TotalSeconds
+            Dim ElapsedSeconds As Double = (Now - StartTime).TotalSeconds
+            If ElapsedSeconds < 0.001 Then ElapsedSeconds = 0.001 'avoid divide by zero
             Logger.Write(DebugLogger.Level.Debug, False, "Transferred " & TransferredBytes.ToString & " bytes in " & ElapsedSeconds.ToString("0.00") & " seconds with a throughput of " & (TransferredMbits / ElapsedSeconds).ToString("0.00") & " Mbps")
 
             Return Frame
 
         Catch ex As Exception
-            'XXX
+            Logger.Write(DebugLogger.Level.Error_, True, "Error acquiring image frame: " & ex.Message)
             Throw
         Finally
             If ImageConn.Connected Then ImageConn.Close()

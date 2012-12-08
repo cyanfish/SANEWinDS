@@ -99,7 +99,7 @@ Public Class FormStartup
                     MsgBox("No pages were acquired.  The Automatic Document Feeder may be empty.")
                 End If
             Else
-                MsgBox("Successfully acquired " & Pages.ToString & " pages")
+                'MsgBox("Successfully acquired " & Pages.ToString & " pages")
             End If
         Catch ex As Exception
             MsgBox(ex.Message)
@@ -136,7 +136,8 @@ Public Class FormStartup
                         pb.Parent = frm
                         pb.Dock = DockStyle.Fill
                         'pb.SizeMode = PictureBoxSizeMode.AutoSize
-                        pb.SizeMode = PictureBoxSizeMode.StretchImage
+                        'pb.SizeMode = PictureBoxSizeMode.StretchImage
+                        pb.SizeMode = PictureBoxSizeMode.Zoom
 
                         frm.Show()
                         pb.BorderStyle = BorderStyle.None
@@ -159,6 +160,9 @@ Public Class FormStartup
                         fs.Close()
                         pb.Image = Image.FromStream(ms)
                         ms.Close()
+
+                        ResizeImageForm(frm)
+                        'AddHandler frm.Resize, AddressOf ImageForm_OnResize
 
                         Application.DoEvents() 'Without this the pictureboxes don't get drawn until all pages are finished.
                     Catch ex As Exception
@@ -261,5 +265,25 @@ Public Class FormStartup
             .FileStream = Nothing
             .FileName = Nothing
         End With
+    End Sub
+
+    Private Sub ImageForm_OnResize(sender As Object, e As EventArgs)
+        ResizeImageForm(sender)
+    End Sub
+
+    Private Sub ResizeImageForm(frm As Form)
+
+        Dim pb As PictureBox = frm.Controls("PictureBox1")
+
+        Dim BordersWidth As Integer = frm.Width - frm.ClientSize.Width
+        Dim BordersHeight As Integer = frm.Height - frm.ClientSize.Height
+        Dim hzoom As Integer = Math.Abs(pb.PreferredSize.Height - pb.Height)
+        Dim wzoom As Integer = Math.Abs(pb.PreferredSize.Width - pb.Width)
+        If hzoom > wzoom Then
+            frm.Height = ((pb.PreferredSize.Height / pb.PreferredSize.Width) * pb.Width) + BordersHeight
+        Else
+            frm.Width = ((pb.PreferredSize.Width / pb.PreferredSize.Height) * pb.Height) + BordersWidth
+        End If
+
     End Sub
 End Class

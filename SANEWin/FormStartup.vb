@@ -31,11 +31,20 @@ Public Class FormStartup
         Dim iTextDocument As iTextSharp.text.Document
         Dim iTextWriter As iTextSharp.text.pdf.PdfWriter
     End Structure
-
+    Private Structure TIFFInfo
+        Dim FirstPage As Bitmap
+        Dim FileName As String
+        'Dim FileStream As System.IO.FileStream
+        Dim ImageCodecInfo As System.Drawing.Imaging.ImageCodecInfo
+        Dim Encoder As System.Drawing.Imaging.Encoder
+        Dim EncoderParameters As System.Drawing.Imaging.EncoderParameters
+    End Structure
     'Private OutputTo As OutputFormat = OutputFormat.PDF
     'Private OutputTo As String = Nothing
 
     Private CurrentPDF As PDFInfo
+    Private CurrentTIFF As TIFFInfo
+
     Private frmStatus As Form
 
     Private Sub FormStartup_Load(ByVal sender As Object, ByVal e As System.EventArgs) Handles Me.Load
@@ -45,6 +54,7 @@ Public Class FormStartup
                 '.AddOutputDestinationString("JPEG")
                 .AddOutputDestinationString("PDF")
                 .AddOutputDestinationString("Screen")
+                .AddOutputDestinationString("TIFF")
                 .SetOutputDestinationString("PDF")
             End With
             Dim DialogResult As DialogResult = GUIForm.ShowDialog
@@ -85,22 +95,33 @@ Public Class FormStartup
     Private Sub OnBatchCompleted(ByVal Pages As Integer) Handles GUIForm.BatchCompleted
         Me.GUIForm.Visible = True
         Try
-            'If Me.OutputTo = OutputFormat.PDF Then
-            If Me.GUIForm.GetOutputDestinationString.ToUpper = "PDF" Then
-                Dim fname As String = Me.CurrentPDF.FileName
-                Me.ClosePDF()
-                frmStatus.Close()
-                If Pages > 0 Then
-                    If fname IsNot Nothing Then
-                        'ShowStatus("Opening PDF document in default viewer...")
-                        Process.Start(fname)
+        Select GUIForm.GetOutputDestinationString.ToUpper
+                Case "PDF"
+                    Dim fname As String = Me.CurrentPDF.FileName
+                    Me.ClosePDF()
+                    frmStatus.Close()
+                    If Pages > 0 Then
+                        If fname IsNot Nothing Then
+                            'ShowStatus("Opening PDF document in default viewer...")
+                            Process.Start(fname)
+                        End If
+                    Else
+                        MsgBox("No pages were acquired.  The Automatic Document Feeder may be empty.")
                     End If
-                Else
-                    MsgBox("No pages were acquired.  The Automatic Document Feeder may be empty.")
-                End If
-            Else
-                'MsgBox("Successfully acquired " & Pages.ToString & " pages")
-            End If
+                Case "TIFF"
+                    Dim fname As String = Me.CurrentTIFF.FileName
+                    Me.CloseTIFF()
+                    frmStatus.Close()
+                    If Pages > 0 Then
+                        If fname IsNot Nothing Then
+                            Process.Start(fname)
+                        End If
+                    Else
+                        MsgBox("No pages were acquired.  The Automatic Document Feeder may be empty.")
+                    End If
+                Case Else
+                    'MsgBox("Successfully acquired " & Pages.ToString & " pages")
+            End Select
         Catch ex As Exception
             MsgBox(ex.Message)
         Finally
@@ -111,10 +132,12 @@ Public Class FormStartup
     Private Sub OnImageError(ByVal PageNumber As Integer, ByVal Message As String) Handles GUIForm.ImageError
         Me.GUIForm.Visible = True
         'If Me.OutputTo = OutputFormat.PDF Then
-        If GUIForm.GetOutputDestinationString.ToUpper = "PDF" Then
-            Me.ClosePDF()
-        End If
-
+        Select GUIForm.GetOutputDestinationString.ToUpper
+            Case "PDF"
+                Me.ClosePDF()
+            Case "TIFF"
+                Me.CloseTIFF()
+        End Select
         frmStatus.Close()
 
         MsgBox("Error acquiring page " & PageNumber.ToString & ": " & Message)
@@ -180,7 +203,7 @@ Public Class FormStartup
                     If bmp IsNot Nothing Then
                         If PageNumber = 1 Then
 
-                            ShowStatus("Creating PDF document...")
+                            'ShowStatus("Creating PDF document...")
 
                             'guess page size:
                             '8.5/11 = .773
@@ -204,7 +227,7 @@ Public Class FormStartup
                         End If
 
                         If CurrentPDF.FileName IsNot Nothing Then
-                            ShowStatus("Adding page " & PageNumber.ToString & " to PDF document...")
+                            'ShowStatus("Adding page " & PageNumber.ToString & " to PDF document...")
                             Me.AddPDFPage(bmp)
                         End If
 
@@ -215,6 +238,55 @@ Public Class FormStartup
                 Finally
                     bmp.Dispose()
                     bmp = Nothing
+                End Try
+            Case "TIFF"
+                Try
+                    If bmp IsNot Nothing Then
+
+                        If Me.CurrentTIFF.ImageCodecInfo Is Nothing Then
+                            Dim Codecs() As System.Drawing.Imaging.ImageCodecInfo = System.Drawing.Imaging.ImageCodecInfo.GetImageEncoders()
+                            For Each codec As System.Drawing.Imaging.ImageCodecInfo In Codecs
+                                If codec.FormatDescription = "TIFF" Then
+                                    'CodecInfo = codec
+                                    Me.CurrentTIFF.ImageCodecInfo = codec
+                                    Exit For
+                                End If
+                            Next
+                        End If
+                        If Me.CurrentTIFF.ImageCodecInfo Is Nothing Then Throw New Exception("Unable to find an instance of the TIFF codec")
+
+                        Me.CurrentTIFF.Encoder = System.Drawing.Imaging.Encoder.SaveFlag
+                        Me.CurrentTIFF.EncoderParameters = New System.Drawing.Imaging.EncoderParameters(1)
+
+                        If PageNumber = 1 Then
+                            'ShowStatus("Creating TIFF image...")
+
+                            Me.CurrentTIFF.FileName = My.Computer.FileSystem.SpecialDirectories.Temp & "\SANEWin.TIF" 'XXX
+
+                            Me.CurrentTIFF.EncoderParameters.Param(0) = New System.Drawing.Imaging.EncoderParameter(Me.CurrentTIFF.Encoder, Fix(System.Drawing.Imaging.EncoderValue.MultiFrame))
+                            Me.CurrentTIFF.FirstPage = bmp
+                            Me.CurrentTIFF.FirstPage.Save(Me.CurrentTIFF.FileName, Me.CurrentTIFF.ImageCodecInfo, Me.CurrentTIFF.EncoderParameters)
+
+                            'bmp.Save(Me.CurrentTIFF.FileName, System.Drawing.Imaging.ImageFormat.Tiff)
+                        Else
+                            'ShowStatus("Adding page " & PageNumber.ToString & " to TIFF image...")
+                            Try
+                                If Me.CurrentTIFF.FirstPage IsNot Nothing Then
+                                    Me.CurrentTIFF.EncoderParameters.Param(0) = New System.Drawing.Imaging.EncoderParameter(Me.CurrentTIFF.Encoder, Fix(System.Drawing.Imaging.EncoderValue.FrameDimensionPage))
+                                    Me.CurrentTIFF.FirstPage.SaveAdd(bmp, Me.CurrentTIFF.EncoderParameters)
+                                Else
+                                    Throw New Exception("The first page of a multipage TIFF disappeared while the file was being written")
+                                End If
+                            Catch ex As Exception
+                                Throw
+                            Finally
+                                bmp.Dispose()
+                                bmp = Nothing
+                            End Try
+                        End If
+                    End If
+                Catch ex As Exception
+                    MsgBox(ex.Message)
                 End Try
         End Select
         ShowStatus("Acquiring page " & (PageNumber + 1).ToString & "...")
@@ -267,6 +339,24 @@ Public Class FormStartup
         End With
     End Sub
 
+    Private Sub CloseTIFF()
+        With Me.CurrentTIFF
+            Try
+                If Me.CurrentTIFF.FirstPage IsNot Nothing Then
+                    ' Close the multiple-frame file.
+                    Dim myEncoderParameter As System.Drawing.Imaging.EncoderParameter
+                    myEncoderParameter = New System.Drawing.Imaging.EncoderParameter(Me.CurrentTIFF.Encoder, Fix(System.Drawing.Imaging.EncoderValue.Flush))
+                    Me.CurrentTIFF.EncoderParameters.Param(0) = myEncoderParameter
+                    Me.CurrentTIFF.FirstPage.SaveAdd(Me.CurrentTIFF.EncoderParameters)
+                End If
+                Me.CurrentTIFF.FirstPage.Dispose()
+                Me.CurrentTIFF.FirstPage = Nothing
+                Me.CurrentTIFF.FileName = Nothing
+            Catch ex As Exception
+                MsgBox(ex.Message)
+            End Try
+        End With
+    End Sub
     Private Sub ImageForm_OnResize(sender As Object, e As EventArgs)
         ResizeImageForm(sender)
     End Sub

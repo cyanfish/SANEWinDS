@@ -99,7 +99,7 @@ Public Class FormMain
                             If Status = SANE_API.SANE_Status.SANE_STATUS_GOOD Then
                                 If bmp IsNot Nothing Then
                                     RaiseEvent ImageAcquired(PageNo, bmp)
-                                    bmp.Dispose()
+                                    'bmp.Dispose() 'let the event consumer decide whether to dispose or not.
                                     bmp = Nothing
                                     If Not CurrentSettings.ScanContinuously Then
                                         RaiseEvent BatchCompleted(PageNo)

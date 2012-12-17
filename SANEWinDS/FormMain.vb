@@ -24,6 +24,8 @@ Public Class FormMain
     Public Event ImageAcquired(ByVal PageNumber As Integer, ByVal Bmp As Bitmap)
     Public Event ImageError(ByVal PageNumber As Integer, ByVal Message As String)
     Public Event BatchCompleted(ByVal Pages As Integer)
+    Public Event OutputDestinationChanged(NewValue As String)
+    Public Event CompressionMethodChanged(NewValue As String)
 
     Dim Host As SharedSettings.HostInfo
 
@@ -279,8 +281,13 @@ Public Class FormMain
                 .SelectedIndex = 0
                 .Enabled = False
             End With
+            With Me.ComboBoxCompression
+                .Items.Add("None")
+                .SelectedIndex = 0
+                .Enabled = False
+            End With
         Else
-            'Let the caller decide what output formats to enable.
+            'Let the caller decide what output formats and compression options to enable.
         End If
     End Sub
 
@@ -301,6 +308,30 @@ Public Class FormMain
     Public Function GetOutputDestinationString() As String
         Return Me.ComboBoxDestination.Text
     End Function
+    Public Sub ClearOutputDestinationStrings()
+        Me.ComboBoxDestination.Items.Clear()
+    End Sub
+
+    Public Sub AddCompressionString(CompressionType As String)
+        If CompressionType IsNot Nothing Then
+            If Not Me.ComboBoxCompression.Items.Contains(CompressionType) Then
+                Me.ComboBoxCompression.Items.Add(CompressionType)
+            End If
+        End If
+    End Sub
+    Public Sub SetCompressionString(CompressionType As String)
+        If CompressionType IsNot Nothing Then
+            If Me.ComboBoxCompression.Items.Contains(CompressionType) Then
+                Me.ComboBoxCompression.Text = CompressionType
+            End If
+        End If
+    End Sub
+    Public Function GetCompressionString(CompressionType As String)
+        Return Me.ComboBoxCompression.Text
+    End Function
+    Public Sub ClearCompressStrings()
+        Me.ComboBoxCompression.Items.Clear()
+    End Sub
 
     Private Sub Try_Init_SANE()
         Try
@@ -1282,6 +1313,14 @@ Public Class FormMain
         Catch ex As Exception
             Logger.Write(DebugLogger.Level.Error_, True, "Error setting page dimensions: " & ex.Message)
         End Try
+    End Sub
+
+    Private Sub ComboBoxDestination_SelectedIndexChanged(sender As Object, e As EventArgs) Handles ComboBoxDestination.SelectedIndexChanged
+        RaiseEvent OutputDestinationChanged(ComboBoxDestination.Text)
+    End Sub
+
+    Private Sub ComboBoxCompression_SelectedIndexChanged(sender As Object, e As EventArgs) Handles ComboBoxCompression.SelectedIndexChanged
+        RaiseEvent CompressionMethodChanged(ComboBoxCompression.Text)
     End Sub
 End Class
 

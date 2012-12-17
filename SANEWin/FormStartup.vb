@@ -31,13 +31,21 @@ Public Class FormStartup
         Dim iTextDocument As iTextSharp.text.Document
         Dim iTextWriter As iTextSharp.text.pdf.PdfWriter
     End Structure
+    Public Enum TIFFCompressionMethod As Byte
+        None = 0
+        CCITT4 = 1
+        RLE = 2
+        LZW = 3
+    End Enum
     Private Structure TIFFInfo
         Dim FirstPage As Bitmap
         Dim FileName As String
         'Dim FileStream As System.IO.FileStream
         Dim ImageCodecInfo As System.Drawing.Imaging.ImageCodecInfo
-        Dim Encoder As System.Drawing.Imaging.Encoder
+        Dim SaveEncoder As System.Drawing.Imaging.Encoder
+        Dim CompressionEncoder As System.Drawing.Imaging.Encoder
         Dim EncoderParameters As System.Drawing.Imaging.EncoderParameters
+        Dim CompressionMethod As TIFFCompressionMethod
     End Structure
     'Private OutputTo As OutputFormat = OutputFormat.PDF
     'Private OutputTo As String = Nothing
@@ -55,6 +63,10 @@ Public Class FormStartup
                 .AddOutputDestinationString("PDF")
                 .AddOutputDestinationString("Screen")
                 .AddOutputDestinationString("TIFF")
+ 
+                AddHandler GUIForm.OutputDestinationChanged, AddressOf Me.GUIForm_DestinationChanged
+                AddHandler GUIForm.CompressionMethodChanged, AddressOf Me.GUIForm_CompressionMethodChanged
+
                 .SetOutputDestinationString("PDF")
             End With
             Dim DialogResult As DialogResult = GUIForm.ShowDialog
@@ -63,6 +75,24 @@ Public Class FormStartup
             Me.ClosePDF()
         End Try
         Me.Close()
+    End Sub
+
+    Private Sub GUIForm_CompressionMethodChanged(NewValue As String)
+        Me.CurrentTIFF.CompressionMethod = [Enum].Parse(GetType(TIFFCompressionMethod), NewValue)
+    End Sub
+
+    Private Sub GUIForm_DestinationChanged(NewValue As String)
+        Select Case GUIForm.GetOutputDestinationString.ToUpper
+            Case "TIFF"
+                For Each c In [Enum].GetNames(GetType(TIFFCompressionMethod))
+                    GUIForm.AddCompressionString(c)
+                Next
+                GUIForm.SetCompressionString(TIFFCompressionMethod.LZW.ToString)
+            Case Else
+                GUIForm.ClearCompressStrings()
+                GUIForm.AddCompressionString("None")
+                GUIForm.SetCompressionString("None")
+        End Select
     End Sub
 
     Private Sub ShowStatus(Text As String)
@@ -247,7 +277,6 @@ Public Class FormStartup
                             Dim Codecs() As System.Drawing.Imaging.ImageCodecInfo = System.Drawing.Imaging.ImageCodecInfo.GetImageEncoders()
                             For Each codec As System.Drawing.Imaging.ImageCodecInfo In Codecs
                                 If codec.FormatDescription = "TIFF" Then
-                                    'CodecInfo = codec
                                     Me.CurrentTIFF.ImageCodecInfo = codec
                                     Exit For
                                 End If
@@ -255,36 +284,49 @@ Public Class FormStartup
                         End If
                         If Me.CurrentTIFF.ImageCodecInfo Is Nothing Then Throw New Exception("Unable to find an instance of the TIFF codec")
 
-                        Me.CurrentTIFF.Encoder = System.Drawing.Imaging.Encoder.SaveFlag
-                        Me.CurrentTIFF.EncoderParameters = New System.Drawing.Imaging.EncoderParameters(1)
+                        If Me.CurrentTIFF.SaveEncoder Is Nothing Then Me.CurrentTIFF.SaveEncoder = System.Drawing.Imaging.Encoder.SaveFlag
+                        If Me.CurrentTIFF.CompressionEncoder Is Nothing Then Me.CurrentTIFF.CompressionEncoder = System.Drawing.Imaging.Encoder.Compression
+                        If Me.CurrentTIFF.EncoderParameters Is Nothing Then Me.CurrentTIFF.EncoderParameters = New System.Drawing.Imaging.EncoderParameters(2)
 
-                        If PageNumber = 1 Then
-                            'ShowStatus("Creating TIFF image...")
+                        Select Case Me.CurrentTIFF.CompressionMethod
+                            Case TIFFCompressionMethod.None
+                                Me.CurrentTIFF.EncoderParameters.Param(1) = New System.Drawing.Imaging.EncoderParameter(Me.CurrentTIFF.CompressionEncoder, System.Drawing.Imaging.EncoderValue.CompressionNone)
+                            Case TIFFCompressionMethod.CCITT4
+                                Me.CurrentTIFF.EncoderParameters.Param(1) = New System.Drawing.Imaging.EncoderParameter(Me.CurrentTIFF.CompressionEncoder, System.Drawing.Imaging.EncoderValue.CompressionCCITT4)
+                                bmp = Me.ConvertToBW(bmp) 'CCITT4 is only for B&W images
+                            Case TIFFCompressionMethod.RLE
+                                Me.CurrentTIFF.EncoderParameters.Param(1) = New System.Drawing.Imaging.EncoderParameter(Me.CurrentTIFF.CompressionEncoder, System.Drawing.Imaging.EncoderValue.CompressionRle)
+                            Case TIFFCompressionMethod.LZW
+                                Me.CurrentTIFF.EncoderParameters.Param(1) = New System.Drawing.Imaging.EncoderParameter(Me.CurrentTIFF.CompressionEncoder, System.Drawing.Imaging.EncoderValue.CompressionLZW)
+                        End Select
 
-                            Me.CurrentTIFF.FileName = My.Computer.FileSystem.SpecialDirectories.Temp & "\SANEWin.TIF" 'XXX
-
-                            Me.CurrentTIFF.EncoderParameters.Param(0) = New System.Drawing.Imaging.EncoderParameter(Me.CurrentTIFF.Encoder, Fix(System.Drawing.Imaging.EncoderValue.MultiFrame))
-                            Me.CurrentTIFF.FirstPage = bmp
-                            Me.CurrentTIFF.FirstPage.Save(Me.CurrentTIFF.FileName, Me.CurrentTIFF.ImageCodecInfo, Me.CurrentTIFF.EncoderParameters)
-
-                            'bmp.Save(Me.CurrentTIFF.FileName, System.Drawing.Imaging.ImageFormat.Tiff)
-                        Else
-                            'ShowStatus("Adding page " & PageNumber.ToString & " to TIFF image...")
-                            Try
-                                If Me.CurrentTIFF.FirstPage IsNot Nothing Then
-                                    Me.CurrentTIFF.EncoderParameters.Param(0) = New System.Drawing.Imaging.EncoderParameter(Me.CurrentTIFF.Encoder, Fix(System.Drawing.Imaging.EncoderValue.FrameDimensionPage))
-                                    Me.CurrentTIFF.FirstPage.SaveAdd(bmp, Me.CurrentTIFF.EncoderParameters)
-                                Else
-                                    Throw New Exception("The first page of a multipage TIFF disappeared while the file was being written")
-                                End If
-                            Catch ex As Exception
-                                Throw
-                            Finally
-                                bmp.Dispose()
-                                bmp = Nothing
-                            End Try
-                        End If
                     End If
+
+                    If PageNumber = 1 Then
+                        'ShowStatus("Creating TIFF image...")
+
+                        Me.CurrentTIFF.FileName = My.Computer.FileSystem.SpecialDirectories.Temp & "\SANEWin.TIF" 'XXX
+
+                        Me.CurrentTIFF.EncoderParameters.Param(0) = New System.Drawing.Imaging.EncoderParameter(Me.CurrentTIFF.SaveEncoder, System.Drawing.Imaging.EncoderValue.MultiFrame)
+                        Me.CurrentTIFF.FirstPage = bmp
+                        Me.CurrentTIFF.FirstPage.Save(Me.CurrentTIFF.FileName, Me.CurrentTIFF.ImageCodecInfo, Me.CurrentTIFF.EncoderParameters)
+                    Else
+                        'ShowStatus("Adding page " & PageNumber.ToString & " to TIFF image...")
+                        Try
+                            If Me.CurrentTIFF.FirstPage IsNot Nothing Then
+                                Me.CurrentTIFF.EncoderParameters.Param(0) = New System.Drawing.Imaging.EncoderParameter(Me.CurrentTIFF.SaveEncoder, System.Drawing.Imaging.EncoderValue.FrameDimensionPage)
+                                Me.CurrentTIFF.FirstPage.SaveAdd(bmp, Me.CurrentTIFF.EncoderParameters)
+                            Else
+                                Throw New Exception("The first page of a multipage TIFF disappeared while the file was being written")
+                            End If
+                        Catch ex As Exception
+                            Throw
+                        Finally
+                            bmp.Dispose()
+                            bmp = Nothing
+                        End Try
+                    End If
+
                 Catch ex As Exception
                     MsgBox(ex.Message)
                 End Try
@@ -292,6 +334,7 @@ Public Class FormStartup
         ShowStatus("Acquiring page " & (PageNumber + 1).ToString & "...")
 
     End Sub
+
     Private Sub OpenPDF(ByVal PageSize As iTextSharp.text.Rectangle)
         With Me.CurrentPDF
             .FileName = My.Computer.FileSystem.SpecialDirectories.Temp & "\SANEWin.PDF" 'XXX
@@ -301,6 +344,7 @@ Public Class FormStartup
             .iTextDocument.Open()
         End With
     End Sub
+
     Private Sub AddPDFPage(ByRef bmp As Bitmap)
         With Me.CurrentPDF
             .iTextDocument.NewPage()
@@ -318,6 +362,7 @@ Public Class FormStartup
             .iTextDocument.Add(img)
         End With
     End Sub
+
     Private Sub ClosePDF()
         With Me.CurrentPDF
             Try
@@ -345,7 +390,7 @@ Public Class FormStartup
                 If Me.CurrentTIFF.FirstPage IsNot Nothing Then
                     ' Close the multiple-frame file.
                     Dim myEncoderParameter As System.Drawing.Imaging.EncoderParameter
-                    myEncoderParameter = New System.Drawing.Imaging.EncoderParameter(Me.CurrentTIFF.Encoder, Fix(System.Drawing.Imaging.EncoderValue.Flush))
+                    myEncoderParameter = New System.Drawing.Imaging.EncoderParameter(Me.CurrentTIFF.SaveEncoder, Fix(System.Drawing.Imaging.EncoderValue.Flush))
                     Me.CurrentTIFF.EncoderParameters.Param(0) = myEncoderParameter
                     Me.CurrentTIFF.FirstPage.SaveAdd(Me.CurrentTIFF.EncoderParameters)
                 End If
@@ -357,6 +402,92 @@ Public Class FormStartup
             End Try
         End With
     End Sub
+
+    Private Function ConvertToBW(ByVal Original As Bitmap) As Bitmap
+        Dim Source As Bitmap = Nothing
+        'If original bitmap is not already in 32 BPP, ARGB format, then convert
+        If Original.PixelFormat <> System.Drawing.Imaging.PixelFormat.Format32bppArgb Then
+            Source = New Bitmap(Original.Width, Original.Height, System.Drawing.Imaging.PixelFormat.Format32bppArgb)
+            Source.SetResolution(Original.HorizontalResolution, Original.VerticalResolution)
+            Using g As Graphics = Graphics.FromImage(Source)
+                g.DrawImageUnscaled(Original, 0, 0)
+            End Using
+        Else
+            Source = Original
+        End If
+
+        'Lock source bitmap in memory
+        Dim sourceData As System.Drawing.Imaging.BitmapData = Source.LockBits(New Rectangle(0, 0, Source.Width, Source.Height), System.Drawing.Imaging.ImageLockMode.ReadOnly, System.Drawing.Imaging.PixelFormat.Format32bppArgb)
+
+        'Copy image data to binary array
+        Dim imageSize As Integer = sourceData.Stride * sourceData.Height
+        Dim sourceBuffer(imageSize - 1) As Byte
+
+        System.Runtime.InteropServices.Marshal.Copy(sourceData.Scan0, sourceBuffer, 0, imageSize)
+
+        'Unlock source bitmap
+        Source.UnlockBits(sourceData)
+
+        'Create destination bitmap
+        Dim Destination As Bitmap = New Bitmap(Source.Width, Source.Height, System.Drawing.Imaging.PixelFormat.Format1bppIndexed)
+
+        'Lock destination bitmap in memory
+        Dim destinationData As System.Drawing.Imaging.BitmapData = Destination.LockBits(New Rectangle(0, 0, Destination.Width, Destination.Height), System.Drawing.Imaging.ImageLockMode.WriteOnly, System.Drawing.Imaging.PixelFormat.Format1bppIndexed)
+
+        'Create destination buffer
+        imageSize = destinationData.Stride * destinationData.Height
+        Dim destinationBuffer(imageSize - 1) As Byte
+
+        Dim sourceIndex As Integer = 0
+        Dim destinationIndex As Integer = 0
+        Dim pixelTotal As Integer = 0
+        Dim destinationValue As Byte = 0
+        Dim pixelValue As Integer = 128
+        Dim height As Integer = Source.Height
+        Dim width As Integer = Source.Width
+        Dim threshold As Integer = 500
+
+
+        'Iterate lines
+        For y As Integer = 0 To height - 1
+
+            sourceIndex = y * sourceData.Stride
+            destinationIndex = y * destinationData.Stride
+            destinationValue = 0
+            pixelValue = 128
+
+            'Iterate pixels
+            For x As Integer = 0 To width - 1
+
+                'Compute pixel brightness (i.e. total of Red, Green, and Blue values)
+                pixelTotal = CInt(sourceBuffer(sourceIndex + 1)) + CInt(sourceBuffer(sourceIndex + 2)) + CInt(sourceBuffer(sourceIndex + 3))
+                If (pixelTotal > threshold) Then
+                    destinationValue += CByte(pixelValue)
+                End If
+                If pixelValue = 1 Then
+                    destinationBuffer(destinationIndex) = destinationValue
+                    destinationIndex += 1
+                    destinationValue = 0
+                    pixelValue = 128
+                Else
+                    pixelValue >>= 1
+                End If
+                sourceIndex += 4
+            Next
+            If pixelValue <> 128 Then
+                destinationBuffer(destinationIndex) = destinationValue
+            End If
+        Next
+
+        'Copy binary image data to destination bitmap
+        System.Runtime.InteropServices.Marshal.Copy(destinationBuffer, 0, destinationData.Scan0, imageSize)
+
+        'Unlock destination bitmap
+        Destination.UnlockBits(destinationData)
+
+        Return Destination
+    End Function
+
     Private Sub ImageForm_OnResize(sender As Object, e As EventArgs)
         ResizeImageForm(sender)
     End Sub

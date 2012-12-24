@@ -30,7 +30,7 @@ Public Class SharedSettings
         Dim TCP_Timeout_ms As Integer
         Dim Open As Boolean
         Dim Device As String
-        Dim DeviceINI As IniFile
+        Dim DeviceINI As IniFile.IniFile
         Dim AutoLocateDevice As String 'SANE backend name of device to auto-choose from list of devices on CurrentHost (example: "canon_dr")
     End Structure
     Public Structure SANESettings
@@ -95,7 +95,7 @@ Public Class SharedSettings
 
     Private Sub WriteSettings()
         'XXX The INIFile class writes the settings out of order
-        Dim INI As New IniFile
+        Dim INI As New IniFile.IniFile
         Dim UserSettingsFileName As String = Me.GetUserConfigFileName
         INI.Load(UserSettingsFileName)
 
@@ -213,7 +213,7 @@ Public Class SharedSettings
             f = Nothing
         End If
 
-        Dim INI As New IniFile
+        Dim INI As New IniFile.IniFile
         INI.Load(UserSettingsFileName)
 
         'SANE.Hosts = GetSANEHostsFromString(INI.GetKeyValue("SANE", "Hosts"))
@@ -280,7 +280,7 @@ Public Class SharedSettings
         Return False
     End Function
 
-    Private Function GetSANEHostsFromINI(INI As IniFile) As HostInfo()
+    Private Function GetSANEHostsFromINI(INI As IniFile.IniFile) As HostInfo()
         Dim hi(-1) As HostInfo
         If INI IsNot Nothing Then
             For idx As Integer = 0 To MAX_HOSTS - 1

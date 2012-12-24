@@ -128,6 +128,10 @@
     </None>
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\IniFile\IniFile.vbproj">
+      <Project>{34b5b176-3c0d-4201-a100-cc6f8b2bf5ed}</Project>
+      <Name>IniFile</Name>
+    </ProjectReference>
     <ProjectReference Include="..\SANEWinDS\SANEWinDS.vbproj">
       <Project>{AFF6B4DD-CDB1-466A-A30F-41B43E5A475F}</Project>
       <Name>SANEWinDS</Name>

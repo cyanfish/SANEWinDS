@@ -24,8 +24,6 @@ Public Class FormMain
     Public Event ImageAcquired(ByVal PageNumber As Integer, ByVal Bmp As Bitmap)
     Public Event ImageError(ByVal PageNumber As Integer, ByVal Message As String)
     Public Event BatchCompleted(ByVal Pages As Integer)
-    Public Event OutputDestinationChanged(NewValue As String)
-    Public Event CompressionMethodChanged(NewValue As String)
 
     Dim Host As SharedSettings.HostInfo
 
@@ -39,7 +37,7 @@ Public Class FormMain
     Public TWAINInstance As TWAIN_VB.DS_Entry_Pump
     Public Mode As UIMode = UIMode.Scan
     Private PanelOptIsDirty As Boolean
-
+    Private Initialized As Boolean 'Has the Load() event already been executed? Workaround for Load() always firing when using ShowDialog().
     Private Sub CloseCurrentHost()
         Logger.Write(DebugLogger.Level.Debug, False, "")
         Try
@@ -90,7 +88,6 @@ Public Class FormMain
             Dim PageNo As Integer = 0
             If SANE.CurrentDevice.Name IsNot Nothing Then
                 If SANE.CurrentDevice.Open Then
-                    Me.ComboBoxDestination.Enabled = False
                     RaiseEvent BatchStarted()
                     Dim Status As SANE_API.SANE_Status = 0
                     Do
@@ -118,7 +115,6 @@ Public Class FormMain
                             Exit Do
                         End Try
                     Loop While Status = SANE_API.SANE_Status.SANE_STATUS_GOOD And CurrentSettings.ScanContinuously = True
-                    Me.ComboBoxDestination.Enabled = True
                 Else
                     RaiseEvent ImageError(PageNo, "The SANE device '" & SANE.CurrentDevice.Name & "' has not been opened")
                 End If
@@ -222,115 +218,67 @@ Public Class FormMain
     End Sub
 
     Private Sub FormMain_FormClosed(sender As Object, e As FormClosedEventArgs) Handles Me.FormClosed
-        If CurrentSettings IsNot Nothing Then CurrentSettings.Save()
-    End Sub
-
-    Private Sub Form1_FormClosing(ByVal sender As Object, ByVal e As System.Windows.Forms.FormClosingEventArgs) Handles Me.FormClosing
         Me.CloseCurrentHost()
         If net IsNot Nothing Then
             If net.Connected Then net.Close()
             net = Nothing
         End If
+        If CurrentSettings IsNot Nothing Then CurrentSettings.Save()
+    End Sub
+
+    Private Sub Form1_FormClosing(ByVal sender As Object, ByVal e As System.Windows.Forms.FormClosingEventArgs) Handles Me.FormClosing
+        'Me.CloseCurrentHost()
+        'If net IsNot Nothing Then
+        '    If net.Connected Then net.Close()
+        '    net = Nothing
+        'End If
     End Sub
 
     Private Sub Form1_Load(ByVal sender As Object, ByVal e As System.EventArgs) Handles Me.Load
+        If Not Me.Initialized Then
+            Me.Initialized = True
+            Me.Text = My.Application.Info.ProductName & " " & My.Application.Info.Version.ToString
+            Me.MinimumSize = Me.Size
 
-        Me.Text = My.Application.Info.ProductName & " " & My.Application.Info.Version.ToString
+            Dim UseRoamingAppData As Boolean = False
+            Try
+                UseRoamingAppData = My.Settings.UseRoamingAppData
+            Catch ex As Exception
+            End Try
 
-        Dim UseRoamingAppData As Boolean = False
-        Try
-            UseRoamingAppData = My.Settings.UseRoamingAppData
-        Catch ex As Exception
-        End Try
+            If Logger Is Nothing Then Logger = New DebugLogger(UseRoamingAppData)
 
-        If Logger Is Nothing Then Logger = New DebugLogger(UseRoamingAppData)
+            Logger.Write(DebugLogger.Level.Debug, False, "")
 
-        Logger.Write(DebugLogger.Level.Debug, False, "")
+            Me.ButtonOK.Enabled = False
+            Me.ButtonHost.Enabled = Not TWAIN_Is_Active 'XXX is it ok to reconfigure with TWAIN active?
 
-        Me.ButtonOK.Enabled = False
-        Me.ButtonHost.Enabled = Not TWAIN_Is_Active 'XXX is it ok to reconfigure with TWAIN active?
+            If SANE Is Nothing Then SANE = New SANE_API
 
-        If SANE Is Nothing Then SANE = New SANE_API
-
-        If Not TWAIN_Is_Active Then
-            If Not ((CurrentSettings.SANE.CurrentHostIndex > -1) AndAlso _
-                    (CurrentSettings.SANE.CurrentHostIndex < CurrentSettings.SANE.Hosts.Length) _
-                    AndAlso CurrentSettings.HostIsValid(CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex)) _
-                    AndAlso (CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Device IsNot Nothing) _
-                    AndAlso CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Device.Length) Then
-                Dim f As New FormSANEHostWizard
-                If f.ShowDialog <> Windows.Forms.DialogResult.OK Then
-                    Logger.Write(DebugLogger.Level.Debug, False, "User cancelled SANE host wizard")
-                    'XXX
+            If Not TWAIN_Is_Active Then
+                If Not ((CurrentSettings.SANE.CurrentHostIndex > -1) AndAlso _
+                        (CurrentSettings.SANE.CurrentHostIndex < CurrentSettings.SANE.Hosts.Length) _
+                        AndAlso CurrentSettings.HostIsValid(CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex)) _
+                        AndAlso (CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Device IsNot Nothing) _
+                        AndAlso CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Device.Length) Then
+                    Dim f As New FormSANEHostWizard
+                    If f.ShowDialog <> Windows.Forms.DialogResult.OK Then
+                        Logger.Write(DebugLogger.Level.Debug, False, "User cancelled SANE host wizard")
+                        'XXX
+                    End If
                 End If
+                Try_Init_SANE()
             End If
-            Try_Init_SANE()
-        End If
 
-        'If CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).NameOrAddress IsNot Nothing Then
-        If (CurrentSettings.SANE.CurrentHostIndex > -1) AndAlso (CurrentSettings.SANE.CurrentHostIndex < CurrentSettings.SANE.Hosts.Length) Then
-            Host = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex)
-        Else
+            'If CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).NameOrAddress IsNot Nothing Then
+            If (CurrentSettings.SANE.CurrentHostIndex > -1) AndAlso (CurrentSettings.SANE.CurrentHostIndex < CurrentSettings.SANE.Hosts.Length) Then
+                Host = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex)
+            Else
 
-        End If
-
-        If Me.Mode = UIMode.Scan Then Me.ButtonOK.Text = "Scan" Else Me.ButtonOK.Text = "OK"
-        If TWAIN_Is_Active Then
-            With Me.ComboBoxDestination
-                .Items.Add("TWAIN")
-                .SelectedIndex = 0
-                .Enabled = False
-            End With
-            With Me.ComboBoxCompression
-                .Items.Add("None")
-                .SelectedIndex = 0
-                .Enabled = False
-            End With
-        Else
-            'Let the caller decide what output formats and compression options to enable.
-        End If
-    End Sub
-
-    Public Sub AddOutputDestinationString(Destination As String)
-        If Destination IsNot Nothing Then
-            If Not Me.ComboBoxDestination.Items.Contains(Destination) Then
-                Me.ComboBoxDestination.Items.Add(Destination)
             End If
-        End If
-    End Sub
-    Public Sub SetOutputDestinationString(Destination As String)
-        If Destination IsNot Nothing Then
-            If Me.ComboBoxDestination.Items.Contains(Destination) Then
-                Me.ComboBoxDestination.Text = Destination
-            End If
-        End If
-    End Sub
-    Public Function GetOutputDestinationString() As String
-        Return Me.ComboBoxDestination.Text
-    End Function
-    Public Sub ClearOutputDestinationStrings()
-        Me.ComboBoxDestination.Items.Clear()
-    End Sub
 
-    Public Sub AddCompressionString(CompressionType As String)
-        If CompressionType IsNot Nothing Then
-            If Not Me.ComboBoxCompression.Items.Contains(CompressionType) Then
-                Me.ComboBoxCompression.Items.Add(CompressionType)
-            End If
+            If Me.Mode = UIMode.Scan Then Me.ButtonOK.Text = "Scan" Else Me.ButtonOK.Text = "OK"
         End If
-    End Sub
-    Public Sub SetCompressionString(CompressionType As String)
-        If CompressionType IsNot Nothing Then
-            If Me.ComboBoxCompression.Items.Contains(CompressionType) Then
-                Me.ComboBoxCompression.Text = CompressionType
-            End If
-        End If
-    End Sub
-    Public Function GetCompressionString(CompressionType As String)
-        Return Me.ComboBoxCompression.Text
-    End Function
-    Public Sub ClearCompressStrings()
-        Me.ComboBoxCompression.Items.Clear()
     End Sub
 
     Private Sub Try_Init_SANE()
@@ -393,7 +341,7 @@ Public Class FormMain
 
                         Me.GetOpts(True)  'must occur prior to reading GetDeviceConfigFileName()!
 
-                        CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI = New IniFile
+                        CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI = New IniFile.IniFile
                         Dim s As String = CurrentSettings.GetDeviceConfigFileName()
                         If s IsNot Nothing AndAlso s.Length > 0 Then CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.Load(s)
 
@@ -1242,9 +1190,9 @@ Public Class FormMain
     End Sub
 
     Private Sub ButtonCancel_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles ButtonCancel.Click
-        If Not TWAIN_Is_Active Then 'TWAIN_VB registers its own event handler
-            Me.Close()
-        End If
+        'If Not TWAIN_Is_Active Then 'TWAIN_VB registers its own event handler
+        Me.Close()
+        'End If
     End Sub
 
     Private Sub CheckBoxBatchMode_CheckedChanged(ByVal sender As Object, ByVal e As System.EventArgs) Handles CheckBoxBatchMode.CheckedChanged
@@ -1315,12 +1263,5 @@ Public Class FormMain
         End Try
     End Sub
 
-    Private Sub ComboBoxDestination_SelectedIndexChanged(sender As Object, e As EventArgs) Handles ComboBoxDestination.SelectedIndexChanged
-        RaiseEvent OutputDestinationChanged(ComboBoxDestination.Text)
-    End Sub
-
-    Private Sub ComboBoxCompression_SelectedIndexChanged(sender As Object, e As EventArgs) Handles ComboBoxCompression.SelectedIndexChanged
-        RaiseEvent CompressionMethodChanged(ComboBoxCompression.Text)
-    End Sub
 End Class
 

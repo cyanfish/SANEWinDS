@@ -3883,7 +3883,7 @@ Namespace TWAIN_VB
                             MyForm.TWAIN_Is_Active = True
                             MyForm.TWAINInstance = Me
                             AddHandler MyForm.ButtonOK.Click, AddressOf Me.GUI_ButtonOK_Click
-                            AddHandler MyForm.ButtonCancel.Click, AddressOf Me.GUI_ButtonCancel_Click
+                            'AddHandler MyForm.ButtonCancel.Click, AddressOf Me.GUI_ButtonCancel_Click
                             AddHandler MyForm.FormClosing, AddressOf Me.GUI_FormClosing
                             'MyForm.CheckBoxBatchMode.Checked = CBool(Me.Caps(CAP.CAP_FEEDERENABLED).CurrentValue)
                             MyForm.CheckBoxBatchMode.Checked = CurrentSettings.ScanContinuously
@@ -3970,7 +3970,7 @@ Namespace TWAIN_VB
 
                                             MyForm.GetOpts(True) 'must occur prior to reading GetDeviceConfigFileName()!
 
-                                            CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI = New IniFile
+                                            CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI = New IniFile.IniFile
                                             Dim s As String = CurrentSettings.GetDeviceConfigFileName()
                                             If s IsNot Nothing AndAlso s.Length > 0 Then CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.Load(s)
 
@@ -4227,10 +4227,10 @@ Namespace TWAIN_VB
             End If
         End Sub
 
-        Private Sub GUI_ButtonCancel_Click(ByVal sender As Object, ByVal e As System.Windows.Forms.MouseEventArgs)
-            Logger.Write(DebugLogger.Level.Debug, False, "")
-            Send_TWAIN_Message(MyIdentity, AppIdentity, DG.DG_CONTROL, DAT.DAT_NULL, MSG.MSG_CLOSEDSREQ, Nothing)
-        End Sub
+        'Private Sub GUI_ButtonCancel_Click(ByVal sender As Object, ByVal e As System.Windows.Forms.MouseEventArgs)
+        '    Logger.Write(DebugLogger.Level.Debug, False, "")
+        '    Send_TWAIN_Message(MyIdentity, AppIdentity, DG.DG_CONTROL, DAT.DAT_NULL, MSG.MSG_CLOSEDSREQ, Nothing)
+        'End Sub
 
         Private Sub GUI_FormClosing(ByVal sender As Object, ByVal e As System.Windows.Forms.FormClosingEventArgs)
             If Not sender.Got_MSG_CLOSEDS Then

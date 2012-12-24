@@ -36,13 +36,9 @@ Partial Class FormMain
         Me.TextBoxDevice = New System.Windows.Forms.TextBox()
         Me.ButtonHost = New System.Windows.Forms.Button()
         Me.SplitContainerOptions = New System.Windows.Forms.SplitContainer()
-        Me.ComboBoxDestination = New System.Windows.Forms.ComboBox()
-        Me.Label1 = New System.Windows.Forms.Label()
+        Me.PanelOpt = New SANEWinDS.DoubleBufferedPanel()
         Me.ComboBoxPageSize = New System.Windows.Forms.ComboBox()
         Me.Label4 = New System.Windows.Forms.Label()
-        Me.Label5 = New System.Windows.Forms.Label()
-        Me.ComboBoxCompression = New System.Windows.Forms.ComboBox()
-        Me.PanelOpt = New SANEWinDS.DoubleBufferedPanel()
         CType(Me.SplitContainerOptions, System.ComponentModel.ISupportInitialize).BeginInit()
         Me.SplitContainerOptions.Panel1.SuspendLayout()
         Me.SplitContainerOptions.Panel2.SuspendLayout()
@@ -54,14 +50,14 @@ Partial Class FormMain
         Me.TreeViewOptions.Dock = System.Windows.Forms.DockStyle.Fill
         Me.TreeViewOptions.Location = New System.Drawing.Point(0, 0)
         Me.TreeViewOptions.Name = "TreeViewOptions"
-        Me.TreeViewOptions.Size = New System.Drawing.Size(198, 291)
+        Me.TreeViewOptions.Size = New System.Drawing.Size(198, 260)
         Me.TreeViewOptions.TabIndex = 5
         '
         'CheckBoxBatchMode
         '
         Me.CheckBoxBatchMode.Anchor = CType((System.Windows.Forms.AnchorStyles.Bottom Or System.Windows.Forms.AnchorStyles.Left), System.Windows.Forms.AnchorStyles)
         Me.CheckBoxBatchMode.AutoSize = True
-        Me.CheckBoxBatchMode.Location = New System.Drawing.Point(15, 402)
+        Me.CheckBoxBatchMode.Location = New System.Drawing.Point(13, 323)
         Me.CheckBoxBatchMode.Name = "CheckBoxBatchMode"
         Me.CheckBoxBatchMode.Size = New System.Drawing.Size(200, 17)
         Me.CheckBoxBatchMode.TabIndex = 8
@@ -71,7 +67,7 @@ Partial Class FormMain
         'ButtonOK
         '
         Me.ButtonOK.Anchor = CType((System.Windows.Forms.AnchorStyles.Bottom Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
-        Me.ButtonOK.Location = New System.Drawing.Point(534, 398)
+        Me.ButtonOK.Location = New System.Drawing.Point(534, 319)
         Me.ButtonOK.Name = "ButtonOK"
         Me.ButtonOK.Size = New System.Drawing.Size(75, 23)
         Me.ButtonOK.TabIndex = 51
@@ -81,7 +77,7 @@ Partial Class FormMain
         'ButtonCancel
         '
         Me.ButtonCancel.Anchor = CType((System.Windows.Forms.AnchorStyles.Bottom Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
-        Me.ButtonCancel.Location = New System.Drawing.Point(453, 398)
+        Me.ButtonCancel.Location = New System.Drawing.Point(453, 319)
         Me.ButtonCancel.Name = "ButtonCancel"
         Me.ButtonCancel.Size = New System.Drawing.Size(75, 23)
         Me.ButtonCancel.TabIndex = 50
@@ -154,37 +150,24 @@ Partial Class FormMain
         'SplitContainerOptions.Panel2
         '
         Me.SplitContainerOptions.Panel2.Controls.Add(Me.PanelOpt)
-        Me.SplitContainerOptions.Size = New System.Drawing.Size(596, 291)
+        Me.SplitContainerOptions.Size = New System.Drawing.Size(596, 260)
         Me.SplitContainerOptions.SplitterDistance = 198
         Me.SplitContainerOptions.TabIndex = 28
         '
-        'ComboBoxDestination
+        'PanelOpt
         '
-        Me.ComboBoxDestination.Anchor = CType((System.Windows.Forms.AnchorStyles.Bottom Or System.Windows.Forms.AnchorStyles.Left), System.Windows.Forms.AnchorStyles)
-        Me.ComboBoxDestination.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList
-        Me.ComboBoxDestination.FormattingEnabled = True
-        Me.ComboBoxDestination.Location = New System.Drawing.Point(82, 342)
-        Me.ComboBoxDestination.Name = "ComboBoxDestination"
-        Me.ComboBoxDestination.Size = New System.Drawing.Size(133, 21)
-        Me.ComboBoxDestination.Sorted = True
-        Me.ComboBoxDestination.TabIndex = 7
-        '
-        'Label1
-        '
-        Me.Label1.Anchor = CType((System.Windows.Forms.AnchorStyles.Bottom Or System.Windows.Forms.AnchorStyles.Left), System.Windows.Forms.AnchorStyles)
-        Me.Label1.AutoSize = True
-        Me.Label1.Location = New System.Drawing.Point(12, 345)
-        Me.Label1.Name = "Label1"
-        Me.Label1.Size = New System.Drawing.Size(60, 13)
-        Me.Label1.TabIndex = 30
-        Me.Label1.Text = "Destination"
+        Me.PanelOpt.Dock = System.Windows.Forms.DockStyle.Fill
+        Me.PanelOpt.Location = New System.Drawing.Point(0, 0)
+        Me.PanelOpt.Name = "PanelOpt"
+        Me.PanelOpt.Size = New System.Drawing.Size(394, 260)
+        Me.PanelOpt.TabIndex = 6
         '
         'ComboBoxPageSize
         '
         Me.ComboBoxPageSize.Anchor = CType((System.Windows.Forms.AnchorStyles.Bottom Or System.Windows.Forms.AnchorStyles.Left), System.Windows.Forms.AnchorStyles)
         Me.ComboBoxPageSize.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList
         Me.ComboBoxPageSize.FormattingEnabled = True
-        Me.ComboBoxPageSize.Location = New System.Drawing.Point(293, 342)
+        Me.ComboBoxPageSize.Location = New System.Drawing.Point(293, 321)
         Me.ComboBoxPageSize.Name = "ComboBoxPageSize"
         Me.ComboBoxPageSize.Size = New System.Drawing.Size(133, 21)
         Me.ComboBoxPageSize.TabIndex = 8
@@ -193,52 +176,19 @@ Partial Class FormMain
         '
         Me.Label4.Anchor = CType((System.Windows.Forms.AnchorStyles.Bottom Or System.Windows.Forms.AnchorStyles.Left), System.Windows.Forms.AnchorStyles)
         Me.Label4.AutoSize = True
-        Me.Label4.Location = New System.Drawing.Point(232, 345)
+        Me.Label4.Location = New System.Drawing.Point(232, 324)
         Me.Label4.Name = "Label4"
         Me.Label4.Size = New System.Drawing.Size(55, 13)
         Me.Label4.TabIndex = 53
         Me.Label4.Text = "Page Size"
         '
-        'Label5
-        '
-        Me.Label5.Anchor = CType((System.Windows.Forms.AnchorStyles.Bottom Or System.Windows.Forms.AnchorStyles.Left), System.Windows.Forms.AnchorStyles)
-        Me.Label5.AutoSize = True
-        Me.Label5.Location = New System.Drawing.Point(12, 374)
-        Me.Label5.Name = "Label5"
-        Me.Label5.Size = New System.Drawing.Size(67, 13)
-        Me.Label5.TabIndex = 55
-        Me.Label5.Text = "Compression"
-        '
-        'ComboBoxCompression
-        '
-        Me.ComboBoxCompression.Anchor = CType((System.Windows.Forms.AnchorStyles.Bottom Or System.Windows.Forms.AnchorStyles.Left), System.Windows.Forms.AnchorStyles)
-        Me.ComboBoxCompression.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList
-        Me.ComboBoxCompression.FormattingEnabled = True
-        Me.ComboBoxCompression.Location = New System.Drawing.Point(82, 371)
-        Me.ComboBoxCompression.Name = "ComboBoxCompression"
-        Me.ComboBoxCompression.Size = New System.Drawing.Size(133, 21)
-        Me.ComboBoxCompression.Sorted = True
-        Me.ComboBoxCompression.TabIndex = 54
-        '
-        'PanelOpt
-        '
-        Me.PanelOpt.Dock = System.Windows.Forms.DockStyle.Fill
-        Me.PanelOpt.Location = New System.Drawing.Point(0, 0)
-        Me.PanelOpt.Name = "PanelOpt"
-        Me.PanelOpt.Size = New System.Drawing.Size(394, 291)
-        Me.PanelOpt.TabIndex = 6
-        '
         'FormMain
         '
         Me.AutoScaleDimensions = New System.Drawing.SizeF(6.0!, 13.0!)
         Me.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font
-        Me.ClientSize = New System.Drawing.Size(617, 431)
-        Me.Controls.Add(Me.Label5)
-        Me.Controls.Add(Me.ComboBoxCompression)
+        Me.ClientSize = New System.Drawing.Size(617, 356)
         Me.Controls.Add(Me.Label4)
         Me.Controls.Add(Me.ComboBoxPageSize)
-        Me.Controls.Add(Me.Label1)
-        Me.Controls.Add(Me.ComboBoxDestination)
         Me.Controls.Add(Me.ButtonHost)
         Me.Controls.Add(Me.TextBoxDevice)
         Me.Controls.Add(Me.TextBoxPort)
@@ -273,11 +223,7 @@ Partial Class FormMain
     Friend WithEvents TextBoxDevice As System.Windows.Forms.TextBox
     Friend WithEvents ButtonHost As System.Windows.Forms.Button
     Friend WithEvents SplitContainerOptions As System.Windows.Forms.SplitContainer
-    Friend WithEvents Label1 As System.Windows.Forms.Label
-    Friend WithEvents ComboBoxDestination As System.Windows.Forms.ComboBox
     Friend WithEvents ComboBoxPageSize As System.Windows.Forms.ComboBox
     Friend WithEvents Label4 As System.Windows.Forms.Label
-    Friend WithEvents Label5 As System.Windows.Forms.Label
-    Friend WithEvents ComboBoxCompression As System.Windows.Forms.ComboBox
 
 End Class

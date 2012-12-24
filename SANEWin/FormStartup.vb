@@ -250,9 +250,11 @@ Public Class FormStartup
     Private Sub OnImageAcquired(ByVal PageNumber As Integer, ByVal bmp As Bitmap) Handles GUIForm.ImageAcquired
         Try
             If Not My.Computer.FileSystem.DirectoryExists(Me.ComboBoxOutputFolderName.Text) Then My.Computer.FileSystem.CreateDirectory(Me.ComboBoxOutputFolderName.Text)
+            Me.INI.SetKeyValue("Output", "DefaultOutputFolder", Me.ComboBoxOutputFolderName.Text)
         Catch ex As Exception
             MsgBox("Error creating directory '" & Me.ComboBoxOutputFolderName.Text & "': " & ex.Message)
-        End Try
+         End Try
+
         Dim FileNameBase As String = My.Computer.FileSystem.CombinePath(Me.ComboBoxOutputFolderName.Text, Me.ProductName & Now.ToString("_MMddyyyy_HHmmss_fff"))
         Dim OutputFormat As ImageType = [Enum].Parse(GetType(ImageType), Me.ComboBoxOutputFormat.Text)
         Select Case OutputFormat

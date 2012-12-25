@@ -471,6 +471,19 @@ Public Class FormStartup
                 Finally
                     bmp = Nothing
                 End Try
+            Case ImageType.BMP
+                Try
+                    Dim fname As String = FileNameBase & "_Page"
+                    fname += PageNumber.ToString
+                    fname += ".bmp"
+                    Me.CurrentImage.FileName = fname
+                    bmp.Save(fname, Imaging.ImageFormat.Bmp)
+                Catch ex As Exception
+                    MsgBox("Error saving file: " & ex.Message)
+                Finally
+                    bmp = Nothing
+                End Try
+
         End Select
         If PageNumber = 1 Then Me.CurrentImage.FileNamePage1 = Me.CurrentImage.FileName
         ShowStatus("Acquiring page " & (PageNumber + 1).ToString & "...")

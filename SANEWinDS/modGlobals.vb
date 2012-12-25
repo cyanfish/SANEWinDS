@@ -123,6 +123,10 @@ Module modGlobals
                         For r = 0 To h - 1
                             System.Runtime.InteropServices.Marshal.Copy(SANEImage.Frames(0).Data, Stride * r, bmp_data.Scan0 + (bmp_data.Stride * r), Stride)
                         Next
+                    ElseIf Stride > bmp_data.Stride Then
+                        For r = 0 To h - 1
+                            System.Runtime.InteropServices.Marshal.Copy(SANEImage.Frames(0).Data, Stride * r, bmp_data.Scan0 + (bmp_data.Stride * r), bmp_data.Stride)
+                        Next
                     Else
                         System.Runtime.InteropServices.Marshal.Copy(SANEImage.Frames(0).Data, 0, bmp_data.Scan0, SANEImage.Frames(0).Data.Length)
                     End If

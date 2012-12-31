@@ -18,6 +18,7 @@
 '
 Imports System.Runtime.InteropServices
 Class DIB
+    Private Shared Logger As NLog.Logger = NLog.LogManager.GetCurrentClassLogger()
     Private MyStream As System.IO.MemoryStream
     Private MyBitmapInfo As BITMAPINFO
     Public Structure BITMAPINFOHEADER
@@ -77,7 +78,7 @@ Class DIB
             Array.Resize(B, 0)
 
         Catch ex As Exception
-            Logger.Write(DebugLogger.Level.Error_, True, ex.Message)
+            Logger.ErrorException(ex.Message, ex)
             Throw
         End Try
     End Sub
@@ -91,44 +92,28 @@ Class DIB
             Array.Resize(B, 0)
             Return hBmp
         Catch ex As Exception
-            Logger.Write(DebugLogger.Level.Error_, True, ex.Message)
+            Logger.ErrorException(ex.Message, ex)
             Throw
         End Try
     End Function
 
     Friend Sub CopyLinesToUnmanagedBuffer(ByVal LineOffset As Integer, ByVal LineCount As UInt32, ByVal AlignedBytesPerLine As UInt32, ByVal pBuffer As IntPtr)
         Try
-            'Logger.Write(DebugLogger.Level.Debug, False, "LineOffset=" & LineOffset.ToString & ", LineCount=" & LineCount.ToString & ", AlignedBytesPerLine=" & AlignedBytesPerLine.ToString)
-
             Dim B((AlignedBytesPerLine * LineCount) - 1) As Byte
-            'Logger.Write(DebugLogger.Level.Debug, False, "Copying " & B.Length.ToString & " bytes into buffer")
-
-            'Logger.Write(DebugLogger.Level.Debug, False, "Data stream length = " & MyStream.Length)
-
             MyStream.Seek(MyStream.Length - (AlignedBytesPerLine * LineOffset), IO.SeekOrigin.Begin) 'ok to seek past end of stream
-            'Logger.Write(DebugLogger.Level.Debug, False, "Seek to " & MyStream.Position.ToString)
             Dim PreviousLineOffset As Integer = MyStream.Position
             For i As Integer = 0 To LineCount - 1
                 Dim Line(AlignedBytesPerLine - 1) As Byte
-
                 PreviousLineOffset -= AlignedBytesPerLine
-
                 MyStream.Seek(PreviousLineOffset, IO.SeekOrigin.Begin)
-                'Logger.Write(DebugLogger.Level.Debug, False, "Seek to " & MyStream.Position.ToString)
-
                 MyStream.Read(Line, 0, AlignedBytesPerLine)
-                'Logger.Write(DebugLogger.Level.Debug, False, "Read " & AlignedBytesPerLine.ToString)
-
                 If MyBitmapInfo.bmiHeader.bitCount = 24 Then RGBtoBGR(Line, 8) 'XXX what about other bitCounts?
-
                 Array.Copy(Line, 0, B, i * Line.Length, Line.Length)
             Next
-
             Marshal.Copy(B, 0, pBuffer, B.Length)
             Array.Resize(B, 0)
-
         Catch ex As Exception
-            Logger.Write(DebugLogger.Level.Error_, True, ex.Message)
+            Logger.ErrorException(ex.Message, ex)
             Throw
         End Try
     End Sub
@@ -157,21 +142,21 @@ Class DIB
             BIH.biClrUsed = BR.ReadUInt32
             BIH.biClrImportant = BR.ReadUInt32
 
-            Logger.Write(DebugLogger.Level.Debug, False, "Size = " & BIH.biSize.ToString)
-            Logger.Write(DebugLogger.Level.Debug, False, "Width = " & BIH.biWidth.ToString)
-            Logger.Write(DebugLogger.Level.Debug, False, "Height = " & BIH.biHeight.ToString)
-            Logger.Write(DebugLogger.Level.Debug, False, "Planes = " & BIH.biPlanes.ToString)
-            Logger.Write(DebugLogger.Level.Debug, False, "Bits Per Pixel = " & BIH.bitCount.ToString)
-            Logger.Write(DebugLogger.Level.Debug, False, "Compression = " & BIH.biCompression.ToString)
-            Logger.Write(DebugLogger.Level.Debug, False, "Image Size = " & BIH.biSizeImage.ToString)
-            Logger.Write(DebugLogger.Level.Debug, False, "X Pixels Per Meter = " & BIH.biXPelsPerMeter.ToString)
-            Logger.Write(DebugLogger.Level.Debug, False, "Y Pixels Per Meter = " & BIH.biYPelsPerMeter.ToString)
-            Logger.Write(DebugLogger.Level.Debug, False, "Colors in Palette = " & BIH.biClrUsed.ToString)
-            Logger.Write(DebugLogger.Level.Debug, False, "Important Colors = " & BIH.biClrImportant.ToString)
+            Logger.Debug("Size = {0}", BIH.biSize)
+            Logger.Debug("Width = {0}", BIH.biWidth)
+            Logger.Debug("Height = {0}", BIH.biHeight)
+            Logger.Debug("Planes = {0}", BIH.biPlanes)
+            Logger.Debug("Bits Per Pixel = {0}", BIH.bitCount)
+            Logger.Debug("Compression = {0}", BIH.biCompression)
+            Logger.Debug("Image Size = {0}", BIH.biSizeImage)
+            Logger.Debug("X Pixels Per Meter = {0}", BIH.biXPelsPerMeter)
+            Logger.Debug("Y Pixels Per Meter = {0}", BIH.biYPelsPerMeter)
+            Logger.Debug("Colors in Palette = {0}", BIH.biClrUsed)
+            Logger.Debug("Important Colors = {0}", BIH.biClrImportant)
 
             Return BIH
         Catch ex As Exception
-            Logger.Write(DebugLogger.Level.Error_, True, ex.Message)
+            Logger.ErrorException(ex.Message, ex)
             Throw
         End Try
     End Function

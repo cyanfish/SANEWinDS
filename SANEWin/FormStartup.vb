@@ -20,11 +20,7 @@
 Imports SANEWinDS
 Public Class FormStartup
     Private WithEvents GUIForm As New SANEWinDS.FormMain
-    'Private Enum OutputFormat As Integer
-    '    Screen = 0
-    '    PDF = 1
-    '    JPEG = 2
-    'End Enum
+
     Private Structure PDFInfo
         'Dim FileName As String
         Dim FileStream As System.IO.FileStream
@@ -87,6 +83,8 @@ Public Class FormStartup
     End Sub
 
     Private Sub FormStartup_Load(ByVal sender As Object, ByVal e As System.EventArgs) Handles Me.Load
+
+
         'Me.Visible = False
         Me.Text = Application.ProductName & " " & Application.ProductVersion
         Me.MinimumSize = Me.Size
@@ -253,7 +251,7 @@ Public Class FormStartup
             Me.INI.SetKeyValue("Output", "DefaultOutputFolder", Me.ComboBoxOutputFolderName.Text)
         Catch ex As Exception
             MsgBox("Error creating directory '" & Me.ComboBoxOutputFolderName.Text & "': " & ex.Message)
-         End Try
+        End Try
 
         Dim FileNameBase As String = My.Computer.FileSystem.CombinePath(Me.ComboBoxOutputFolderName.Text, Me.ProductName & Now.ToString("_MMddyyyy_HHmmss_fff"))
         Dim OutputFormat As ImageType = [Enum].Parse(GetType(ImageType), Me.ComboBoxOutputFormat.Text)

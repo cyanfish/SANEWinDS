@@ -75,6 +75,9 @@
     <AssemblyOriginatorKeyFile>TWAIN_VB.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="NLog, Version=2.0.0.0, Culture=neutral, PublicKeyToken=5120e14c03d0593c, processorArchitecture=MSIL">
+      <HintPath>..\packages\NLog.2.0.0.2000\lib\net40\NLog.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Data" />
     <Reference Include="System.Drawing" />
@@ -100,7 +103,6 @@
     <Compile Include="classDoubleBufferedPanel.vb">
       <SubType>Component</SubType>
     </Compile>
-    <Compile Include="classLogger.vb" />
     <Compile Include="classPageSize.vb" />
     <Compile Include="classSANE.vb" />
     <Compile Include="classSharedSettings.vb" />
@@ -164,6 +166,12 @@
       <CustomToolNamespace>My</CustomToolNamespace>
       <LastGenOutput>Settings.Designer.vb</LastGenOutput>
     </None>
+    <Content Include="NLog.config">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <SubType>Designer</SubType>
+    </Content>
+    <None Include="NLog.xsd" />
+    <None Include="packages.config" />
     <None Include="TWAIN_VB.snk" />
   </ItemGroup>
   <ItemGroup>

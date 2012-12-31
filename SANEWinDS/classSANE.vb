@@ -130,7 +130,7 @@ Class SANE_API
         Try
             Return CInt(w * (1 << SANE_FIXED_SCALE_SHIFT))
         Catch ofe As OverflowException
-            Logger.Write(DebugLogger.Level.Warn, True, "The number '" & w.ToString & "' had to be adjusted to avoid an overflow.")
+            Logger.Warn("The number '{0}' had to be adjusted to avoid an overflow.", w)
             If w > 0 Then
                 Return Int32.MaxValue
             Else
@@ -184,6 +184,8 @@ Class SANE_API
         Dim type As String          '/* device type (e.g., "flatbed scanner") */
     End Structure
 #End Region
+
+    Private Shared Logger As NLog.Logger = NLog.LogManager.GetCurrentClassLogger()
 
     Friend Function UnitString(ByVal Unit As SANE_Unit) As String
         Select Case Unit
@@ -279,12 +281,10 @@ Class SANE_API
         Catch ex As Exception
         End Try
 
-        If Logger Is Nothing Then Logger = New DebugLogger(UseRoamingAppData)
-        Logger.Write(DebugLogger.Level.Debug, False, "")
+        Logger.Debug("")
 
         If CurrentSettings Is Nothing Then CurrentSettings = New SharedSettings(UseRoamingAppData)
 
-        'CurrentDevice.SupportedPageSizes = New ArrayList
     End Sub
 
     Friend Function OptionValueArrayLength(ByVal Option_Size As Int32, ByVal Option_Type As SANE_Value_Type) As Int32
@@ -447,7 +447,7 @@ Class SANE_API
     End Function
 
     Friend Function Net_Init(ByRef TCPClient As System.Net.Sockets.TcpClient, ByVal Username As String) As SANE_Status
-        Logger.Write(DebugLogger.Level.Debug, False, "")
+        Logger.Debug("")
         Dim stream As System.Net.Sockets.NetworkStream = Nothing
         Dim rstream As New System.IO.MemoryStream
         Try
@@ -471,17 +471,17 @@ Class SANE_API
                 Dim Status As Int32 = Me.DeSerialize(stream, rstream, Sane_DataType.SANE_Word)
                 Dim Version As Int32 = Me.DeSerialize(stream, rstream, Sane_DataType.SANE_Word)
                 Dim status_code As SANE_Status = Status
-                Logger.Write(DebugLogger.Level.Info, False, "My version = " & Me.SANE_VERSION_MAJOR(Me.VersionCode).ToString & "." & Me.SANE_VERSION_MINOR(Me.VersionCode).ToString & "." & Me.SANE_VERSION_BUILD(Me.VersionCode))
-                Logger.Write(DebugLogger.Level.Info, False, "Server version = " & Me.SANE_VERSION_MAJOR(Version).ToString & "." & Me.SANE_VERSION_MINOR(Version).ToString & "." & Me.SANE_VERSION_BUILD(Version))
+                Logger.Info("My version = {0}.{1}.{2}", Me.SANE_VERSION_MAJOR(Me.VersionCode), Me.SANE_VERSION_MINOR(Me.VersionCode), Me.SANE_VERSION_BUILD(Me.VersionCode))
+                Logger.Info("Server version = {0}.{1}.{2}", Me.SANE_VERSION_MAJOR(Version), Me.SANE_VERSION_MINOR(Version), Me.SANE_VERSION_BUILD(Version))
                 If Version <> Me.VersionCode Then
-                    Logger.Write(DebugLogger.Level.Warn, False, "Version mismatch!")
+                    Logger.Warn("Version mismatch!")
                 End If
                 Return Status
             Else
                 Throw New Exception("Stream does not support reading")
             End If
         Catch ex As Exception
-            Logger.Write(DebugLogger.Level.Error_, True, ex.Message)
+            Logger.ErrorException(ex.Message, ex)
             Throw
         Finally
             stream = Nothing
@@ -489,7 +489,7 @@ Class SANE_API
     End Function
 
     Friend Function Net_Get_Devices(ByRef TCPClient As System.Net.Sockets.TcpClient, ByRef DeviceList() As SANE_Device) As SANE_Status
-        Logger.Write(DebugLogger.Level.Debug, False, "")
+        Logger.Debug("")
 
         Dim stream As System.Net.Sockets.NetworkStream = Nothing
         Dim rstream As New System.IO.MemoryStream
@@ -544,6 +544,7 @@ Class SANE_API
     End Function
 
     Friend Function Net_Open(ByRef TCPClient As System.Net.Sockets.TcpClient, ByVal DeviceName As String, ByRef DeviceHandle As Int32) As SANE_Status
+        Logger.Debug("")
         Dim stream As System.Net.Sockets.NetworkStream = Nothing
         Dim rstream As New System.IO.MemoryStream
         Try
@@ -552,7 +553,6 @@ Class SANE_API
             Dim sbuf(-1) As Byte
             Me.Serialize(CInt(RPCCode), sbuf, Sane_DataType.SANE_Word)
             Me.Serialize(DeviceName, sbuf, Sane_DataType.SANE_String)
-            Logger.Write(DebugLogger.Level.Debug, False, "---SANE_NET_OPEN---")
 
             If stream.CanWrite Then
                 stream.Write(sbuf, 0, sbuf.Length)
@@ -588,6 +588,7 @@ Class SANE_API
     End Function
 
     Friend Sub Net_Close(ByRef TCPClient As System.Net.Sockets.TcpClient, ByVal DeviceHandle As Int32)
+        Logger.Debug("")
         Dim stream As System.Net.Sockets.NetworkStream = Nothing
         Dim rstream As New System.IO.MemoryStream
         Try
@@ -596,7 +597,6 @@ Class SANE_API
             Dim sbuf(-1) As Byte
             Me.Serialize(CInt(RPCCode), sbuf, Sane_DataType.SANE_Word)
             Me.Serialize(DeviceHandle, sbuf, Sane_DataType.SANE_Word)
-            Logger.Write(DebugLogger.Level.Debug, False, "---SANE_NET_CLOSE---")
 
             If stream.CanWrite Then
                 stream.Write(sbuf, 0, sbuf.Length)
@@ -625,6 +625,7 @@ Class SANE_API
     End Sub
 
     Friend Function Net_Get_Option_Descriptors(ByRef TCPClient As System.Net.Sockets.TcpClient, ByVal DeviceHandle As Int32) As SANE_Option_Descriptor()
+        Logger.Debug("")
         Dim stream As System.Net.Sockets.NetworkStream = Nothing
         Dim rstream As New System.IO.MemoryStream
         Try
@@ -634,7 +635,6 @@ Class SANE_API
             Dim sbuf(-1) As Byte
             Me.Serialize(CInt(RPCCode), sbuf, Sane_DataType.SANE_Word)
             Me.Serialize(DeviceHandle, sbuf, Sane_DataType.SANE_Word)
-            Logger.Write(DebugLogger.Level.Debug, False, "---SANE_NET_GET_OPTION_DESCRIPTORS---")
 
             If stream.CanWrite Then
                 stream.Write(sbuf, 0, sbuf.Length)
@@ -707,6 +707,7 @@ Class SANE_API
     End Function
 
     Friend Function Net_Control_Option(ByRef TCPClient As System.Net.Sockets.TcpClient, ByVal Request As SANENetControlOption_Request, ByRef Reply As SANENetControlOption_Reply) As SANE_Status
+        Logger.Debug("Option={0}, Action={1}", CurrentDevice.OptionDescriptors(Request.option_).name, Request.action)
         Select Case Request.value_type
             Case SANE_Value_Type.SANE_TYPE_GROUP
                 'do nothing; these types don't have values
@@ -715,14 +716,13 @@ Class SANE_API
 
                 Dim stream As System.Net.Sockets.NetworkStream = Nothing
                 Dim rstream As New System.IO.MemoryStream
-                Logger.Write(DebugLogger.Level.Debug, False, "---SANE_SANE_NET_CONTROL_OPTION [" & Request.option_.ToString & "] (" & Request.action.ToString & ")---")
 
                 If Request.values IsNot Nothing Then
                     For i As Integer = 0 To Request.values.Length - 1
                         If Request.values(i) IsNot Nothing Then
-                            Logger.Write(DebugLogger.Level.Debug, False, "  New value(" & i.ToString & ") = '" & Request.values(i).ToString & "'")
+                            Logger.Debug("  New value({0}) = '{1}'", i, Request.values(i))
                         Else
-                            Logger.Write(DebugLogger.Level.Debug, False, "  New value(" & i.ToString & ") = 'Nothing'")
+                            Logger.Debug("  New value({0}) = 'Nothing'", i)
                         End If
                     Next
                 End If
@@ -842,6 +842,7 @@ Class SANE_API
     End Function
 
     Friend Function Net_Get_Parameters(ByRef TCPClient As System.Net.Sockets.TcpClient, ByVal DeviceHandle As Int32, ByRef Params As SANE_Parameters) As SANE_Status
+        Logger.Debug("")
         Dim stream As System.Net.Sockets.NetworkStream = Nothing
         Dim rstream As New System.IO.MemoryStream
         Try
@@ -850,7 +851,6 @@ Class SANE_API
             Dim sbuf(-1) As Byte
             Me.Serialize(CInt(RPCCode), sbuf, Sane_DataType.SANE_Word)
             Me.Serialize(DeviceHandle, sbuf, Sane_DataType.SANE_Word)
-            Logger.Write(DebugLogger.Level.Debug, False, "---SANE_NET_GET_PARAMETERS---")
 
             If stream.CanWrite Then
                 stream.Write(sbuf, 0, sbuf.Length)
@@ -886,7 +886,7 @@ Class SANE_API
     End Function
 
     Friend Function Net_Start(ByRef TCPClient As System.Net.Sockets.TcpClient, ByVal DeviceHandle As Int32, ByRef Port As Int32, ByRef ByteOrder As SANE_Net_Byte_Order) As SANE_Status
-
+        Logger.Debug("")
         Dim stream As System.Net.Sockets.NetworkStream = Nothing
         Dim rstream As New System.IO.MemoryStream
         Try
@@ -895,7 +895,6 @@ Class SANE_API
             Dim sbuf(-1) As Byte
             Me.Serialize(CInt(RPCCode), sbuf, Sane_DataType.SANE_Word)
             Me.Serialize(DeviceHandle, sbuf, Sane_DataType.SANE_Word)
-            Logger.Write(DebugLogger.Level.Debug, False, "---SANE_NET_START---")
 
             If stream.CanWrite Then
                 stream.Write(sbuf, 0, sbuf.Length)
@@ -935,14 +934,13 @@ Class SANE_API
     End Function
 
     Friend Sub Net_Exit(ByRef TCPClient As System.Net.Sockets.TcpClient)
-
+        Logger.Debug("")
         Dim stream As System.Net.Sockets.NetworkStream = Nothing
         Try
             stream = TCPClient.GetStream
             Dim RPCCode As SANE_Net_Procedure_Number = SANE_Net_Procedure_Number.SANE_NET_EXIT
             Dim buf(0 To 3) As Byte
             Me.Serialize(CInt(RPCCode), buf, 0, Sane_DataType.SANE_Word)
-            Logger.Write(DebugLogger.Level.Debug, False, "---SANE_NET_EXIT---")
 
             If stream.CanWrite Then
                 stream.Write(buf, 0, buf.Length)
@@ -963,7 +961,7 @@ Class SANE_API
         Dim EndPoint As System.Net.IPEndPoint = TCPClient.Client.RemoteEndPoint
         Dim HostIP As System.Net.IPAddress = EndPoint.Address
 
-        Logger.Write(DebugLogger.Level.Debug, False, "Beginning image transfer")
+        Logger.Debug("Beginning image transfer")
 
         Dim ImageConn As New System.Net.Sockets.TcpClient
         ImageConn.ReceiveTimeout = TCP_Timeout_ms
@@ -991,10 +989,8 @@ Class SANE_API
                     Dim datalen As UInt32 = BitConverter.ToUInt32(buf, 0)
                     datalen = Me.SwapEndian(datalen)
 
-                    'Logger.Write(DebugLogger.Level.Debug, False, "datalen=&H" & Hex(datalen))
-
                     If datalen = CUInt(&HFFFFFFFFUI) Then
-                        Logger.Write(DebugLogger.Level.Debug, False, "Received EOF")
+                        Logger.Debug("Received EOF")
                         Exit Do
                     End If
                     If datalen > 0 Then
@@ -1012,12 +1008,12 @@ Class SANE_API
             Dim TransferredMbits As UInt64 = (TransferredBytes * 8UL) / 1024 / 1024
             Dim ElapsedSeconds As Double = (Now - StartTime).TotalSeconds
             If ElapsedSeconds < 0.001 Then ElapsedSeconds = 0.001 'avoid divide by zero
-            Logger.Write(DebugLogger.Level.Debug, False, "Transferred " & TransferredBytes.ToString & " bytes in " & ElapsedSeconds.ToString("0.00") & " seconds with a throughput of " & (TransferredMbits / ElapsedSeconds).ToString("0.00") & " Mbps")
+            Logger.Debug("Transferred " & TransferredBytes.ToString & " bytes in " & ElapsedSeconds.ToString("0.00") & " seconds with a throughput of " & (TransferredMbits / ElapsedSeconds).ToString("0.00") & " Mbps")
 
             Return Frame
 
         Catch ex As Exception
-            Logger.Write(DebugLogger.Level.Error_, True, "Error acquiring image frame: " & ex.Message)
+            Logger.ErrorException("Error acquiring image frame: " & ex.Message, ex)
             Throw
         Finally
             If ImageConn.Connected Then ImageConn.Close()

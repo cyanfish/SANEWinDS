@@ -17,6 +17,9 @@
 '   along with SANEWinDS.  If not, see <http://www.gnu.org/licenses/>.
 '
 Public Class FormSANEHostWizard
+
+    Private Shared Logger As NLog.Logger = NLog.LogManager.GetCurrentClassLogger()
+
     Private Sub ButtonNext_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles ButtonNext.Click
         If Me.PanelHost.Visible Then
             If Me.ComboBoxHost.Text IsNot Nothing AndAlso Me.ComboBoxHost.Text.Length Then
@@ -44,12 +47,12 @@ Public Class FormSANEHostWizard
                                 If net IsNot Nothing Then
                                     net.ReceiveTimeout = Host.TCP_Timeout_ms
                                     net.SendTimeout = Host.TCP_Timeout_ms
-                                    Logger.Write(DebugLogger.Level.Debug, False, "TCPClient Send buffer length is " & net.SendBufferSize)
-                                    Logger.Write(DebugLogger.Level.Debug, False, "TCPClient Receive buffer length is " & net.ReceiveBufferSize)
+                                    Logger.Debug("TCPClient Send buffer length is {0}", net.SendBufferSize)
+                                    Logger.Debug("TCPClient Receive buffer length is {0}", net.ReceiveBufferSize)
                                     Me.Cursor = Windows.Forms.Cursors.WaitCursor
                                     net.Connect(Host.NameOrAddress, Host.Port)
                                     Dim Status As SANE_API.SANE_Status = SANE.Net_Init(net, Host.Username)
-                                    Logger.Write(DebugLogger.Level.Debug, False, "Net_Init returned status '" & Status.ToString & "'")
+                                    Logger.Debug("Net_Init returned status '{0}'", Status)
                                     If Status = SANE_API.SANE_Status.SANE_STATUS_GOOD Then
                                         Host.Open = True
                                         Dim Devices(-1) As SANE_API.SANE_Device

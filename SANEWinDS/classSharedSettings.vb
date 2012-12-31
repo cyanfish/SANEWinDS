@@ -18,6 +18,7 @@
 '
 Public Class SharedSettings
 
+    Private Logger As NLog.Logger = NLog.LogManager.GetCurrentClassLogger()
     'Public Enum UserSettingsLocations As Integer
     '    LocalAppData = 0
     '    RoamingAppData = 1
@@ -194,21 +195,15 @@ Public Class SharedSettings
             Me.SharedConfigDirectory = System.Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) & "\" & Me.ProductName.Name
             If Not My.Computer.FileSystem.DirectoryExists(Me.SharedConfigDirectory) Then My.Computer.FileSystem.CreateDirectory(Me.SharedConfigDirectory)
         Catch ex As Exception
-            Logger.Write(DebugLogger.Level.Error_, True, "Failed to create common configuration folder '" & Me.SharedConfigDirectory & "': " & ex.Message)
+            Logger.LogException(NLog.LogLevel.Error, "Failed to create common configuration folder '" & Me.SharedConfigDirectory & "'", ex)
         End Try
 
-        'Dim UserSettingsFileName As String = Me.ConfigDirectory & "\" & Me.ProductName.Name & ".ini"
         Dim UserSettingsFileName As String = Me.GetUserConfigFileName
         If Not My.Computer.FileSystem.FileExists(UserSettingsFileName) Then
             Dim f As New System.IO.StreamWriter(UserSettingsFileName)
             f.WriteLine("[Log]")
             f.WriteLine("RetainDays=3")
             f.WriteLine("")
-            'f.WriteLine("[SANE]")
-            'f.WriteLine("Hosts=")
-            'f.WriteLine("DefaultHost=0")
-            'f.WriteLine("Device=")
-            'f.WriteLine("AutoLocateDevice=")
             f.Close()
             f = Nothing
         End If
@@ -216,50 +211,42 @@ Public Class SharedSettings
         Dim INI As New IniFile.IniFile
         INI.Load(UserSettingsFileName)
 
-        'SANE.Hosts = GetSANEHostsFromString(INI.GetKeyValue("SANE", "Hosts"))
         SANE.Hosts = GetSANEHostsFromINI(INI)
         SANE.CurrentHostIndex = -1
         Dim CurrentHostIndex As Integer = -1
         Dim s As String = INI.GetKeyValue("SANE", "DefaultHost")
         If IsNumeric(s) Then Integer.TryParse(s, CurrentHostIndex)
         If (CurrentHostIndex > -1) And (CurrentHostIndex < SANE.Hosts.Length) Then
-            ''SANESettings.CurrentHost = Hosts(CurrentHostIndex)
-            'SANE.CurrentHost.NameOrAddress = SANE.Hosts(CurrentHostIndex).NameOrAddress
-            'SANE.CurrentHost.Port = SANE.Hosts(CurrentHostIndex).Port
-            'SANE.CurrentHost.TCP_Timeout_ms = SANE.Hosts(CurrentHostIndex).TCP_Timeout_ms
-            'SANE.CurrentHost.Username = SANE.Hosts(CurrentHostIndex).Username
             SANE.CurrentHostIndex = CurrentHostIndex
         Else
             If SANE.Hosts.Length > 0 Then SANE.CurrentHostIndex = 0
         End If
 
         If (SANE.CurrentHostIndex > -1) AndAlso (SANE.CurrentHostIndex < SANE.Hosts.Length) Then
-            Logger.Write(DebugLogger.Level.Info, False, "Current host is '" & SANE.Hosts(SANE.CurrentHostIndex).NameOrAddress & "' port '" & SANE.Hosts(SANE.CurrentHostIndex).Port & "'")
-            'SANE.CurrentDevice = INI.GetKeyValue("SANE", "Device")
-            Logger.Write(DebugLogger.Level.Info, False, "Default device is '" & SANE.Hosts(SANE.CurrentHostIndex).Device & "'")
-            'SANE.AutoLocateDevice = INI.GetKeyValue("SANE", "AutoLocateDevice").Trim
-            Logger.Write(DebugLogger.Level.Info, False, "AutoLocateDevice is '" & SANE.Hosts(SANE.CurrentHostIndex).AutoLocateDevice & "'")
+            Logger.Log(NLog.LogLevel.Info, "Current host is '{0}' port '{1}'", SANE.Hosts(SANE.CurrentHostIndex).NameOrAddress, SANE.Hosts(SANE.CurrentHostIndex).Port)
+            Logger.Log(NLog.LogLevel.Info, "Default device is '{0}'", SANE.Hosts(SANE.CurrentHostIndex).Device)
+            Logger.Log(NLog.LogLevel.Info, "AutoLocateDevice is '{0}'", SANE.Hosts(SANE.CurrentHostIndex).AutoLocateDevice)
         Else
-            Logger.Write(DebugLogger.Level.Warn, False, "No hosts are configured")
+            Logger.Log(NLog.LogLevel.Warn, "No hosts are configured")
         End If
-        'clean up expired log files
-        Dim DebugLogMaxAgeDays As Integer = 0 'never delete
-        Try
-            s = INI.GetKeyValue("Log", "RetainDays")
-            If s Is Nothing OrElse s.Length < 1 Then Throw New Exception("RetainDays value is not configured in the [Log] section")
-            If Integer.TryParse(s, DebugLogMaxAgeDays) Then
-                If DebugLogMaxAgeDays = 0 Then
-                    Logger.Write(DebugLogger.Level.Info, False, "Retaining logs forever")
-                Else
-                    Logger.Write(DebugLogger.Level.Info, False, "Retaining logs for '" & DebugLogMaxAgeDays.ToString & "' days")
-                End If
-                Logger.Delete_Expired_Logs(DebugLogMaxAgeDays)
-            Else
-                Throw New Exception("Unable to interpret '" & s & "' as an integer")
-            End If
-        Catch ex As Exception
-            Logger.Write(DebugLogger.Level.Error_, False, "Error reading RetainDays value from '" & UserSettingsFileName & "': " & ex.Message)
-        End Try
+        ''clean up expired log files
+        'Dim DebugLogMaxAgeDays As Integer = 0 'never delete
+        'Try
+        '    s = INI.GetKeyValue("Log", "RetainDays")
+        '    If s Is Nothing OrElse s.Length < 1 Then Throw New Exception("RetainDays value is not configured in the [Log] section")
+        '    If Integer.TryParse(s, DebugLogMaxAgeDays) Then
+        '        If DebugLogMaxAgeDays = 0 Then
+        '            Logger.Log(NLog.LogLevel.Info, "Retaining logs forever")
+        '        Else
+        '            Logger.Log(NLog.LogLevel.Info, "Retaining logs for '{0}'", DebugLogMaxAgeDays)
+        '        End If
+        '        Logger.Delete_Expired_Logs(DebugLogMaxAgeDays)
+        '    Else
+        '        Throw New Exception("Unable to interpret '" & s & "' as an integer")
+        '    End If
+        'Catch ex As Exception
+        '    Logger.Write(DebugLogger.Level.Error_, False, "Error reading RetainDays value from '" & UserSettingsFileName & "': " & ex.Message)
+        'End Try
 
     End Sub
 
@@ -269,14 +256,14 @@ Public Class SharedSettings
                 If .Port > 0 Then
                     If .TCP_Timeout_ms > 1000 Then
                         If .Username IsNot Nothing AndAlso .Username.Length Then
-                            Logger.Write(DebugLogger.Level.Debug, False, "returning True")
+                            Logger.Log(NLog.LogLevel.Debug, "Returning True")
                             Return True
                         End If
                     End If
                 End If
             End If
         End With
-        Logger.Write(DebugLogger.Level.Debug, False, "returning False")
+        Logger.Log(NLog.LogLevel.Debug, "Returning False")
         Return False
     End Function
 
@@ -295,7 +282,7 @@ Public Class SharedSettings
                             NameOrAddress = ts.GetCurrentSessionIP
                             ts = Nothing
                         Catch ex As Exception
-                            Logger.Write(DebugLogger.Level.Debug, False, "Error getting terminal server client IP address: " & ex.Message)
+                            Logger.ErrorException("Error getting terminal server client IP address: " & ex.Message, ex)
                         End Try
                     End If
                     If Not String.IsNullOrEmpty(NameOrAddress) Then
@@ -324,43 +311,6 @@ Public Class SharedSettings
         End If
         Return hi
     End Function
-
-    'Private Function GetSANEHostsFromString(ByVal str As String) As HostInfo()
-    '    'str should be in the format "host0:port0;timeout_ms0;username0,host1:port1;timeout_ms1;username1,..."
-    '    Dim Hosts(-1) As HostInfo
-    '    If str IsNot Nothing Then
-    '        Dim h() As String = str.Split(",")
-    '        For Each s As String In h
-    '            'Try
-    '            If s IsNot Nothing AndAlso s.Length > 0 Then
-    '                Dim p As Integer = s.IndexOf(":")
-    '                If p > 0 And p < (s.Length - 1) Then
-    '                    ReDim Preserve Hosts(Hosts.Count)
-    '                    Hosts(Hosts.Count - 1).NameOrAddress = System.Environment.ExpandEnvironmentVariables(s.Substring(0, p))
-
-    '                    If Hosts(Hosts.Count - 1).NameOrAddress.ToUpper = "TSCLIENTIP" Then
-    '                        Try
-    '                            Dim ts As New TSAPI
-    '                            Hosts(Hosts.Count - 1).NameOrAddress = ts.GetCurrentSessionIP
-    '                            ts = Nothing
-    '                        Catch ex As Exception
-    '                            Logger.Write(DebugLogger.Level.Debug, False, "Error getting terminal server client IP address: " & ex.Message)
-    '                        End Try
-    '                    End If
-
-    '                    Hosts(Hosts.Count - 1).Port = s.Substring(p + 1)
-    '                    'XXX parse these out from the ini
-    '                    Hosts(Hosts.Count - 1).TCP_Timeout_ms = 5000
-    '                    Hosts(Hosts.Count - 1).Username = ProductName.Name
-    '                    '
-    '                End If
-    '            End If
-    '            'Catch ex As Exception
-    '            'End Try
-    '        Next
-    '    End If
-    '    Return Hosts
-    'End Function
 
     Public Function GetUserConfigFileName() As String
         Return Me.UserConfigDirectory & "\" & Me.ProductName.Name & ".ini"
@@ -397,14 +347,7 @@ Public Class SharedSettings
         'Create .INI file to hold all settings for SANE backend
         Dim fs As System.IO.StreamWriter = Nothing
         Try
-            'If My.Computer.FileSystem.FileExists(FileName) Then
-            '    'XXX read file
-            'Else
-
-            'Logger.Write(DebugLogger.Level.Debug, False, "1")
-
             fs = New System.IO.StreamWriter(FileName)
-            'Logger.Write(DebugLogger.Level.Debug, False, "1")
             fs.WriteLine("[General]")
             fs.WriteLine(";ScanContinuously is a boolean value that determines whether to scan a single page or continue until the ADF is empty.")
             fs.WriteLine(";In most cases the correct value will be guessed automatically.")
@@ -558,9 +501,8 @@ Public Class SharedSettings
                 End Select
                 fs.WriteLine("")
             Next
-            'End If
         Catch ex As Exception
-            Logger.Write(DebugLogger.Level.Error_, False, "Error writing '" & FileName & "': " & ex.Message)
+            Logger.LogException(NLog.LogLevel.Error, "Error writing '{0}'", ex)
         Finally
             If fs IsNot Nothing Then fs.Close()
         End Try

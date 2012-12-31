@@ -20,6 +20,9 @@ Imports System.Windows.Forms
 Imports System.Drawing
 
 Public Class FormMain
+
+    Private Shared Logger As NLog.Logger = NLog.LogManager.GetCurrentClassLogger()
+
     Public Event BatchStarted()
     Public Event ImageAcquired(ByVal PageNumber As Integer, ByVal Bmp As Bitmap)
     Public Event ImageError(ByVal PageNumber As Integer, ByVal Message As String)
@@ -39,7 +42,7 @@ Public Class FormMain
     Private PanelOptIsDirty As Boolean
     Private Initialized As Boolean 'Has the Load() event already been executed? Workaround for Load() always firing when using ShowDialog().
     Private Sub CloseCurrentHost()
-        Logger.Write(DebugLogger.Level.Debug, False, "")
+        Logger.Debug("")
         Try
             Me.CloseCurrentDevice()
             If net IsNot Nothing Then
@@ -67,7 +70,7 @@ Public Class FormMain
     End Function
 
     Private Sub CloseCurrentDevice()
-        Logger.Write(DebugLogger.Level.Debug, False, "")
+        Logger.Debug("")
         Try
             If SANE IsNot Nothing Then
                 If SANE.CurrentDevice.Name IsNot Nothing Then
@@ -78,12 +81,12 @@ Public Class FormMain
                 End If
             End If
         Catch ex As Exception
-            Logger.Write(DebugLogger.Level.Error_, True, ex.Message)
+            Logger.ErrorException(ex.Message, ex)
         End Try
     End Sub
 
     Private Sub ButtonOK_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles ButtonOK.Click
-        Logger.Write(DebugLogger.Level.Debug, False, "")
+        Logger.Debug("")
         If Not TWAIN_Is_Active Then 'TWAIN_VB registers its own event handler
             Dim PageNo As Integer = 0
             If SANE.CurrentDevice.Name IsNot Nothing Then
@@ -212,7 +215,7 @@ Public Class FormMain
                 End If
             End If
         Catch ex As Exception
-            Logger.Write(DebugLogger.Level.Error_, True, ex.Message)
+            Logger.ErrorException(ex.Message, ex)
         End Try
 
     End Sub
@@ -246,9 +249,9 @@ Public Class FormMain
             Catch ex As Exception
             End Try
 
-            If Logger Is Nothing Then Logger = New DebugLogger(UseRoamingAppData)
+            'If Logger Is Nothing Then Logger = New DebugLogger(UseRoamingAppData)
 
-            Logger.Write(DebugLogger.Level.Debug, False, "")
+            Logger.Debug("")
 
             Me.ButtonOK.Enabled = False
             Me.ButtonHost.Enabled = Not TWAIN_Is_Active 'XXX is it ok to reconfigure with TWAIN active?
@@ -263,7 +266,7 @@ Public Class FormMain
                         AndAlso CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Device.Length) Then
                     Dim f As New FormSANEHostWizard
                     If f.ShowDialog <> Windows.Forms.DialogResult.OK Then
-                        Logger.Write(DebugLogger.Level.Debug, False, "User cancelled SANE host wizard")
+                        Logger.Debug("User cancelled SANE host wizard")
                         'XXX
                     End If
                 End If
@@ -289,23 +292,22 @@ Public Class FormMain
                     If CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).NameOrAddress IsNot Nothing Then
                         net.ReceiveTimeout = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).TCP_Timeout_ms
                         net.SendTimeout = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).TCP_Timeout_ms
-                        Logger.Write(DebugLogger.Level.Debug, False, "TCPClient Send buffer length is " & net.SendBufferSize)
-                        Logger.Write(DebugLogger.Level.Debug, False, "TCPClient Receive buffer length is " & net.ReceiveBufferSize)
+                        Logger.Debug("TCPClient Send buffer length is {0}", net.SendBufferSize)
+                        Logger.Debug("TCPClient Receive buffer length is {0}", net.ReceiveBufferSize)
                         net.Connect(CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).NameOrAddress, CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Port)
                         Dim Status As SANE_API.SANE_Status = SANE.Net_Init(net, CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Username)
-                        Logger.Write(DebugLogger.Level.Debug, False, "Net_Init returned status '" & Status.ToString & "'")
+                        Logger.Debug("Net_Init returned status {0}'", Status)
                         If Status = SANE_API.SANE_Status.SANE_STATUS_GOOD Then CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Open = True
                         If CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Open Then
                             SANE.CurrentDevice = New SANE_API.CurrentDeviceInfo
 
                             Dim DeviceHandle As Integer
                             Status = SANE.Net_Open(net, CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Device, DeviceHandle)
-                            Logger.Write(DebugLogger.Level.Debug, False, "Net_Open returned status '" & Status.ToString & "'")
-
+                            Logger.Debug("Net_Open returned status '{0}'", Status)
 
                             If Status = SANE_API.SANE_Status.SANE_STATUS_INVAL Then  'Auto-Locate
                                 If CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).AutoLocateDevice IsNot Nothing AndAlso CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).AutoLocateDevice.Length > 0 Then
-                                    Logger.Write(DebugLogger.Level.Debug, False, "Attempting to auto-locate devices matching '" & CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).AutoLocateDevice & "'")
+                                    Logger.Debug("Attempting to auto-locate devices matching '{0}'", CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).AutoLocateDevice)
                                     Dim Devices(-1) As SANE_API.SANE_Device
                                     Status = SANE.Net_Get_Devices(net, Devices)
                                     If Status = SANE_API.SANE_Status.SANE_STATUS_GOOD Then
@@ -313,9 +315,9 @@ Public Class FormMain
                                             Status = SANE_API.SANE_Status.SANE_STATUS_INVAL
                                             If Devices(i).name.Trim.Length >= CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).AutoLocateDevice.Length Then
                                                 If Devices(i).name.Trim.Substring(0, CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).AutoLocateDevice.Length) = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).AutoLocateDevice Then
-                                                    Logger.Write(DebugLogger.Level.Debug, False, "Auto-located device '" & Devices(i).name & "'; attempting to open...")
+                                                    Logger.Debug("Auto-located device '{0}'; attempting to open...", Devices(i).name)
                                                     Status = SANE.Net_Open(net, Devices(i).name, DeviceHandle)
-                                                    Logger.Write(DebugLogger.Level.Debug, False, "Net_Open returned status '" & Status.ToString & "'")
+                                                    Logger.Debug("Net_Open returned status '{0}'", Status)
                                                     If Status = SANE_API.SANE_Status.SANE_STATUS_GOOD Then CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Device = Devices(i).name
                                                     Exit For
                                                 End If
@@ -334,7 +336,7 @@ Public Class FormMain
                             End If
                         End If
                     Else
-                        Logger.Write(DebugLogger.Level.Warn, True, "No host is configured")
+                        Logger.Warn("No host is configured")
                     End If
 
                     If SANE.CurrentDevice.Open Then
@@ -352,11 +354,11 @@ Public Class FormMain
                         'XXX
                     End If
                 Else
-                    Logger.Write(DebugLogger.Level.Warn, False, "Current host index is out of range")
+                    Logger.Warn("Current host index is out of range")
                 End If
             End If
         Catch ex As Exception
-            Logger.Write(DebugLogger.Level.Error_, True, ex.Message)
+            Logger.ErrorException(ex.Message, ex)
             Close_SANE()
         Finally
             Close_Net()
@@ -737,7 +739,7 @@ Public Class FormMain
 
     Public Sub SetUserDefaults()
         'read all DefaultValue= settings from the backend.ini and set live values
-        Logger.Write(DebugLogger.Level.Debug, False, "begin")
+        Logger.Debug("begin")
 
         SANE.CurrentDevice.SupportedPageSizes = New ArrayList
         Me.ComboBoxPageSize.Items.Clear()
@@ -752,9 +754,9 @@ Public Class FormMain
                     End If
                 End If
             Catch ex As Exception
-                Logger.Write(DebugLogger.Level.Error_, False, "Exception reading ScanContinuously setting from backend.ini: " & ex.Message)
+                Logger.ErrorException("Exception reading ScanContinuously setting from backend.ini: " & ex.Message, ex)
             End Try
-            Logger.Write(DebugLogger.Level.Info, False, "ScanContinuously = '" & CurrentSettings.ScanContinuously.ToString & "'")
+            Logger.Info("ScanContinuously = '{0}'", CurrentSettings.ScanContinuously)
             Me.CheckBoxBatchMode.Checked = CurrentSettings.ScanContinuously
             'XXX need to set CAP_FEEDERENABLED here or does an event fire?
 
@@ -767,11 +769,11 @@ Public Class FormMain
                         If optval IsNot Nothing Then
                             If optval.Length Then
                                 If SANE.SANE_OPTION_IS_ACTIVE(SANE.CurrentDevice.OptionDescriptors(i).cap) And SANE.SANE_OPTION_IS_SETTABLE(SANE.CurrentDevice.OptionDescriptors(i).cap) Then
-                                    Logger.Write(DebugLogger.Level.Debug, False, "importing setting '" & SANE.CurrentDevice.OptionDescriptors(i).name & "' = '" & optval & "'")
+                                    Logger.Debug("importing setting '{0}' = '{1}'", SANE.CurrentDevice.OptionDescriptors(i).name, optval)
                                     Dim Values() As Object = optval.Split(",")
                                     SetOpt(i, Values) 'sets value for both SANE and TWAIN
                                 Else
-                                    Logger.Write(DebugLogger.Level.Warn, False, "Option '" & SANE.CurrentDevice.OptionDescriptors(i).title & "' is not currently settable")
+                                    Logger.Warn("Option '{0}' is not currently settable", SANE.CurrentDevice.OptionDescriptors(i).title)
                                 End If
                             End If
                         End If
@@ -794,7 +796,7 @@ Public Class FormMain
                     End If
                 End If
             Catch ex As Exception
-                Logger.Write(DebugLogger.Level.Error_, False, "Exception reading MaxPaperWidth setting from backend.ini: " & ex.Message)
+                Logger.ErrorException("Exception reading MaxPaperWidth setting from backend.ini: " & ex.Message, ex)
             End Try
             Try
                 Dim opt As String = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.GetKeyValue("General", "MaxPaperHeight")
@@ -806,7 +808,7 @@ Public Class FormMain
                     End If
                 End If
             Catch ex As Exception
-                Logger.Write(DebugLogger.Level.Error_, False, "Exception reading MaxPaperHeight setting from backend.ini: " & ex.Message)
+                Logger.ErrorException("Exception reading MaxPaperHeight setting from backend.ini: " & ex.Message, ex)
             End Try
             If (MaxWidth = 0) And (MaxHeight = 0) Then
                 Me.Get_Current_Device_Physical_Size_In_Inches(MaxWidth, MaxHeight)
@@ -818,13 +820,13 @@ Public Class FormMain
                         Case TWAIN_VB.TWSS.TWSS_NONE, TWAIN_VB.TWSS.TWSS_MAXSIZE
                             ps.Width = MaxWidth
                             ps.Height = MaxHeight
-                            Logger.Write(DebugLogger.Level.Info, False, "Supported page size: '" & ps.Name & "'")
+                            Logger.Info("Supported page size: '{0}'", ps.Name)
                             SANE.CurrentDevice.SupportedPageSizes.Add(ps)
                             Me.ComboBoxPageSize.Items.Add(ps.Name)
                         Case Else
                             If ps.Width <= Math.Round(MaxWidth, 2, MidpointRounding.AwayFromZero) Then
                                 If ps.Height <= Math.Round(MaxHeight, 2, MidpointRounding.AwayFromZero) Then
-                                    Logger.Write(DebugLogger.Level.Info, False, "Supported page size: '" & ps.Name & "'")
+                                    Logger.Info("Supported page size: '{0}'", ps.Name)
                                     SANE.CurrentDevice.SupportedPageSizes.Add(ps)
                                     Me.ComboBoxPageSize.Items.Add(ps.Name)
                                 End If
@@ -838,7 +840,7 @@ Public Class FormMain
                 End If
 
             Else
-                Logger.Write(DebugLogger.Level.Warn, False, "'MaxPaperWidth' and 'MaxPaperHeight' are not configured in backend.ini and backend doesn't properly support 'br-x' and 'br-y'; unable to determine which page sizes are supported.")
+                Logger.Warn("'MaxPaperWidth' and 'MaxPaperHeight' are not configured in backend.ini and backend doesn't properly support 'br-x' and 'br-y'; unable to determine which page sizes are supported.")
             End If
 
             Try
@@ -849,7 +851,7 @@ Public Class FormMain
                         For Each ps As PageSize In SANE.CurrentDevice.SupportedPageSizes
                             If ps.Name.ToUpper.Trim = opt.ToUpper.Trim Then
                                 Found_Default = True
-                                Logger.Write(DebugLogger.Level.Info, False, "Setting default page size to '" & opt.Trim & "'")
+                                Logger.Info("Setting default page size to '{0}'", opt.Trim)
                                 Me.ComboBoxPageSize.SelectedItem = ps.Name
                                 If TWAIN_Is_Active Then
                                     Me.TWAINInstance.SetCap(TWAIN_VB.CAP.ICAP_SUPPORTEDSIZES, ps.TWAIN_TWSS, TWAIN_VB.DS_Entry_Pump.SetCapScope.DefaultValue, TWAIN_VB.DS_Entry_Pump.RequestSource.SANE)
@@ -858,12 +860,12 @@ Public Class FormMain
                             End If
                         Next
                         If Not Found_Default Then
-                            Logger.Write(DebugLogger.Level.Warn, False, "Default page size '" & opt.Trim & "' is not in the list of supported sizes for this device")
+                            Logger.Warn("Default page size '{0}' is not in the list of supported sizes for this device", opt.Trim)
                         End If
                     End If
                 End If
             Catch ex As Exception
-                Logger.Write(DebugLogger.Level.Error_, False, "Exception while attempting to set DefaultPaperSize value: " & ex.Message)
+                Logger.ErrorException("Exception while attempting to set DefaultPaperSize value: " & ex.Message, ex)
             End Try
             If Me.ComboBoxPageSize.SelectedItem Is Nothing Then
                 If Me.ComboBoxPageSize.Items.Contains("Maximum") Then
@@ -873,9 +875,9 @@ Public Class FormMain
             '
             Me.PanelOpt.Controls.Clear()
         Else
-            Logger.Write(DebugLogger.Level.Warn, False, "Backend configuration file uninitialized; backend-specific default values were not configured")
+            Logger.Warn("Backend configuration file uninitialized; backend-specific default values were not configured")
         End If
-        Logger.Write(DebugLogger.Level.Debug, False, "end")
+        Logger.Debug("end")
     End Sub
 
     Friend Sub Get_Current_Device_Physical_Size_In_Inches(ByRef Width As Double, ByRef Height As Double)
@@ -949,23 +951,23 @@ Public Class FormMain
                             PhysicalWidth = PhysicalWidth / res_dpi
                             PhysicalLength = PhysicalLength / res_dpi
                         Else
-                            Logger.Write(DebugLogger.Level.Warn, False, "Unable to convert pixels to inches because dpi is unknown; using defaults instead")
+                            Logger.Warn("Unable to convert pixels to inches because dpi is unknown; using defaults instead")
                             PhysicalWidth = 8.5
                             PhysicalLength = 11
                         End If
                 End Select
-                Logger.Write(DebugLogger.Level.Debug, False, "physical size = " & PhysicalWidth.ToString & " x " & PhysicalLength.ToString & " inches")
+                Logger.Debug("physical size = {0} x {1} inches", PhysicalWidth, PhysicalLength)
                 Width = PhysicalWidth
                 Height = PhysicalLength
             End If
         Catch ex As Exception
-            Logger.Write(DebugLogger.Level.Error_, False, ex.Message)
+            Logger.ErrorException(ex.Message, ex)
         End Try
     End Sub
 
 
     Friend Sub SetTWAINCaps(ByVal OptionDescriptor As SANE_API.SANE_Option_Descriptor, ByVal OptionValues() As Object, ByVal SetDefaultValue As Boolean)
-        If OptionValues.Length > 1 Then Logger.Write(DebugLogger.Level.Warn, False, "Only the first value in the array will be evaluated for option '" & OptionDescriptor.title & "'")
+        If OptionValues.Length > 1 Then Logger.Warn("Only the first value in the array will be evaluated for option '{0}'", OptionDescriptor.title)
         If (CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI IsNot Nothing) Then
             If OptionValues.Length > 0 Then
                 If OptionValues(0) IsNot Nothing Then
@@ -981,25 +983,25 @@ Public Class FormMain
                             If ss.Length = 2 Then
                                 capName(i) = ss(0).Trim.ToUpper
                                 capVal(i) = ss(1).Trim.ToUpper
-                                Logger.Write(DebugLogger.Level.Debug, False, "TWAIN Capability = '" & capName(i) & "', Value = '" & capVal(i) & "'")
+                                Logger.Debug("TWAIN Capability = '{0}', Value = '{1}'", capName(i), capVal(i))
                                 If Me.TWAINInstance IsNot Nothing Then
                                     Dim n As TWAIN_VB.CAP
                                     If [Enum].TryParse(capName(i), True, n) Then
                                         If capVal(i) = "#" Then capVal(i) = OptionValues(0)
                                         Me.TWAINInstance.SetCap(n, capVal(i), IIf(SetDefaultValue, TWAIN_VB.DS_Entry_Pump.SetCapScope.BothValues, TWAIN_VB.DS_Entry_Pump.SetCapScope.CurrentValue), TWAIN_VB.DS_Entry_Pump.RequestSource.SANE)
                                     Else
-                                        Logger.Write(DebugLogger.Level.Warn, False, "Unknown TWAIN capability '" & capName(i) & "'")
+                                        Logger.Warn("Unknown TWAIN capability '{0}'", capName(i))
                                     End If
                                 End If
                             Else
-                                Logger.Write(DebugLogger.Level.Warn, False, "Malformed TWAIN capability mapping: '" & caps(i) & "'")
+                                Logger.Warn("Malformed TWAIN capability mapping: '{0}'", caps(i))
                             End If
                         Next
                     End If
                 End If
             End If
         Else
-            Logger.Write(DebugLogger.Level.Warn, False, "Backend configuration file uninitialized; SANE to TWAIN capability mappings were not configured")
+            Logger.Warn("Backend configuration file uninitialized; SANE to TWAIN capability mappings were not configured")
         End If
     End Sub
 
@@ -1051,7 +1053,7 @@ Public Class FormMain
             ReDim OptReq.values(Values.Length - 1)
             For i As Integer = 0 To Values.Length - 1
 
-                Logger.Write(DebugLogger.Level.Debug, False, "Value Type = '" & Values(i).GetType.ToString & "', Value = '" & Values(i).ToString & "'")
+                Logger.Debug("Value Type = '{0}', Value = '{1}'", Values(i).GetType, Values(i))
                 If Values(i).GetType Is GetType(TWAIN_VB.TW_FIX32) Then Values(i) = Me.TWAINInstance.FIX32ToFloat(Values(i))
 
                 Select Case od.type
@@ -1118,10 +1120,10 @@ Public Class FormMain
 
             Return Status
         Catch ex As ApplicationException
-            Logger.Write(DebugLogger.Level.Warn, False, ex.Message)
+            Logger.WarnException(ex.Message, ex)
             Throw
         Catch ex As Exception
-            Logger.Write(DebugLogger.Level.Error_, False, ex.Message)
+            Logger.ErrorException(ex.Message, ex)
             Throw
         End Try
 
@@ -1151,7 +1153,7 @@ Public Class FormMain
                 End If
             End If
         Catch ex As Exception
-            Logger.Write(DebugLogger.Level.Error_, True, "Unable to set option value: " & ex.Message)
+            Logger.ErrorException("Unable to set option value: " & ex.Message, ex)
         End Try
     End Sub
 
@@ -1205,7 +1207,7 @@ Public Class FormMain
         If SANE Is Nothing Then SANE = New SANE_API
         Dim f As New FormSANEHostWizard
         If f.ShowDialog <> Windows.Forms.DialogResult.OK Then
-            Logger.Write(DebugLogger.Level.Debug, False, "User cancelled SANE host wizard")
+            Logger.Debug("User cancelled SANE host wizard")
             'XXX
         End If
         Try_Init_SANE()
@@ -1259,7 +1261,7 @@ Public Class FormMain
                 End If
             End If
         Catch ex As Exception
-            Logger.Write(DebugLogger.Level.Error_, True, "Error setting page dimensions: " & ex.Message)
+            Logger.ErrorException("Error setting page dimensions: " & ex.Message, ex)
         End Try
     End Sub
 

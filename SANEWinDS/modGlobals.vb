@@ -19,9 +19,11 @@
 Imports System.Drawing
 
 Module modGlobals
+
+    Private Logger As NLog.Logger = NLog.LogManager.GetCurrentClassLogger()
+
     Public CurrentSettings As SharedSettings
     Public SANE As SANE_API
-    Public Logger As DebugLogger
     Public net As System.Net.Sockets.TcpClient
 
     Public Function InchesToMM(ByVal Inches As Double) As Double
@@ -41,7 +43,7 @@ Module modGlobals
     End Function
 
     Public Function AcquireImage(ByRef bmp As Bitmap) As SANE_API.SANE_Status
-        Logger.Write(DebugLogger.Level.Debug, False, "")
+        Logger.Debug("")
         Dim Status As SANE_API.SANE_Status = 0
         Dim Port As Int32 = 0
         Dim ByteOrder As SANE_API.SANE_Net_Byte_Order
@@ -56,7 +58,7 @@ Module modGlobals
                 Try
                     SANEImage.Frames(CurrentFrame) = SANE.AcquireFrame(net, Port, ByteOrder, CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).TCP_Timeout_ms)
                 Catch ex As Exception
-                    Logger.Write(DebugLogger.Level.Error_, True, "AcquireFrame returned exception: " & ex.Message)
+                    Logger.ErrorException("AcquireFrame returned exception: " & ex.Message, ex)
                     Status = SANE_API.SANE_Status.SANE_STATUS_IO_ERROR
                     Exit Do
                 End Try
@@ -133,7 +135,7 @@ Module modGlobals
                     bmp.UnlockBits(bmp_data)
                 End If
             Catch ex As Exception
-                Logger.Write(DebugLogger.Level.Error_, True, "Error creating image: " & ex.Message)
+                Logger.ErrorException("Error creating image: " & ex.Message, ex)
                 Status = SANE_API.SANE_Status.SANE_STATUS_IO_ERROR
             Finally
                 'ReDim SANEImage.Frames(0).Data(-1)
@@ -142,7 +144,9 @@ Module modGlobals
                 'bmp = Nothing
             End Try
         Else
-            Logger.Write(DebugLogger.Level.Debug, Status <> SANE_API.SANE_Status.SANE_STATUS_NO_DOCS, "Got status '" & Status.ToString & "' while acquiring image frames")
+            Dim msg As String = "Got status '" & Status.ToString & "' while acquiring image frames"
+            Logger.Debug(msg)
+            If Status <> SANE_API.SANE_Status.SANE_STATUS_NO_DOCS Then MsgBox(msg)
         End If
         Return Status
     End Function
@@ -312,7 +316,7 @@ Module modGlobals
                 End If
             End If
         Catch ex As Exception
-            Logger.Write(DebugLogger.Level.Error_, True, ex.Message)
+            Logger.ErrorException(ex.Message, ex)
         End Try
     End Sub
 End Module

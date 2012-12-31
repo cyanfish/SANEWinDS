@@ -2066,6 +2066,9 @@ Namespace TWAIN_VB
 #End Region
 
     Public Class DS_Entry_Pump
+
+        Private Logger As NLog.Logger = NLog.LogManager.GetCurrentClassLogger()
+
         Private Enum TwainState As Integer
             None = 0
             DSM_Pre_Session = 1
@@ -2144,17 +2147,11 @@ Namespace TWAIN_VB
         Private CurrentJob As TWAINJob
         Public Delegate Sub Message_From_DSEventHandler(ByVal _pOrigin As IntPtr, ByVal _pDest As IntPtr, ByVal _DG As UInt32, ByVal _DAT As UInt32, ByVal _MSG As UInt16, ByVal _pData As IntPtr)
         Public Event Message_From_DS As Message_From_DSEventHandler
-        'Private Logger As New Logger
 
         Private Sub Send_TWAIN_Message(ByVal _Origin As TW_IDENTITY, ByVal _Dest As TW_IDENTITY, ByVal _DG As DG, ByVal _DAT As DAT, ByVal _MSG As MSG, ByVal _Data As Object)
 
-            Dim LogString As String = "(" & _DG.ToString & ", " & _DAT.ToString & ", " & _MSG.ToString & ")"
-            LogString += " Origin.Id=" & _Origin.Id.ToString
-            LogString += ", Origin.ProductName=" & _Origin.ProductName
-            LogString += ", Dest.Id=" & _Dest.Id.ToString
-            LogString += ", Dest.ProductName=" & _Dest.ProductName
-
-            Logger.Write(DebugLogger.Level.Info, False, LogString)
+            Logger.Info("({0}, {1}, {2}) Origin.Id={3}, Origin.ProductName={4}, Destination.Id={5}, Destination.ProductName={6}", _
+                       {_DG.ToString, _DAT.ToString, _MSG.ToString, _Origin.Id, _Origin.ProductName, _Dest.Id, _Dest.ProductName})
 
             'XXX check for null ptr after each mem alloc!
 
@@ -2190,28 +2187,24 @@ Namespace TWAIN_VB
             Catch ex As Exception
             End Try
 
-            Logger.Write(DebugLogger.Level.Debug, False, MyState.ToString & " --> " & NewState.ToString & "; called from " & "[" & callertype & ":" & caller & "]")
+            Logger.Debug("{0} --> {1}; called from [{2}:{3}]", {MyState, NewState, callertype, caller})
             MyState = NewState
         End Sub
 
         Private Sub SetCondition(ByVal NewCondition As TWCC)
-            'If NewCondition <> MyCondition Then
-            Logger.Write(DebugLogger.Level.Debug, False, MyCondition.ToString & " --> " & NewCondition.ToString)
+            Logger.Debug("{0} --> {1}", MyCondition, NewCondition)
             MyCondition = NewCondition
-            'End If
         End Sub
 
         Private Sub SetResult(ByVal NewResult As TWRC)
-            'If NewResult <> MyResult Then
             If (NewResult <> TWRC.TWRC_DSEVENT) And (NewResult <> TWRC.TWRC_NOTDSEVENT) Then 'filter out the noisy changes
-                Logger.Write(DebugLogger.Level.Debug, False, MyResult.ToString & " --> " & NewResult.ToString)
+                Logger.Debug("{0} --> {1}", MyResult, NewResult)
             End If
             MyResult = NewResult
-            'End If
         End Sub
 
         Public Sub Log(ByVal message As String)
-            Logger.Write(DebugLogger.Level.Info, False, message)
+            Logger.Info(message)
         End Sub
 
 #Region "TWAIN Message handler"
@@ -2254,14 +2247,7 @@ Namespace TWAIN_VB
             Dim MSG As MSG = _MSG
 
             If Not ((_DG = DG.DG_CONTROL) And (_DAT = DAT.DAT_EVENT) And (_MSG = MSG.MSG_PROCESSEVENT)) Then
-                Dim LogString As String = "(" & DG.ToString & ", " & DAT.ToString & ", " & MSG.ToString & ")"
-                'If _pOrigin <> IntPtr.Zero Then
-                '    Dim _Origin As TW_IDENTITY_unmanaged = Marshal.PtrToStructure(_pData, GetType(TW_IDENTITY_unmanaged))
-                '    LogString += " Origin.Id=" & _Origin.Id.ToString
-                '    LogString += ", Origin.ProductName=" & _Origin.ProductName
-                '    LogString += ", Origin.Manufacturer=" & _Origin.Manufacturer
-                'End If
-                Logger.Write(DebugLogger.Level.Debug, False, LogString)
+                Logger.Debug("({0}, {1}, {2})", DG, DAT, MSG)
             End If
 
             If Not ((_DG = DG.DG_CONTROL) And (_DAT = DAT.DAT_STATUS) And (_MSG = MSG.MSG_GET)) Then
@@ -2442,10 +2428,10 @@ Namespace TWAIN_VB
                         br_x = FIX32ToFloat(ImageLayout.Frame.Right)
                         br_y = FIX32ToFloat(ImageLayout.Frame.Bottom)
 
-                        Logger.Write(DebugLogger.Level.Debug, False, "tl-x=" & tl_x.ToString)
-                        Logger.Write(DebugLogger.Level.Debug, False, "tl-y=" & tl_y.ToString)
-                        Logger.Write(DebugLogger.Level.Debug, False, "br-x=" & br_x.ToString)
-                        Logger.Write(DebugLogger.Level.Debug, False, "br-y=" & br_y.ToString)
+                        Logger.Debug("tl-x={0}", tl_x)
+                        Logger.Debug("tl-y={0}", tl_y)
+                        Logger.Debug("br-x={0}", br_x)
+                        Logger.Debug("br-y={0}", br_y)
 
                         Dim BadVal As Boolean = False
 
@@ -2529,7 +2515,7 @@ Namespace TWAIN_VB
         End Function
 
         Private Function DG_CONTROL__DAT_PENDINGXFERS(ByVal _MSG As MSG, ByVal _pData As IntPtr) As TWRC
-            Logger.Write(DebugLogger.Level.Debug, False, "CurrentJob.PendingXfers.Count = " & CurrentJob.PendingXfers.Count.ToString)
+            Logger.Debug("CurrentJob.PendingXfers.Count = {0}", CurrentJob.PendingXfers.Count)
             Select Case _MSG
                 Case MSG.MSG_GET
                     If MyState >= TwainState.DS_Opened And MyState <= TwainState.DS_Xfer_Active Then
@@ -2590,12 +2576,12 @@ Namespace TWAIN_VB
         End Function
 
         Private Sub SetXfers(ByVal Count As Integer)
-            Logger.Write(DebugLogger.Level.Debug, False, "CurrentJob.ImagesXferred " & CurrentJob.ImagesXferred.ToString & " --> " & Count.ToString)
+            Logger.Debug("CurrentJob.ImagesXferred {0} --> {1}", CurrentJob.ImagesXferred.ToString, Count.ToString)
             CurrentJob.ImagesXferred = Count
         End Sub
 
         Private Sub SetPendingXfers(ByVal Count As Integer)
-            Logger.Write(DebugLogger.Level.Debug, False, "CurrentJob.PendingXfers.Count " & CurrentJob.PendingXfers.Count.ToString & " --> " & Count.ToString)
+            Logger.Debug("CurrentJob.PendingXfers.Count {0} --> {1}", CurrentJob.PendingXfers.Count, Count.ToString)
             CurrentJob.PendingXfers.Count = Count
         End Sub
 
@@ -2652,7 +2638,8 @@ Namespace TWAIN_VB
                                     Return MyResult
                                 End If
                             Catch ex As Exception
-                                Logger.Write(DebugLogger.Level.Error_, True, ex.Message)
+                                Logger.ErrorException(ex.Message, ex)
+                                MsgBox(ex.Message)
                                 SetCondition(TWCC.TWCC_OPERATIONERROR)
                                 SetResult(TWRC.TWRC_FAILURE)
                                 Return MyResult
@@ -2700,10 +2687,10 @@ Namespace TWAIN_VB
                                         Dim bmiHeader As DIB.BITMAPINFOHEADER = CurrentJob.CurrentImage.DIB.DIBInfo.bmiHeader
                                         Dim AlignedBytesPerLine As UInt32 = ((bmiHeader.biWidth * bmiHeader.bitCount + 31) \ 32) * 4
 
-                                        Logger.Write(DebugLogger.Level.Debug, False, "AlignedBytesPerLine=" & AlignedBytesPerLine.ToString)
+                                        Logger.Debug("AlignedBytesPerLine={0}", AlignedBytesPerLine)
                                         CurrentJob.CurrentImage.TotalBytes = AlignedBytesPerLine * CurrentJob.CurrentImage.ImageInfo.ImageLength
-                                        Logger.Write(DebugLogger.Level.Debug, False, "CurrentImage.TotalBytes=" & CurrentJob.CurrentImage.TotalBytes.ToString)
-                                        Logger.Write(DebugLogger.Level.Debug, False, "ImageMemXfer.Memory.Length=" & ImageMemXfer.Memory.Length.ToString)
+                                        Logger.Debug("CurrentImage.TotalBytes={0}", CurrentJob.CurrentImage.TotalBytes)
+                                        Logger.Debug("ImageMemXfer.Memory.Length={0}", ImageMemXfer.Memory.Length)
 
                                         If ImageMemXfer.Memory.Length >= AlignedBytesPerLine Then
                                             Dim LinesToCopy As Integer = ImageMemXfer.Memory.Length \ AlignedBytesPerLine
@@ -2765,7 +2752,8 @@ Namespace TWAIN_VB
                                     Return MyResult
                                 End If
                             Catch ex As Exception
-                                Logger.Write(DebugLogger.Level.Error_, True, ex.Message)
+                                Logger.ErrorException(ex.Message, ex)
+                                MsgBox(ex.Message)
                                 SetCondition(TWCC.TWCC_OPERATIONERROR)
                                 SetResult(TWRC.TWRC_FAILURE)
                                 Return MyResult
@@ -2869,18 +2857,18 @@ Namespace TWAIN_VB
                 End Select
                 .Compression = TWCP.TWCP_NONE
 
-                Logger.Write(DebugLogger.Level.Debug, False, "XResolution -> " & FIX32ToFloat(.XResolution).ToString)
-                Logger.Write(DebugLogger.Level.Debug, False, "YResolution -> " & FIX32ToFloat(.YResolution).ToString)
-                Logger.Write(DebugLogger.Level.Debug, False, "ImageWidth -> " & .ImageWidth.ToString)
-                Logger.Write(DebugLogger.Level.Debug, False, "ImageLength -> " & .ImageLength.ToString)
-                Logger.Write(DebugLogger.Level.Debug, False, "SamplesPerPixel -> " & .SamplesPerPixel.ToString)
+                Logger.Debug("XResolution -> {0}", FIX32ToFloat(.XResolution))
+                Logger.Debug("YResolution -> {0}", FIX32ToFloat(.YResolution))
+                Logger.Debug("ImageWidth -> {0}", .ImageWidth)
+                Logger.Debug("ImageLength -> {0}", .ImageLength)
+                Logger.Debug("SamplesPerPixel -> {0}", .SamplesPerPixel)
                 For i As Integer = 0 To .BitsPerSample.Length - 1
-                    Logger.Write(DebugLogger.Level.Debug, False, "BitsPerSample(" & i.ToString & ") -> " & .BitsPerSample(i).ToString)
+                    Logger.Debug("BitsPerSample({0}) -> {1}", i, .BitsPerSample(i))
                 Next
-                Logger.Write(DebugLogger.Level.Debug, False, "BitsPerPixel -> " & .BitsPerPixel.ToString)
-                Logger.Write(DebugLogger.Level.Debug, False, "Planar -> " & CBool(.Planar).ToString)
-                Logger.Write(DebugLogger.Level.Debug, False, "PixelType -> " & .PixelType.ToString)
-                Logger.Write(DebugLogger.Level.Debug, False, "Compression -> " & .Compression.ToString)
+                Logger.Debug("BitsPerPixel -> {0}", .BitsPerPixel)
+                Logger.Debug("Planar -> {0}", CBool(.Planar))
+                Logger.Debug("PixelType -> {0}", .PixelType)
+                Logger.Debug("Compression -> {0}", .Compression)
 
             End With
         End Sub
@@ -2947,18 +2935,18 @@ Namespace TWAIN_VB
                 End Select
                 .Compression = TWCP.TWCP_NONE
 
-                Logger.Write(DebugLogger.Level.Debug, False, "XResolution -> " & FIX32ToFloat(.XResolution).ToString)
-                Logger.Write(DebugLogger.Level.Debug, False, "YResolution -> " & FIX32ToFloat(.YResolution).ToString)
-                Logger.Write(DebugLogger.Level.Debug, False, "ImageWidth -> " & .ImageWidth.ToString)
-                Logger.Write(DebugLogger.Level.Debug, False, "ImageLength -> " & .ImageLength.ToString)
-                Logger.Write(DebugLogger.Level.Debug, False, "SamplesPerPixel -> " & .SamplesPerPixel.ToString)
+                Logger.Debug("XResolution -> {0}", FIX32ToFloat(.XResolution))
+                logger.debug("YResolution -> {0}", FIX32ToFloat(.YResolution))
+                logger.debug("ImageWidth -> {0}", .ImageWidth)
+                logger.debug("ImageLength -> {0}", .ImageLength)
+                logger.debug("SamplesPerPixel -> {0}", .SamplesPerPixel)
                 For i As Integer = 0 To .BitsPerSample.Length - 1
-                    Logger.Write(DebugLogger.Level.Debug, False, "BitsPerSample(" & i.ToString & ") -> " & .BitsPerSample(i).ToString)
+                    logger.debug("BitsPerSample({0}) -> {1}", i, .BitsPerSample(i))
                 Next
-                Logger.Write(DebugLogger.Level.Debug, False, "BitsPerPixel -> " & .BitsPerPixel.ToString)
-                Logger.Write(DebugLogger.Level.Debug, False, "Planar -> " & CBool(.Planar).ToString)
-                Logger.Write(DebugLogger.Level.Debug, False, "PixelType -> " & .PixelType.ToString)
-                Logger.Write(DebugLogger.Level.Debug, False, "Compression -> " & .Compression.ToString)
+                logger.debug("BitsPerPixel -> {0}", .BitsPerPixel)
+                logger.debug("Planar -> {0}", CBool(.Planar))
+                logger.debug("PixelType -> {0}", .PixelType)
+                logger.debug("Compression -> {0}", .Compression)
 
             End With
         End Sub
@@ -3008,7 +2996,7 @@ Namespace TWAIN_VB
                     Status.ConditionCode = MyCondition
                     Status.Data = 0
                     Marshal.StructureToPtr(Status, _pData, True)
-                    Logger.Write(DebugLogger.Level.Debug, False, "Returning condition code '" & MyCondition.ToString & "'")
+                    Logger.Debug("Returning condition code '{0}'", MyCondition)
                     SetCondition(TWCC.TWCC_SUCCESS) 'must reset now per TWAIN spec.
                     SetResult(TWRC.TWRC_SUCCESS)
                     Return MyResult
@@ -3032,12 +3020,12 @@ Namespace TWAIN_VB
                         Dim ser As New System.Web.Script.Serialization.JavaScriptSerializer
                         Dim MyStr As String = ser.Serialize(cds)
 
-                        Logger.Write(DebugLogger.Level.Debug, False, MyStr)
+                        Logger.Debug(MyStr)
 
                         Dim b() As Byte
                         b = System.Text.Encoding.ASCII.GetBytes(MyStr)
                         CustomDSData.InfoLength = b.Length
-                        Logger.Write(DebugLogger.Level.Debug, False, "InfoLength=" & CustomDSData.InfoLength.ToString)
+                        Logger.Debug("InfoLength={0}", CustomDSData.InfoLength)
 
                         CustomDSData.hData = WinAPI.GlobalAlloc(WinAPI.GlobalAllocFlags.GHND, b.Length)
                         Marshal.Copy(b, 0, CustomDSData.hData, b.Length)
@@ -3048,18 +3036,17 @@ Namespace TWAIN_VB
                         SetResult(TWRC.TWRC_SUCCESS)
                         Return MyResult
                     Catch ex As Exception
-                        Logger.Write(DebugLogger.Level.Error_, False, ex.Message)
-                        Logger.Write(DebugLogger.Level.Error_, False, ex.InnerException.Message)
+                        Logger.ErrorException(ex.Message, ex)
                         SetCondition(TWCC.TWCC_BUMMER)
                         SetResult(TWRC.TWRC_FAILURE)
                         Return MyResult
                     End Try
                 Case MSG.MSG_SET
                     Try
-                        Logger.Write(DebugLogger.Level.Debug, False, "_pData=" & _pData.ToString)
+                        Logger.Debug("_pData={0}", _pData)
                         Dim CustomDSData As TW_CUSTOMDSDATA = Marshal.PtrToStructure(_pData, GetType(TW_CUSTOMDSDATA))
-                        Logger.Write(DebugLogger.Level.Debug, False, "InfoLength=" & CustomDSData.InfoLength.ToString)
-                        Logger.Write(DebugLogger.Level.Debug, False, "hData=" & CustomDSData.hData.ToString)
+                        Logger.Debug("InfoLength={0}", CustomDSData.InfoLength)
+                        Logger.Debug("hData={0}", CustomDSData.hData)
 
                         If (CustomDSData.InfoLength > 0) And (CustomDSData.hData <> IntPtr.Zero) Then
                             Dim b(CustomDSData.InfoLength - 1) As Byte
@@ -3067,7 +3054,7 @@ Namespace TWAIN_VB
 
                             Dim MyStr As String = System.Text.Encoding.ASCII.GetString(b, 0, b.Length)
 
-                            Logger.Write(DebugLogger.Level.Debug, False, MyStr)
+                            Logger.Debug(MyStr)
 
                             Dim ser As New System.Web.Script.Serialization.JavaScriptSerializer
                             Dim cds As CustomDSData = ser.Deserialize(Of CustomDSData)(MyStr)
@@ -3080,22 +3067,22 @@ Namespace TWAIN_VB
                                     If StoredOptionValues(Index) IsNot Nothing AndAlso SANE.CurrentDevice.OptionValues(Index) IsNot Nothing Then
                                         For val_idx As Integer = 0 To StoredOptionValues(Index).Length - 1
                                             If StoredOptionValues(Index)(val_idx) IsNot Nothing AndAlso SANE.CurrentDevice.OptionValues(Index)(val_idx) IsNot Nothing Then
-                                                Logger.Write(DebugLogger.Level.Debug, False, "Option '" & od.name & "': Current = '" & SANE.CurrentDevice.OptionValues(Index)(val_idx).ToString & "', Stored = '" & StoredOptionValues(Index)(val_idx).ToString & "'")
+                                                Logger.Debug("Option '{0}': Current = '{1}', Stored = '{2}'", od.name, SANE.CurrentDevice.OptionValues(Index)(val_idx), StoredOptionValues(Index)(val_idx))
                                                 If StoredOptionValues(Index)(val_idx) <> SANE.CurrentDevice.OptionValues(Index)(val_idx) Then
                                                     OptionDifferent = True
                                                     Exit For
                                                 End If
                                             Else
-                                                Logger.Write(DebugLogger.Level.Debug, False, "Option '" & od.name & "' value(" & val_idx.ToString & ") is Nothing")
+                                                Logger.Debug("Option '{0}' value({1}) is Nothing", od.name, val_idx.ToString)
                                             End If
                                         Next
                                     Else
-                                        Logger.Write(DebugLogger.Level.Debug, False, "Option '" & od.name & "' value is Nothing")
+                                        Logger.Debug("Option '{0}' value is Nothing", od.name)
                                     End If
-                                    Logger.Write(DebugLogger.Level.Debug, False, "Stored option '" & od.title & "' is " & IIf(OptionDifferent, "", "not ") & "different from current settings.")
+                                    Logger.Debug("Stored option '{0}' is {1}different from current settings.", od.title, IIf(OptionDifferent, "", "not "))
 
                                     If OptionDifferent Then
-                                        If Not MyForm.SetSANEOption(od.name, StoredOptionValues(Index)) Then Logger.Write(DebugLogger.Level.Warn, False, "Error setting '" & od.type.ToString & "' option '" & od.title & "'")
+                                        If Not MyForm.SetSANEOption(od.name, StoredOptionValues(Index)) Then Logger.Warn("Error setting '{0}' option '{1}'", od.type, od.title)
                                     End If
                                 End If
                             Next
@@ -3109,14 +3096,13 @@ Namespace TWAIN_VB
 
                             Array.Resize(b, 0)
                         Else
-                            Logger.Write(DebugLogger.Level.Warn, False, "Custom DS Data structure wasn't provided by the application!")
+                            Logger.Warn("Custom DS Data structure wasn't provided by the application!")
                         End If
 
                         SetResult(TWRC.TWRC_SUCCESS)
                         Return MyResult
                     Catch ex As Exception
-                        Logger.Write(DebugLogger.Level.Error_, False, ex.Message)
-                        Logger.Write(DebugLogger.Level.Error_, False, ex.InnerException.Message)
+                        Logger.ErrorException(ex.Message, ex)
                         SetCondition(TWCC.TWCC_BUMMER)
                         SetResult(TWRC.TWRC_FAILURE)
                         Return MyResult
@@ -3132,7 +3118,7 @@ Namespace TWAIN_VB
             Select Case _MSG
                 Case MSG.MSG_GET, MSG.MSG_GETCURRENT, MSG.MSG_GETDEFAULT
                     Dim tw_cap As TW_CAPABILITY = Marshal.PtrToStructure(_pData, GetType(TW_CAPABILITY))
-                    Logger.Write(DebugLogger.Level.Debug, False, "Capability=" & CType(tw_cap.Cap, CAP).ToString & ", ContainerType=" & CType(tw_cap.ConType, TWON).ToString)
+                    Logger.Debug("Capability={0}, ContainerType={1}", CType(tw_cap.Cap, CAP), CType(tw_cap.ConType, TWON))
 
                     Dim ReqCap As TwainCapability
                     Dim CurVal As Object = Nothing
@@ -3152,11 +3138,11 @@ Namespace TWAIN_VB
                     End If
 
                     CurVal = ReqCap.CurrentValue
-                    Logger.Write(DebugLogger.Level.Debug, False, "Current Value Type=" & CurVal.GetType.ToString)
+                    Logger.Debug("Current Value Type={0}", CurVal.GetType)
                     If CurVal.GetType Is GetType(TW_FIX32) Then
-                        Logger.Write(DebugLogger.Level.Debug, False, "Current Value=" & FIX32ToFloat(CurVal).ToString)
+                        Logger.Debug("Current Value={0}", FIX32ToFloat(CurVal))
                     Else
-                        Logger.Write(DebugLogger.Level.Debug, False, "Current Value=" & CurVal.ToString)
+                        Logger.Debug("Current Value={0}", CurVal)
                     End If
                     DefaultVal = ReqCap.DefaultValue
 
@@ -3170,7 +3156,7 @@ Namespace TWAIN_VB
                                 Dim oneval As TW_ONEVALUE
                                 oneval.ItemType = TWTY.TWTY_BOOL
                                 oneval.Item = IIf(_MSG = MSG.MSG_GETDEFAULT, DefaultVal, CurVal)
-                                Logger.Write(DebugLogger.Level.Debug, False, "Returning value '" & oneval.Item.ToString & "'")
+                                Logger.Debug("Returning value '{0}'", oneval.Item)
                                 Dim pContainer As IntPtr = WinAPI.GlobalAlloc(WinAPI.GlobalAllocFlags.GHND, Marshal.SizeOf(oneval))
                                 tw_cap.ConType = TWON.TWON_ONEVALUE
                                 tw_cap.hContainer = pContainer
@@ -3192,11 +3178,11 @@ Namespace TWAIN_VB
                             Marshal.WriteInt32(pContainer + 2, cap_array.NumItems)
                             Dim i As Integer = 0
                             For Each ccap As Object In Caps
-                                Logger.Write(DebugLogger.Level.Debug, False, "  Supported capability: " & CType(ccap.Key, CAP).ToString)
+                                Logger.Debug("  Supported capability: {0}", CType(ccap.Key, CAP))
                                 Try
                                     Marshal.WriteInt16(pContainer + ItemOffset + i, ccap.Key)
                                 Catch ex As Exception
-                                    Logger.Write(DebugLogger.Level.Error_, True, ex.Message)
+                                    Logger.ErrorException(ex.Message, ex)
                                 End Try
                                 i += 2
                             Next
@@ -3225,8 +3211,8 @@ Namespace TWAIN_VB
                                         Catch
                                             cap_enum.DefaultIndex = Me.SupportedSizes.IndexOf(TWSS.TWSS_NONE)
                                         End Try
-                                        Logger.Write(DebugLogger.Level.Debug, False, "cap_enum.currentindex=" & cap_enum.CurrentIndex.ToString)
-                                        Logger.Write(DebugLogger.Level.Debug, False, "cap_enum.defaultindex=" & cap_enum.DefaultIndex.ToString)
+                                        Logger.Debug("cap_enum.currentindex={0}", cap_enum.CurrentIndex)
+                                        Logger.Debug("cap_enum.defaultindex={0}", cap_enum.DefaultIndex)
 
                                         Dim ItemOffset As Integer = Marshal.SizeOf(cap_enum.ItemType) + Marshal.SizeOf(cap_enum.NumItems) + Marshal.SizeOf(cap_enum.CurrentIndex) + Marshal.SizeOf(cap_enum.DefaultIndex)
                                         Dim pContainer As IntPtr = WinAPI.GlobalAlloc(WinAPI.GlobalAllocFlags.GHND, CInt(ItemOffset + (2 * cap_enum.NumItems)))
@@ -3237,11 +3223,11 @@ Namespace TWAIN_VB
                                         '
                                         Dim i As Integer = 0
                                         For Each ps As TWSS In Me.SupportedSizes
-                                            Logger.Write(DebugLogger.Level.Debug, False, "  Supported size: " & ps.ToString)
+                                            Logger.Debug("  Supported size: {0}", ps)
                                             Try
                                                 Marshal.WriteInt16(pContainer + ItemOffset + i, ps)
                                             Catch ex As Exception
-                                                Logger.Write(DebugLogger.Level.Error_, True, ex.Message)
+                                                Logger.ErrorException(ex.Message, ex)
                                             End Try
                                             i += 2
                                         Next
@@ -3320,7 +3306,7 @@ Namespace TWAIN_VB
                                     Marshal.StructureToPtr(tw_cap, _pData, True)
                                     SetResult(TWRC.TWRC_SUCCESS)
                                 Case Else
-                                    Logger.Write(DebugLogger.Level.Warn, True, "unable to convert to unit '" & CType(Caps(CAP.ICAP_UNITS).CurrentValue, TWUN) & "'")
+                                    Logger.Debug("unable to convert to unit '{0}'", CType(Caps(CAP.ICAP_UNITS).CurrentValue, TWUN))
                                     SetCondition(TWCC.TWCC_BADVALUE)
                                     SetResult(TWRC.TWRC_FAILURE)
                             End Select
@@ -3348,14 +3334,14 @@ Namespace TWAIN_VB
                                             Marshal.StructureToPtr(tw_cap, _pData, True)
                                             SetResult(TWRC.TWRC_SUCCESS)
                                         Case Else
-                                            Logger.Write(DebugLogger.Level.Warn, True, "unable to convert to unit '" & CType(Caps(CAP.ICAP_UNITS).CurrentValue, TWUN) & "'")
+                                            Logger.Debug("unable to convert to unit '{0}'", CType(Caps(CAP.ICAP_UNITS).CurrentValue, TWUN))
                                             SetCondition(TWCC.TWCC_BADVALUE)
                                             SetResult(TWRC.TWRC_FAILURE)
                                     End Select
                                     Return MyResult
 
                                 Case MSG.MSG_GET
-                                    Logger.Write(DebugLogger.Level.Debug, False, "Constraint type = '" & ReqCap.ConstraintType.ToString & "'")
+                                    Logger.Debug("Constraint type = '{0}'" & ReqCap.ConstraintType)
                                     Select Case ReqCap.ConstraintType
                                         'XXX respect ICAP_UNITS
                                         Case TWON.TWON_RANGE
@@ -3392,14 +3378,14 @@ Namespace TWAIN_VB
                                             '
                                             Dim i As Integer = 0
                                             For Each res As TW_FIX32 In ReqCap.ConstraintValues
-                                                Logger.Write(DebugLogger.Level.Debug, False, "  Supported Resolution: " & FIX32ToFloat(res).ToString)
+                                                Logger.Debug("  Supported Resolution: {0}", FIX32ToFloat(res))
                                                 Try
                                                     Marshal.WriteInt16(pContainer + ItemOffset + i, res.Whole)
                                                     i += 2
                                                     Marshal.WriteInt16(pContainer + ItemOffset + i, res.Frac)
                                                     i += 2
                                                 Catch ex As Exception
-                                                    Logger.Write(DebugLogger.Level.Error_, True, ex.Message)
+                                                    Logger.ErrorException(ex.Message, ex)
                                                 End Try
                                             Next
                                             '
@@ -3429,7 +3415,7 @@ Namespace TWAIN_VB
                                                     Marshal.StructureToPtr(tw_cap, _pData, True)
                                                     SetResult(TWRC.TWRC_SUCCESS)
                                                 Case Else
-                                                    Logger.Write(DebugLogger.Level.Warn, True, "unable to convert to unit '" & CType(Caps(CAP.ICAP_UNITS).CurrentValue, TWUN) & "'")
+                                                    Logger.Warn("unable to convert to unit '{0}'", CType(Caps(CAP.ICAP_UNITS).CurrentValue, TWUN))
                                                     SetCondition(TWCC.TWCC_BADVALUE)
                                                     SetResult(TWRC.TWRC_FAILURE)
                                             End Select
@@ -3456,7 +3442,7 @@ Namespace TWAIN_VB
                         Return MyResult
                     End If
                     Dim tw_cap As TW_CAPABILITY = Marshal.PtrToStructure(_pData, GetType(TW_CAPABILITY))
-                    Logger.Write(DebugLogger.Level.Debug, False, "Capability=" & CType(tw_cap.Cap, CAP).ToString & ", ContainerType=" & CType(tw_cap.ConType, TWON).ToString)
+                    Logger.Debug("Capability={0}, ContainerType={1}", CType(tw_cap.Cap, CAP), CType(tw_cap.ConType, TWON))
 
                     Dim ReqCap As TwainCapability
                     Try
@@ -3488,14 +3474,14 @@ Namespace TWAIN_VB
                                 Dim pContainer As IntPtr = WinAPI.GlobalLock(tw_cap.hContainer)
                                 Dim oneval As TW_ONEVALUE = Marshal.PtrToStructure(pContainer, GetType(TW_ONEVALUE))
                                 If pContainer Then WinAPI.GlobalUnlock(tw_cap.hContainer)
-                                Logger.Write(DebugLogger.Level.Debug, False, "ItemType=" & CType(oneval.ItemType, TWTY).ToString)
+                                Logger.Debug("ItemType={0}", CType(oneval.ItemType, TWTY))
                                 If oneval.ItemType <> TWTY.TWTY_BOOL Then
                                     Me.SetCondition(TWCC.TWCC_BADVALUE)
                                     Me.SetResult(TWRC.TWRC_FAILURE)
                                     Return MyResult
                                 End If
 
-                                Logger.Write(DebugLogger.Level.Debug, False, "app sent value '" & oneval.Item.ToString & "'")
+                                Logger.Debug("app sent value '{0}'", oneval.Item)
 
                                 SetCap(ReqCap.Capability, CType(oneval.Item, UInt16), SetCapScope.CurrentValue, RequestSource.TWAIN)
 
@@ -3512,9 +3498,9 @@ Namespace TWAIN_VB
                                 Dim pContainer As IntPtr = WinAPI.GlobalLock(tw_cap.hContainer)
                                 Dim oneval As TW_ONEVALUE = Marshal.PtrToStructure(pContainer, GetType(TW_ONEVALUE))
                                 If pContainer Then WinAPI.GlobalUnlock(tw_cap.hContainer)
-                                Logger.Write(DebugLogger.Level.Debug, False, "ItemType=" & CType(oneval.ItemType, TWTY).ToString)
+                                Logger.Debug("ItemType={0}" & CType(oneval.ItemType, TWTY))
 
-                                Logger.Write(DebugLogger.Level.Debug, False, "app sent value '" & oneval.Item.ToString & "'")
+                                Logger.Debug("app sent value '{0}'" & oneval.Item)
 
                                 If oneval.ItemType <> TWTY.TWTY_BOOL Then
                                     Me.SetCondition(TWCC.TWCC_BADVALUE)
@@ -3536,14 +3522,14 @@ Namespace TWAIN_VB
                                 Dim pContainer As IntPtr = WinAPI.GlobalLock(tw_cap.hContainer)
                                 Dim oneval As TW_ONEVALUE = Marshal.PtrToStructure(pContainer, GetType(TW_ONEVALUE))
                                 If pContainer Then WinAPI.GlobalUnlock(tw_cap.hContainer)
-                                Logger.Write(DebugLogger.Level.Debug, False, "ItemType=" & CType(oneval.ItemType, TWTY).ToString)
+                                Logger.Debug("ItemType={0}", CType(oneval.ItemType, TWTY))
                                 If oneval.ItemType <> TWTY.TWTY_BOOL Then
                                     Me.SetCondition(TWCC.TWCC_BADVALUE)
                                     Me.SetResult(TWRC.TWRC_FAILURE)
                                     Return MyResult
                                 End If
 
-                                Logger.Write(DebugLogger.Level.Debug, False, "app sent value '" & oneval.Item.ToString & "'")
+                                Logger.Debug("app sent value '{0}'" & oneval.Item)
 
                                 SetCap(ReqCap.Capability, CType(oneval.Item, UInt16), SetCapScope.CurrentValue, RequestSource.TWAIN)
 
@@ -3563,7 +3549,7 @@ Namespace TWAIN_VB
                                 Dim pContainer As IntPtr = WinAPI.GlobalLock(tw_cap.hContainer)
                                 Dim oneval As TW_ONEVALUE = Marshal.PtrToStructure(pContainer, GetType(TW_ONEVALUE))
                                 If pContainer Then WinAPI.GlobalUnlock(tw_cap.hContainer)
-                                Logger.Write(DebugLogger.Level.Debug, False, "ItemType=" & CType(oneval.ItemType, TWTY).ToString)
+                                Logger.Debug("ItemType={0}", CType(oneval.ItemType, TWTY))
                                 If oneval.ItemType <> TWTY.TWTY_INT16 Then
                                     Me.SetCondition(TWCC.TWCC_BADVALUE)
                                     Me.SetResult(TWRC.TWRC_FAILURE)
@@ -3583,7 +3569,7 @@ Namespace TWAIN_VB
                                 Dim pContainer As IntPtr = WinAPI.GlobalLock(tw_cap.hContainer)
                                 Dim oneval As TW_ONEVALUE = Marshal.PtrToStructure(pContainer, GetType(TW_ONEVALUE))
                                 If pContainer Then WinAPI.GlobalUnlock(tw_cap.hContainer)
-                                Logger.Write(DebugLogger.Level.Debug, False, "ItemType=" & CType(oneval.ItemType, TWTY).ToString)
+                                Logger.Debug("ItemType={0}", CType(oneval.ItemType, TWTY))
                                 If oneval.ItemType <> TWTY.TWTY_UINT16 Then
                                     SetCondition(TWCC.TWCC_BADVALUE)
                                     SetResult(TWRC.TWRC_FAILURE)
@@ -3612,7 +3598,7 @@ Namespace TWAIN_VB
                                 Dim pContainer As IntPtr = WinAPI.GlobalLock(tw_cap.hContainer)
                                 Dim oneval As TW_ONEVALUE = Marshal.PtrToStructure(pContainer, GetType(TW_ONEVALUE))
                                 If pContainer Then WinAPI.GlobalUnlock(tw_cap.hContainer)
-                                Logger.Write(DebugLogger.Level.Debug, False, "ItemType=" & CType(oneval.ItemType, TWTY).ToString)
+                                Logger.Debug("ItemType={0}", CType(oneval.ItemType, TWTY))
                                 If oneval.ItemType <> TWTY.TWTY_UINT16 Then
                                     SetCondition(TWCC.TWCC_BADVALUE)
                                     SetResult(TWRC.TWRC_FAILURE)
@@ -3639,7 +3625,7 @@ Namespace TWAIN_VB
                                 Dim pContainer As IntPtr = WinAPI.GlobalLock(tw_cap.hContainer)
                                 Dim oneval As TW_ONEVALUE = Marshal.PtrToStructure(pContainer, GetType(TW_ONEVALUE))
                                 If pContainer Then WinAPI.GlobalUnlock(tw_cap.hContainer)
-                                Logger.Write(DebugLogger.Level.Debug, False, "ItemType=" & CType(oneval.ItemType, TWTY).ToString)
+                                Logger.Debug("ItemType={0}", CType(oneval.ItemType, TWTY))
                                 If oneval.ItemType <> TWTY.TWTY_UINT16 Then
                                     SetCondition(TWCC.TWCC_BADVALUE)
                                     SetResult(TWRC.TWRC_FAILURE)
@@ -3673,7 +3659,7 @@ Namespace TWAIN_VB
                                 Dim pContainer As IntPtr = WinAPI.GlobalLock(tw_cap.hContainer)
                                 Dim oneval As TW_ONEVALUE = Marshal.PtrToStructure(pContainer, GetType(TW_ONEVALUE))
                                 If pContainer Then WinAPI.GlobalUnlock(tw_cap.hContainer)
-                                Logger.Write(DebugLogger.Level.Debug, False, "ItemType=" & CType(oneval.ItemType, TWTY).ToString)
+                                Logger.Debug("ItemType={0}", CType(oneval.ItemType, TWTY))
                                 If (oneval.ItemType <> TWTY.TWTY_UINT16) OrElse ((oneval.Item <> TWUN.TWUN_INCHES)) Then 'only allow inches, or...'And (oneval.Item <> TWUN.TWUN_MILLIMETERS) And (oneval.Item <> TWUN.TWUN_CENTIMETERS)) Then 'only allow inches, mm, or cm
                                     Me.SetCondition(TWCC.TWCC_BADVALUE)
                                     Me.SetResult(TWRC.TWRC_FAILURE)
@@ -3693,7 +3679,7 @@ Namespace TWAIN_VB
                                 Dim pContainer As IntPtr = WinAPI.GlobalLock(tw_cap.hContainer)
                                 Dim oneval As TW_ONEVALUE = Marshal.PtrToStructure(pContainer, GetType(TW_ONEVALUE))
                                 If pContainer Then WinAPI.GlobalUnlock(tw_cap.hContainer)
-                                Logger.Write(DebugLogger.Level.Debug, False, "ItemType=" & CType(oneval.ItemType, TWTY).ToString)
+                                Logger.Debug("ItemType={0}", CType(oneval.ItemType, TWTY))
                                 If oneval.ItemType <> TWTY.TWTY_UINT16 Then
                                     SetCondition(TWCC.TWCC_BADVALUE)
                                     SetResult(TWRC.TWRC_FAILURE)
@@ -3720,7 +3706,7 @@ Namespace TWAIN_VB
                                 Dim pContainer As IntPtr = WinAPI.GlobalLock(tw_cap.hContainer)
                                 Dim oneval As TW_ONEVALUE_FIX32 = Marshal.PtrToStructure(pContainer, GetType(TW_ONEVALUE_FIX32))
                                 If pContainer Then WinAPI.GlobalUnlock(tw_cap.hContainer)
-                                Logger.Write(DebugLogger.Level.Debug, False, "ItemType=" & CType(oneval.ItemType, TWTY).ToString)
+                                Logger.Debug("ItemType={0}", CType(oneval.ItemType, TWTY))
                                 If oneval.ItemType <> TWTY.TWTY_FIX32 Then
                                     SetCondition(TWCC.TWCC_BADVALUE)
                                     SetResult(TWRC.TWRC_FAILURE)
@@ -3746,7 +3732,7 @@ Namespace TWAIN_VB
                         Return MyResult
                     End If
                     Dim tw_cap As TW_CAPABILITY = Marshal.PtrToStructure(_pData, GetType(TW_CAPABILITY))
-                    Logger.Write(DebugLogger.Level.Debug, False, "Capability=" & CType(tw_cap.Cap, CAP).ToString & ", ContainerType=" & CType(tw_cap.ConType, TWON).ToString)
+                    Logger.Debug("Capability={0}, ContainerType={1}", CType(tw_cap.Cap, CAP), CType(tw_cap.ConType, TWON))
 
                     Dim ResultBits As Int32 = 0
                     Try
@@ -3786,7 +3772,7 @@ Namespace TWAIN_VB
                         Return MyResult
                     Else
                         Dim UserInterface As TW_USERINTERFACE = Marshal.PtrToStructure(_pData, GetType(TW_USERINTERFACE))
-                        Logger.Write(DebugLogger.Level.Debug, False, "ShowUI = '" & UserInterface.ShowUI.ToString & "'")
+                        Logger.Debug("ShowUI = '{0}'", CBool(UserInterface.ShowUI))
                         MyForm.Parent = System.Windows.Forms.Form.FromHandle(UserInterface.hParent)
                         MyForm.Mode = FormMain.UIMode.Scan
                         Me.SetState(TwainState.DS_Enabled)
@@ -3863,8 +3849,8 @@ Namespace TWAIN_VB
                         MyIdentity = Marshal.PtrToStructure(_pData, GetType(TW_IDENTITY))
                         Dim NewAppIdentity As TW_IDENTITY
                         NewAppIdentity = Marshal.PtrToStructure(_pOrigin, GetType(TW_IDENTITY))
-                        Logger.Write(DebugLogger.Level.Info, False, "MyIdentity.Id=" & MyIdentity.Id.ToString & ", MyIdentity.ProductName=" & MyIdentity.ProductName & ", MyIdentity.Manufacturer=" & MyIdentity.Manufacturer)
-                        Logger.Write(DebugLogger.Level.Info, False, "AppIdentity.Id=" & NewAppIdentity.Id.ToString & ", AppIdentity.ProductName=" & NewAppIdentity.ProductName & ", AppIdentity.Manufacturer=" & NewAppIdentity.Manufacturer)
+                        Logger.Info("MyIdentity.Id=" & MyIdentity.Id.ToString & ", MyIdentity.ProductName={0}, MyIdentity.Manufacturer={1}", MyIdentity.ProductName, MyIdentity.Manufacturer)
+                        Logger.Info("AppIdentity.Id={0}, AppIdentity.ProductName={1}, AppIdentity.Manufacturer={2}", {NewAppIdentity.Id, NewAppIdentity.ProductName, NewAppIdentity.Manufacturer})
 
                         If AppIdentity.Id <> 0 Then
                             If NewAppIdentity.Id <> AppIdentity.Id Then
@@ -3901,18 +3887,16 @@ Namespace TWAIN_VB
                                CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Device.Length) Then
                             Dim f As New FormSANEHostWizard
                             If f.ShowDialog <> Windows.Forms.DialogResult.OK Then
-                                Logger.Write(DebugLogger.Level.Debug, False, "User cancelled SANE host wizard")
+                                Logger.Debug("User cancelled SANE host wizard")
                                 SetCondition(TWCC.TWCC_BUMMER)
                                 SetResult(TWRC.TWRC_FAILURE)
                                 Return MyResult
-                                'Return TWRC.TWRC_FAILURE
                             End If
                             If (CurrentSettings.SANE.CurrentHostIndex < 0) OrElse (CurrentSettings.SANE.CurrentHostIndex >= CurrentSettings.SANE.Hosts.Length) Then
-                                Logger.Write(DebugLogger.Level.Warn, False, "Returned from SANE Host Wizard with an invalid CurrentHostIndex; aborting")
+                                Logger.Warn("Returned from SANE Host Wizard with an invalid CurrentHostIndex; aborting")
                                 SetCondition(TWCC.TWCC_BUMMER)
                                 SetResult(TWRC.TWRC_FAILURE)
                                 Return MyResult
-                                'Return TWRC.TWRC_FAILURE
                             End If
                         End If
 
@@ -3924,26 +3908,23 @@ Namespace TWAIN_VB
                                     net.ReceiveTimeout = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).TCP_Timeout_ms
                                     net.SendTimeout = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).TCP_Timeout_ms
 
-                                    'net.SendBufferSize = 65536
-                                    'net.ReceiveBufferSize = 65536
-
-                                    Logger.Write(DebugLogger.Level.Debug, False, "TCPClient Send buffer length is " & net.SendBufferSize)
-                                    Logger.Write(DebugLogger.Level.Debug, False, "TCPClient Receive buffer length is " & net.ReceiveBufferSize)
+                                    Logger.Debug("TCPClient Send buffer length is {0}", net.SendBufferSize)
+                                    Logger.Debug("TCPClient Receive buffer length is {0}", net.ReceiveBufferSize)
 
                                     Dim status As SANE_API.SANE_Status
                                     SANE.CurrentDevice = New SANE_API.CurrentDeviceInfo
                                     net.Connect(CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).NameOrAddress, CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Port)
                                     status = SANE.Net_Init(net, CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Username)
-                                    Logger.Write(DebugLogger.Level.Debug, False, "Net_Init returned status '" & status.ToString & "'")
+                                    Logger.Debug("Net_Init returned status '{0}'", status)
                                     If status = SANE_API.SANE_Status.SANE_STATUS_GOOD Then
                                         CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Open = True
                                         Dim DeviceHandle As Integer
                                         status = SANE.Net_Open(net, CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Device, DeviceHandle)
-                                        Logger.Write(DebugLogger.Level.Debug, False, "Net_Open returned status '" & status.ToString & "'")
+                                        Logger.Debug("Net_Open returned status '{0}'", status)
 
                                         If status = SANE_API.SANE_Status.SANE_STATUS_INVAL Then  'Auto-Locate
                                             If CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).AutoLocateDevice IsNot Nothing AndAlso CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).AutoLocateDevice.Length > 0 Then
-                                                Logger.Write(DebugLogger.Level.Debug, False, "Attempting to auto-locate devices matching '" & CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).AutoLocateDevice & "'")
+                                                Logger.Debug("Attempting to auto-locate devices matching '{0}'", CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).AutoLocateDevice)
                                                 Dim Devices(-1) As SANE_API.SANE_Device
                                                 status = SANE.Net_Get_Devices(net, Devices)
                                                 If status = SANE_API.SANE_Status.SANE_STATUS_GOOD Then
@@ -3951,9 +3932,9 @@ Namespace TWAIN_VB
                                                         status = SANE_API.SANE_Status.SANE_STATUS_INVAL
                                                         If Devices(i).name.Trim.Length >= CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).AutoLocateDevice.Length Then
                                                             If Devices(i).name.Trim.Substring(0, CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).AutoLocateDevice.Length) = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).AutoLocateDevice Then
-                                                                Logger.Write(DebugLogger.Level.Debug, False, "Auto-located device '" & Devices(i).name & "'; attempting to open...")
+                                                                Logger.Debug("Auto-located device '{0}'; attempting to open...", Devices(i).name)
                                                                 status = SANE.Net_Open(net, Devices(i).name, DeviceHandle)
-                                                                Logger.Write(DebugLogger.Level.Debug, False, "Net_Open returned status '" & status.ToString & "'")
+                                                                Logger.Debug("Net_Open returned status '{0}'", status)
                                                                 If status = SANE_API.SANE_Status.SANE_STATUS_GOOD Then CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Device = Devices(i).name
                                                                 Exit For
                                                             End If
@@ -3998,7 +3979,6 @@ Namespace TWAIN_VB
 
                                         Dim f As New FormSANEHostWizard
                                         If f.ShowDialog <> Windows.Forms.DialogResult.OK Then
-                                            'Logger.Write(DebugLogger.Level.Debug, False, "User cancelled SANE host wizard")
                                             'SetCondition(TWCC.TWCC_BUMMER)
                                             'Return TWRC.TWRC_FAILURE
                                             Throw New ApplicationException("Scanner was not configured")
@@ -4006,7 +3986,7 @@ Namespace TWAIN_VB
                                     End If
                                 End If
                             Catch ex As Exception
-                                Logger.Write(DebugLogger.Level.Error_, True, ex.Message)
+                                Logger.ErrorException(ex.Message, ex)
                                 Try
                                     If SANE.CurrentDevice.Open Then
                                         SANE.Net_Close(net, SANE.CurrentDevice.Handle)
@@ -4018,12 +3998,10 @@ Namespace TWAIN_VB
                                     SetCondition(TWCC.TWCC_BUMMER)
                                     SetResult(TWRC.TWRC_FAILURE)
                                     Return MyResult
-                                    'Return TWRC.TWRC_FAILURE
                                 Catch exx As Exception
                                     SetCondition(TWCC.TWCC_BUMMER)
                                     SetResult(TWRC.TWRC_FAILURE)
                                     Return MyResult
-                                    'Return TWRC.TWRC_FAILURE
                                 End Try
                             Finally
                                 Try
@@ -4039,7 +4017,7 @@ Namespace TWAIN_VB
                                         End If
                                     End If
                                 Catch ex As Exception
-                                    Logger.Write(DebugLogger.Level.Error_, True, ex.Message)
+                                    Logger.ErrorException(ex.Message, ex)
                                 End Try
                             End Try
                         Loop While Not SANE.CurrentDevice.Open
@@ -4060,22 +4038,10 @@ Namespace TWAIN_VB
                             End If
 
                             If net IsNot Nothing Then
-                                'If net.Connected Then
-                                '    'If SANE.CurrentDevice.Open Then
-                                '    '    SANE.Net_Close(net, SANE.CurrentDevice.Handle)
-                                '    'End If
-                                '    'If CurrentSettings.SANE.CurrentHost.Open Then
-                                '    '    SANE.Net_Exit(net)
-                                '    'End If
-
-                                '    'Dim stream As System.Net.Sockets.NetworkStream = net.GetStream
-                                '    'stream.Close()
-                                '    'stream = Nothing
-                                'End If
                                 If net.Connected Then net.Close()
                             End If
                         Catch ex As Exception
-                            Logger.Write(DebugLogger.Level.Error_, True, ex.Message)
+                            Logger.ErrorException(ex.Message, ex)
                         Finally
                             CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Open = False
                             net = Nothing
@@ -4087,7 +4053,7 @@ Namespace TWAIN_VB
                     SetResult(TWRC.TWRC_SUCCESS) 'return success even if it wasn't open
                     Return MyResult
                 Case Else
-                    Logger.Write(DebugLogger.Level.Warn, False, "***Unimplemented message type: " & _MSG.ToString & " ***")
+                    Logger.Warn("***Unimplemented message type: {0}", _MSG)
                     SetCondition(TWCC.TWCC_BADPROTOCOL)
                     SetResult(TWRC.TWRC_FAILURE)
                     Return MyResult
@@ -4099,7 +4065,7 @@ Namespace TWAIN_VB
                 Case MSG.MSG_PROCESSEVENT
                     'If MyState < TwainState.DS_Enabled Then 'this is correct per TWAIN documentation.
                     If MyState < TwainState.DS_Opened Then 'XXX this is wrong per TWAIN documentation, but their Twacker tool does this.
-                        Logger.Write(DebugLogger.Level.Warn, False, "MSG_PROCESSEVENT was received in illegal state: '" & MyState.ToString & "'")
+                        Logger.Warn("MSG_PROCESSEVENT was received in illegal state: '{0}'", MyState)
                         SetCondition(TWCC.TWCC_SEQERROR)
                         SetResult(TWRC.TWRC_FAILURE)
                         Return MyResult
@@ -4133,7 +4099,7 @@ Namespace TWAIN_VB
                         End If
                     End If
                 Case Else
-                    Logger.Write(DebugLogger.Level.Warn, False, "***Unimplemented message type: " & _MSG.ToString & " ***")
+                    Logger.Warn("***Unimplemented message type: {0}", _MSG)
                     SetCondition(TWCC.TWCC_BADPROTOCOL)
                     SetResult(TWRC.TWRC_FAILURE)
                     Return MyResult
@@ -4169,15 +4135,18 @@ Namespace TWAIN_VB
             Catch ex As Exception
             End Try
 
-            If Logger Is Nothing Then Logger = New DebugLogger(UseRoamingAppData)
-
             'Dim MyName As System.Reflection.AssemblyName = System.Reflection.Assembly.GetExecutingAssembly.GetName
-            'Dim strPath As String = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().CodeBase)
-            Logger.Write(DebugLogger.Level.Info, False, "codebase=" & System.Reflection.Assembly.GetExecutingAssembly().CodeBase)
+            Dim strPath As String = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().CodeBase)
+            If strPath IsNot Nothing Then
+                strPath = strPath.ToLower.Replace("file:\", "")
+                NLog.LogManager.Configuration = New NLog.Config.XmlLoggingConfiguration(System.IO.Path.Combine(strPath, "NLog.config"))
+            End If
+
+            Logger.Info("codebase={0}", System.Reflection.Assembly.GetExecutingAssembly().CodeBase)
 
             If CurrentSettings Is Nothing Then CurrentSettings = New SharedSettings(UseRoamingAppData)
 
-            Logger.Write(DebugLogger.Level.Info, False, CurrentSettings.ProductName.FullName & " object created by '" & System.Environment.GetCommandLineArgs()(0) & "'")
+            Logger.Info("{0} object created by '{1}'", CurrentSettings.ProductName.FullName, System.Environment.GetCommandLineArgs()(0))
 
             Me.SetState(TwainState.DSM_Opened)
             Me.SetCondition(TWCC.TWCC_SUCCESS)
@@ -4200,7 +4169,7 @@ Namespace TWAIN_VB
             MyIdentity.ProductName = CurrentSettings.ProductName.Name
 
             MyTWAINversion = MyIdentity.ProtocolMajor + (MyIdentity.ProtocolMinor / 10)
-            Logger.Write(DebugLogger.Level.Info, False, "Reporting my TWAIN version as '" & MyTWAINversion.ToString & "'")
+            Logger.Info("Reporting my TWAIN version as '{0}'", MyTWAINversion)
 
             Me.InitCaps()
         End Sub
@@ -4209,7 +4178,7 @@ Namespace TWAIN_VB
             ' Destructor
             Try
                 'Marshal.FreeHGlobal(pMyIdentity)
-                Logger.Write(DebugLogger.Level.Debug, False, "Object destroyed")
+                Logger.Debug("Object destroyed")
             Catch ex As Exception
 
             Finally
@@ -4218,7 +4187,7 @@ Namespace TWAIN_VB
         End Sub
 
         Private Sub GUI_ButtonOK_Click(ByVal sender As Object, ByVal e As System.Windows.Forms.MouseEventArgs)
-            Logger.Write(DebugLogger.Level.Debug, False, "")
+            Logger.Debug("")
             If MyForm.Mode = FormMain.UIMode.Scan Then
                 SetState(TwainState.DS_Xfer_Ready)
                 Send_TWAIN_Message(MyIdentity, AppIdentity, DG.DG_CONTROL, DAT.DAT_NULL, MSG.MSG_XFERREADY, Nothing)
@@ -4234,7 +4203,7 @@ Namespace TWAIN_VB
 
         Private Sub GUI_FormClosing(ByVal sender As Object, ByVal e As System.Windows.Forms.FormClosingEventArgs)
             If Not sender.Got_MSG_CLOSEDS Then
-                Logger.Write(DebugLogger.Level.Debug, False, "Intercepted FormClosing event; sending MSG_CLOSEDSREQ instead")
+                Logger.Debug("Intercepted FormClosing event; sending MSG_CLOSEDSREQ instead")
                 e.Cancel = True
                 Send_TWAIN_Message(MyIdentity, AppIdentity, DG.DG_CONTROL, DAT.DAT_NULL, MSG.MSG_CLOSEDSREQ, Nothing)
             End If
@@ -4263,17 +4232,11 @@ Namespace TWAIN_VB
                 Else
                     EnumTypeStr = "Nothing"
                 End If
-                Logger.Write(DebugLogger.Level.Debug, False, "Capability: '" & Capability.ToString & ", Scope = '" & Scope.ToString & "', Target Type = '" & ReqCap.DataType.ToString & "', Target Enum = '" & EnumTypeStr & "', NewValue Type = '" & NewValue.GetType.ToString & "', NewValue = '" & NewValue.ToString & "'")
+                Logger.Debug("Capability: '{0}', Scope = '{1}', Target Type = '{2}', Target Enum = '{3}', NewValue Type = '{4}', NewValue = '{5}'", {Capability, Scope, ReqCap.DataType, EnumTypeStr, NewValue.GetType, NewValue})
 
                 Dim OldValStr As String = Nothing
                 Dim NewValStr As String = Nothing
 
-                'If NewValue.GetType <> OldVal.GetType Then
-                'Logger.Write(DebugLogger.Level.Warn, False, "Value type mismatch; attempting to convert from '" & NewValue.GetType.ToString & "' to '" & OldVal.GetType.ToString & "'")
-                'Logger.Write(DebugLogger.Level.Warn, False, "Value type mismatch; attempting to convert from '" & NewValue.GetType.ToString & "' to '" & ReqCap.DataType.ToString & "'")
-
-                'Select Case OldVal.GetType
-                '    Case GetType(Int32)
                 Select Case ReqCap.DataType
                     Case TWTY.TWTY_BOOL
                         Select Case NewValue.ToString.ToUpper.Trim
@@ -4309,26 +4272,16 @@ Namespace TWAIN_VB
                         Select Case NewValue.GetType
                             Case GetType(TW_FIX32)
                                 'do nothing
-                                'Case GetType(Double)
-                                '    NewValue = FloatToFIX32(NewValue)
-                                'Case GetType(Decimal), GetType(Single), GetType(Int64), GetType(UInt64), GetType(Int32), GetType(UInt32), GetType(Int16), GetType(UInt16)
-                                '    NewValue = FloatToFIX32(CDbl(NewValue))
                             Case Else
                                 Dim d As Double
-                                'Logger.Write(DebugLogger.Level.Debug, False, "1")
                                 If Double.TryParse(NewValue.ToString, d) Then
-                                    'Logger.Write(DebugLogger.Level.Debug, False, "2")
                                     NewValue = FloatToFIX32(d)
-                                    'Logger.Write(DebugLogger.Level.Debug, False, "3")
                                 Else
                                     Throw New ApplicationException("Data type conversion failed")
                                 End If
                         End Select
-                        'Logger.Write(DebugLogger.Level.Debug, False, "4")
                         OldValStr = FIX32ToFloat(OldVal).ToString
-                        'Logger.Write(DebugLogger.Level.Debug, False, "5")
                         NewValStr = FIX32ToFloat(NewValue).ToString
-                        'Logger.Write(DebugLogger.Level.Debug, False, "6")
                     Case TWTY.TWTY_INT8, TWTY.TWTY_INT16, TWTY.TWTY_INT32, TWTY.TWTY_UINT8, TWTY.TWTY_UINT16, TWTY.TWTY_UINT32
                         Select Case NewValue.GetType
                             Case GetType(String)
@@ -4471,7 +4424,7 @@ Namespace TWAIN_VB
                                 End If
                         End Select
                         If (ReqCap.EnumType IsNot Nothing) AndAlso (NewValue.GetType <> OldVal.GetType) Then
-                            Logger.Write(DebugLogger.Level.Debug, False, "Attempting CTypeDynamic for type '" & ReqCap.EnumType.ToString & "'")
+                            Logger.Debug("Attempting CTypeDynamic for type '{0}'", ReqCap.EnumType)
                             NewValue = CTypeDynamic(NewValue, ReqCap.EnumType)
                         End If
                         OldValStr = OldVal.ToString
@@ -4490,7 +4443,7 @@ Namespace TWAIN_VB
                         ReqCap.CurrentValue = NewValue
                 End Select
                 Caps(ReqCap.Capability) = ReqCap
-                Logger.Write(DebugLogger.Level.Debug, False, ReqCap.Capability.ToString & ": " & OldValStr & " --> " & NewValStr)
+                Logger.Debug("{0}: {1} --> {2}", {ReqCap.Capability, OldValStr, NewValStr})
 
                 'If ReqCap.Capability = CAP.CAP_FEEDERENABLED Then
                 '    MyForm.CheckBoxBatchMode.Enabled = CBool(ReqCap.CurrentValue)
@@ -4504,31 +4457,19 @@ Namespace TWAIN_VB
 
                     Me.SupportedSizes = New ArrayList
                     For Each ps As PageSize In SANE.CurrentDevice.SupportedPageSizes
-                        Logger.Write(DebugLogger.Level.Info, False, "Supported paper size: '" & ps.TWAIN_TWSS.ToString & "'")
+                        Logger.Info("Supported paper size: '{0}'", ps.TWAIN_TWSS)
                         Me.SupportedSizes.Add(ps.TWAIN_TWSS)
                     Next
-                    '    For Each ss In Me.PageSizes
-                    '        Select Case ss.Key
-                    '            Case TWSS.TWSS_NONE, TWSS.TWSS_MAXSIZE
-                    '                SupportedSizes.Add(ss.Key)
-                    '            Case Else
-                    '                If ss.Value.Width <= Math.Round(Me.FIX32ToFloat(Caps(CAP.ICAP_PHYSICALWIDTH).CurrentValue), 2, MidpointRounding.AwayFromZero) Then
-                    '                    If ss.Value.Height <= Math.Round(Me.FIX32ToFloat(Caps(CAP.ICAP_PHYSICALHEIGHT).CurrentValue), 2, MidpointRounding.AwayFromZero) Then
-                    '                        SupportedSizes.Add(ss.Key)
-                    '                    End If
-                    '                End If
-                    '        End Select
-                    '    Next
                 End If
 
                 If Source <> RequestSource.SANE Then 'if it came from SANE we don't want to give it back or we'll have an endless loop
                     If Not SetSANECaps(Capability, NewValue) Then
-                        Logger.Write(DebugLogger.Level.Warn, False, "Error setting SANE option for capability '" & ReqCap.Capability.ToString & "'")
+                        Logger.Warn("Error setting SANE option for capability '{0}'", ReqCap.Capability)
                     End If
                 End If
 
             Catch ex As Exception
-                Logger.Write(DebugLogger.Level.Error_, False, "Error setting capability '" & Capability.ToString & "': " & ex.Message)
+                Logger.ErrorException("Error setting capability '" & Capability.ToString & "': " & ex.Message, ex)
             End Try
         End Sub
 
@@ -4551,16 +4492,16 @@ Namespace TWAIN_VB
                             capVal(i) = ss(1).Trim.ToUpper
                             If SANE IsNot Nothing Then
                                 If capVal(i) = "#" Then capVal(i) = NewValue.ToString
-                                Logger.Write(DebugLogger.Level.Debug, False, "SANE Option = '" & capName(i) & "', Value = '" & capVal(i) & "'")
+                                Logger.Debug("SANE Option = '{0}', Value = '{1}'", capName(i), capVal(i))
                                 If MyForm.SetSANEOption(capName(i), {capVal(i)}) Then
                                     SetSANECaps = True
                                 Else
-                                    Logger.Write(DebugLogger.Level.Warn, False, "Error setting SANE option.")
+                                    Logger.Warn("Error setting SANE option.")
                                     Return False
                                 End If
                             End If
                         Else
-                            Logger.Write(DebugLogger.Level.Warn, False, "Format of capability map is not correct")
+                            Logger.Warn("Format of capability map is not correct")
                             Return False
                         End If
                     Next
@@ -4587,7 +4528,7 @@ Namespace TWAIN_VB
                                         br_x = InchesToMM(Me.PageSizes(NewValue).Width)
                                         br_y = InchesToMM(Me.PageSizes(NewValue).Height)
                                     Case Else
-                                        Logger.Write(DebugLogger.Level.Warn, False, "Unable to set scan area using resolution unit '" & unit.ToString & "'")
+                                        Logger.Warn("Unable to set scan area using resolution unit '{0}'", unit)
                                 End Select
                                 If MyForm.SetSANEOption("tl-x", {0}) AndAlso _
                                     MyForm.SetSANEOption("tl-y", {0}) AndAlso _
@@ -4595,19 +4536,19 @@ Namespace TWAIN_VB
                                     MyForm.SetSANEOption("br-y", {br_y}) Then
                                     Return True
                                 Else
-                                    Logger.Write(DebugLogger.Level.Warn, False, "SANE backend doesn't appear to support all of 'tl-x', 'tl-y', 'br-x', and 'br-y'")
+                                    Logger.Warn("SANE backend doesn't appear to support all of 'tl-x', 'tl-y', 'br-x', and 'br-y'")
                                     Return False
                                 End If
                             Else
-                                Logger.Write(DebugLogger.Level.Warn, False, "Page width and height must both be greater than zero")
+                                Logger.Warn("Page width and height must both be greater than zero")
                                 Return False
                             End If
                         Else
-                            Logger.Write(DebugLogger.Level.Warn, False, "Unknown page size: '" & NewValue.ToString & "'")
+                            Logger.Warn("Unknown page size: '{0}'", NewValue)
                             Return False
                         End If
                     Else
-                        Logger.Write(DebugLogger.Level.Debug, False, "No capability mapping was found for '" & Capability.ToString & "'")
+                        Logger.Debug("No capability mapping was found for '{0}'", Capability)
                         Return False
                     End If
                 End If
@@ -4616,7 +4557,7 @@ Namespace TWAIN_VB
         End Function
 
         Private Sub Import_SANE_Options()
-            Logger.Write(DebugLogger.Level.Debug, False, "begin")
+            Logger.Debug("begin")
             Try
                 'Map SANE Well-Known Options
                 For i As Integer = 1 To SANE.CurrentDevice.OptionDescriptors.Count - 1 'skip the first option, which is just the option count
@@ -4626,19 +4567,18 @@ Namespace TWAIN_VB
                             If (SANE.CurrentDevice.OptionValues(i).Length > 0) AndAlso (SANE.CurrentDevice.OptionValues(i)(0) IsNot Nothing) Then
                                 logstr += ", Value '" & SANE.CurrentDevice.OptionValues(i)(0).ToString & "'"
                             End If
-                            Logger.Write(DebugLogger.Level.Debug, False, logstr)
+                            Logger.Debug(logstr)
                             Dim TWAINcap As String = Nothing
                             Select Case SANE.CurrentDevice.OptionDescriptors(i).name.ToLower
                                 Case "resolution"
-                                    'TWAINcap = CAP.ICAP_XRESOLUTION.ToString & ", " & CAP.ICAP_YRESOLUTION.ToString & ", " & CAP.ICAP_XNATIVERESOLUTION.ToString & ", " & CAP.ICAP_YNATIVERESOLUTION.ToString
                                     Dim res_dpi As Double = SANE.CurrentDevice.OptionValues(i)(0)
                                     Dim caparray() As CAP = {CAP.ICAP_XRESOLUTION, CAP.ICAP_YRESOLUTION, CAP.ICAP_XNATIVERESOLUTION, CAP.ICAP_YNATIVERESOLUTION}
                                     For Each icap As CAP In caparray
                                         If Caps.ContainsKey(icap) Then
                                             SetCap(icap, FloatToFIX32(res_dpi), SetCapScope.BothValues, RequestSource.SANE)
                                             Dim cap As TwainCapability = Caps(icap)
-                                            Logger.Write(DebugLogger.Level.Debug, False, "Value type: " & SANE.CurrentDevice.OptionDescriptors(i).type.ToString)
-                                            Logger.Write(DebugLogger.Level.Debug, False, "Constraint type: " & SANE.CurrentDevice.OptionDescriptors(i).constraint_type.ToString)
+                                            Logger.Debug("Value type: {0}", SANE.CurrentDevice.OptionDescriptors(i).type)
+                                            Logger.Debug("Constraint type: {0}", SANE.CurrentDevice.OptionDescriptors(i).constraint_type)
                                             Select Case SANE.CurrentDevice.OptionDescriptors(i).constraint_type
                                                 Case SANE_API.SANE_Constraint_Type.SANE_CONSTRAINT_RANGE
                                                     Try
@@ -4661,14 +4601,14 @@ Namespace TWAIN_VB
                                                                 Case Else
                                                                     Throw New Exception("Invalid data type '" & SANE.CurrentDevice.OptionDescriptors(i).type & "'")
                                                             End Select
-                                                            Logger.Write(DebugLogger.Level.Debug, False, "Min value: " & FIX32ToFloat(.MinValue).ToString)
-                                                            Logger.Write(DebugLogger.Level.Debug, False, "Max value: " & FIX32ToFloat(.MaxValue).ToString)
-                                                            Logger.Write(DebugLogger.Level.Debug, False, "Step size: " & FIX32ToFloat(.StepSize).ToString)
-                                                            Logger.Write(DebugLogger.Level.Debug, False, "Current value: " & FIX32ToFloat(.CurrentValue).ToString)
-                                                            Logger.Write(DebugLogger.Level.Debug, False, "Default value: " & FIX32ToFloat(.DefaultValue).ToString)
+                                                            Logger.Debug("Min value: {0}", FIX32ToFloat(.MinValue))
+                                                            Logger.Debug("Max value: {0}", FIX32ToFloat(.MaxValue))
+                                                            Logger.Debug("Step size: {0}", FIX32ToFloat(.StepSize))
+                                                            Logger.Debug("Current value: {0}", FIX32ToFloat(.CurrentValue))
+                                                            Logger.Debug("Default value: {0}", FIX32ToFloat(.DefaultValue))
                                                         End With
                                                     Catch ex As Exception
-                                                        Logger.Write(DebugLogger.Level.Warn, False, "Error translating SANE range constraint for resolution: " & ex.Message)
+                                                        Logger.WarnException("Error translating SANE range constraint for resolution: " & ex.Message, ex)
                                                     End Try
                                                 Case SANE_API.SANE_Constraint_Type.SANE_CONSTRAINT_WORD_LIST
                                                     Try
@@ -4683,14 +4623,14 @@ Namespace TWAIN_VB
                                                                     Else
                                                                         val = FloatToFIX32(CDbl(SANE.CurrentDevice.OptionDescriptors(i).constraint.word_list(idx)))
                                                                     End If
-                                                                    Logger.Write(DebugLogger.Level.Debug, False, "Adding value '" & FIX32ToFloat(val).ToString & "'")
+                                                                    Logger.Debug("Adding value '{0}'", FIX32ToFloat(val))
                                                                     cap.ConstraintValues.Add(val)
                                                                 Next
                                                             Case Else
                                                                 Throw New Exception("Invalid data type '" & SANE.CurrentDevice.OptionDescriptors(i).type & "'")
                                                         End Select
                                                     Catch ex As Exception
-                                                        Logger.Write(DebugLogger.Level.Warn, False, "Error translating SANE word list constraint for resolution: " & ex.Message)
+                                                        Logger.WarnException("Error translating SANE word list constraint for resolution: " & ex.Message, ex)
                                                     End Try
                                             End Select
                                             Caps(icap) = cap
@@ -4705,7 +4645,7 @@ Namespace TWAIN_VB
                                     MyForm.SetTWAINCaps(SANE.CurrentDevice.OptionDescriptors(i), SANE.CurrentDevice.OptionValues(i), True)
                             End Select
                         Else
-                            Logger.Write(DebugLogger.Level.Debug, False, "Unreadable Option '" & SANE.CurrentDevice.OptionDescriptors(i).name & "'")
+                            Logger.Debug("Unreadable Option '{0}'", SANE.CurrentDevice.OptionDescriptors(i).name)
                         End If
                     End If
                 Next
@@ -4723,9 +4663,9 @@ Namespace TWAIN_VB
                 'End If
 
             Catch ex As Exception
-                Logger.Write(DebugLogger.Level.Error_, True, ex.Message)
+                Logger.ErrorException(ex.Message, ex)
             End Try
-            Logger.Write(DebugLogger.Level.Debug, False, "end")
+            Logger.Debug("end")
         End Sub
 
         Public Function FloatToFIX32(ByVal floater As Double) As TW_FIX32
@@ -4742,7 +4682,7 @@ Namespace TWAIN_VB
         End Function
 
         Friend Sub InitPageSizes()
-            Logger.Write(DebugLogger.Level.Debug, False, "")
+            Logger.Debug("")
             Me.PageSizes = New System.Collections.Generic.SortedDictionary(Of TWSS, PageSize)
             For Each ps As PageSize In CurrentSettings.PageSizes
                 Me.PageSizes.Add(ps.TWAIN_TWSS, ps)
@@ -4750,7 +4690,7 @@ Namespace TWAIN_VB
         End Sub
 
         Private Sub InitCaps()
-            Logger.Write(DebugLogger.Level.Debug, False, "")
+            Logger.Debug("")
 
             Dim tc As New TwainCapability
             tc.Capability = CAP.CAP_AUTOFEED

@@ -24,6 +24,8 @@ Public Class TSAPI
     Public Const WTS_CURRENT_SERVER_HANDLE As Int32 = 0
     Public Const WTS_CURRENT_SESSION As Int32 = -1
 
+    Private Logger As NLog.Logger = NLog.LogManager.GetCurrentClassLogger()
+
     Private Enum WTS_CONNECTSTATE_CLASS
         WTSActive
         WTSConnected

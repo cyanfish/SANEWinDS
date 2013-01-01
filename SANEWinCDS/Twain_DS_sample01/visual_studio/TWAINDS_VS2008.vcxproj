@@ -37,6 +37,7 @@
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseOfMfc>false</UseOfMfc>
     <CharacterSet>MultiByte</CharacterSet>
+    <CLRSupport>true</CLRSupport>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
@@ -95,6 +96,10 @@
     <PreBuildEventUseInBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</PreBuildEventUseInBuild>
     <PreBuildEventUseInBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</PreBuildEventUseInBuild>
     <PostBuildEventUseInBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</PostBuildEventUseInBuild>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <PostBuildEventUseInBuild>false</PostBuildEventUseInBuild>
+    <PreBuildEventUseInBuild>false</PreBuildEventUseInBuild>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <PreBuildEvent>
@@ -197,7 +202,7 @@ copy "$(ProjectDir)\..\..\pub\bin\TWAIN_logo.png" c:\windows\twain_64\sample2
       <ExceptionHandling>false</ExceptionHandling>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>User32.lib;FreeImage.lib;qtmain.lib;QtCore4.lib;QtGui4.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>User32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(OutDir)$(ProjectName)32.ds</OutputFile>
       <AdditionalLibraryDirectories>..\..\pub\external\lib;..\..\pub\lib;$(QTDIR)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <ModuleDefinitionFile>..\src\TWAINDS.def</ModuleDefinitionFile>
@@ -209,9 +214,7 @@ copy "$(ProjectDir)\..\..\pub\bin\TWAIN_logo.png" c:\windows\twain_64\sample2
     </Link>
     <PostBuildEvent>
       <Message>Copy Data Source to pub\bin directory</Message>
-      <Command>copy "$(TargetPath)"  "$(ProjectDir)\..\pub\bin"
-copy "$(ProjectDir)\..\..\pub\external\bin\FreeImage.dll" "$(ProjectDir)\..\pub\bin"
-</Command>
+      <Command>copy "$(TargetPath)"  "$(ProjectDir)\..\pub\bin"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">

@@ -62,3 +62,7 @@ packages/
 
 #Test files
 *.testsettings
+
+#Advanced Installer files
+[Ss]etup [Ff]iles/
+[Ss]etup-cache/

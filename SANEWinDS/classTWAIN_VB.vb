@@ -4033,6 +4033,7 @@ Namespace TWAIN_VB
 
                             If MyForm IsNot Nothing Then
                                 MyForm.Got_MSG_CLOSEDS = True
+                                MyForm.Show() 'FormClosing and FormClosed events don't fire when form is hidden
                                 MyForm.Close()
                                 MyForm = Nothing
                             End If

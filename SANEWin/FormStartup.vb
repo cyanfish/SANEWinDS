@@ -82,6 +82,12 @@ Public Class FormStartup
         End If
     End Sub
 
+    Private Sub FormStartup_FormClosing(sender As Object, e As FormClosingEventArgs) Handles Me.FormClosing
+        RemoveHandler GUIForm.FormClosing, AddressOf Me.GUIForm_FormClosing 'This handler hides the form instead of closing it
+        GUIForm.Show() 'XXX MS bug: The FormClosing and FormClosed events don't fire when the form is hidden
+        GUIForm.Close()
+    End Sub
+
     Private Sub FormStartup_Load(ByVal sender As Object, ByVal e As System.EventArgs) Handles Me.Load
 
 
@@ -144,6 +150,9 @@ Public Class FormStartup
 
         Me.ComboBoxOutputFolderName.Items.Add(Me.OutputDirectory)
         Me.ComboBoxOutputFolderName.SelectedItem = Me.OutputDirectory
+
+        AddHandler GUIForm.FormClosing, AddressOf Me.GUIForm_FormClosing
+
     End Sub
 
     Private Sub OnCompressionMethodChanged(sender As Object, e As EventArgs) Handles ComboBoxCompression.TextChanged
@@ -671,7 +680,7 @@ Public Class FormStartup
         End Try
     End Sub
 
-    Private Sub GUIForm_FormClosing(sender As Object, e As FormClosingEventArgs) Handles GUIForm.FormClosing
+    Private Sub GUIForm_FormClosing(sender As Object, e As FormClosingEventArgs) 'Handles GUIForm.FormClosing
         If e.CloseReason = CloseReason.UserClosing Then
             e.Cancel = True
             GUIForm.Hide()

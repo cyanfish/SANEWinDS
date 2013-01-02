@@ -329,6 +329,22 @@ Public Class SharedSettings
                 Return ff
             Else
                 CreateDeviceConfigFile(f)
+                Dim r As MsgBoxResult = MsgBox("The configuration file '" & BackEnd & ".ini' for the '" & BackEnd & "' backend was not found." _
+                    & "  A file containing reasonable defaults has been created in the folder '" & CurrentSettings.UserConfigDirectory & "'." _
+                    & "  You will most likely need to modify this new file to take full advantage of your backend, particularly if" _
+                    & " you intend to use it through TWAIN.  Once you have tested your configuration, please help other users" _
+                    & " by submitting '" & BackEnd & ".ini' back to the project at https://sourceforge.net/p/sanewinds/discussion/backend-ini/." _
+                    & "  Would you like to open the backend forum now?" _
+                    , MsgBoxStyle.Exclamation + MsgBoxStyle.YesNo)
+                If r = MsgBoxResult.Yes Then
+                    Try
+                        Process.Start("https://sourceforge.net/p/sanewinds/discussion/backend-ini/")
+                    Catch ex As Exception
+                        Dim msg As String = "Unable to open web page: " & ex.Message
+                        Logger.ErrorException(msg, ex)
+                        MsgBox(msg, MsgBoxStyle.Critical)
+                    End Try
+                End If
                 Return f
             End If
         End If

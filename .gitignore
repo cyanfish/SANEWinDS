@@ -65,4 +65,4 @@ packages/
 
 #Advanced Installer files
 [Ss]etup [Ff]iles/
-[Ss]etup-cache/
+[Ss]etup*-cache/

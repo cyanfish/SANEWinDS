@@ -196,7 +196,9 @@ Public Class FormMain
                                 OptReq.value_size = Descriptors(i).size
                                 OptReq.values = Nothing
 
-                                Dim Status As SANE_API.SANE_Status = SANE.Net_Control_Option(net, OptReq, OptReply)
+                                Dim Status As SANE_API.SANE_Status = SANE.Net_Control_Option(net, OptReq, OptReply, _
+                                                                                             CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Username, _
+                                                                                             CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Password)
                                 If Status = SANE_API.SANE_Status.SANE_STATUS_GOOD Then
                                     ReDim SANE.CurrentDevice.OptionValues(i)(OptReply.values.Length - 1)
                                     Array.Copy(OptReply.values, SANE.CurrentDevice.OptionValues(i), OptReply.values.Length)
@@ -295,16 +297,18 @@ Public Class FormMain
                         Logger.Debug("TCPClient Send buffer length is {0}", net.SendBufferSize)
                         Logger.Debug("TCPClient Receive buffer length is {0}", net.ReceiveBufferSize)
                         net.Connect(CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).NameOrAddress, CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Port)
-                        Dim Status As SANE_API.SANE_Status = SANE.Net_Init(net, CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Username)
+                        'Dim Status As SANE_API.SANE_Status = SANE.Net_Init(net, CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Username)
+                        Dim Status As SANE_API.SANE_Status = SANE.Net_Init(net, Environment.UserName)
                         Logger.Debug("Net_Init returned status {0}'", Status)
                         If Status = SANE_API.SANE_Status.SANE_STATUS_GOOD Then CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Open = True
                         If CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Open Then
                             SANE.CurrentDevice = New SANE_API.CurrentDeviceInfo
 
                             Dim DeviceHandle As Integer
-                            Status = SANE.Net_Open(net, CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Device, DeviceHandle)
+                            Status = SANE.Net_Open(net, CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Device, DeviceHandle, _
+                                                   CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Username, _
+                                                   CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Password)
                             Logger.Debug("Net_Open returned status '{0}'", Status)
-
                             If Status = SANE_API.SANE_Status.SANE_STATUS_INVAL Then  'Auto-Locate
                                 If CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).AutoLocateDevice IsNot Nothing AndAlso CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).AutoLocateDevice.Length > 0 Then
                                     Logger.Debug("Attempting to auto-locate devices matching '{0}'", CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).AutoLocateDevice)
@@ -316,7 +320,10 @@ Public Class FormMain
                                             If Devices(i).name.Trim.Length >= CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).AutoLocateDevice.Length Then
                                                 If Devices(i).name.Trim.Substring(0, CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).AutoLocateDevice.Length) = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).AutoLocateDevice Then
                                                     Logger.Debug("Auto-located device '{0}'; attempting to open...", Devices(i).name)
-                                                    Status = SANE.Net_Open(net, Devices(i).name, DeviceHandle)
+
+                                                    Status = SANE.Net_Open(net, CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Device, DeviceHandle, _
+                                                                          CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Username, _
+                                                                          CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Password)
                                                     Logger.Debug("Net_Open returned status '{0}'", Status)
                                                     If Status = SANE_API.SANE_Status.SANE_STATUS_GOOD Then CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Device = Devices(i).name
                                                     Exit For
@@ -332,7 +339,9 @@ Public Class FormMain
                                 SANE.CurrentDevice.Handle = DeviceHandle
                                 SANE.CurrentDevice.Open = True
                             Else
-                                'XXX
+                                Dim msg As String = "The SANE backend reported " & Status.ToString & " during initialization"
+                                Logger.Warn(msg)
+                                MsgBox(msg, MsgBoxStyle.Exclamation)
                             End If
                         End If
                     Else
@@ -351,7 +360,7 @@ Public Class FormMain
 
                         Me.ButtonOK.Enabled = True
                     Else
-                        'XXX
+                        Logger.Warn("SANE device is not open")
                     End If
                 Else
                     Logger.Warn("Current host index is out of range")
@@ -359,6 +368,7 @@ Public Class FormMain
             End If
         Catch ex As Exception
             Logger.ErrorException(ex.Message, ex)
+            MsgBox(ex.Message, MsgBoxStyle.Critical)
             Close_SANE()
         Finally
             Close_Net()
@@ -1094,9 +1104,10 @@ Public Class FormMain
                         End If
                 End Select
             Next
-            Dim Status As SANE_API.SANE_Status = SANE.Net_Control_Option(net, OptReq, OptReply)
+            Dim Status As SANE_API.SANE_Status = SANE.Net_Control_Option(net, OptReq, OptReply, _
+                                                                         CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Username, _
+                                                                         CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Password)
             If Status = SANE_API.SANE_Status.SANE_STATUS_GOOD Then
-
                 Array.Copy(OptReply.values, SANE.CurrentDevice.OptionValues(OptionIndex), OptReply.values.Length)
 
                 If OptReply.info And SANE_API.SANE_INFO_RELOAD_OPTIONS Then Me.GetOpts(False)

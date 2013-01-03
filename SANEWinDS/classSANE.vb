@@ -431,8 +431,11 @@ Class SANE_API
     End Function
 
     Private Sub StreamReadAndCopy(ByRef NetStream As System.Net.Sockets.NetworkStream, ByRef MemStream As System.IO.MemoryStream)
+        StreamReadAndCopy(NetStream, MemStream, 8192)
+    End Sub
+    Private Sub StreamReadAndCopy(ByRef NetStream As System.Net.Sockets.NetworkStream, ByRef MemStream As System.IO.MemoryStream, ByVal BytesToRead As Integer)
         Dim OriginalPosition As Integer = MemStream.Position
-        Dim buf(8191) As Byte
+        Dim buf(BytesToRead - 1) As Byte
         Dim Bytes As Integer = NetStream.Read(buf, 0, buf.Length)
         MemStream.Position = MemStream.Length
         MemStream.Write(buf, 0, Bytes)
@@ -443,6 +446,11 @@ Class SANE_API
         Do
             StreamReadAndCopy(stream, rstream)
         Loop While stream.DataAvailable
+        Return rstream.Length
+    End Function
+
+    Private Function ReadWord(ByRef stream As System.Net.Sockets.NetworkStream, ByRef rstream As System.IO.MemoryStream) As Integer
+        StreamReadAndCopy(stream, rstream, 4)
         Return rstream.Length
     End Function
 
@@ -525,25 +533,21 @@ Class SANE_API
                             DeviceList(i).type = Me.DeSerialize(stream, rstream, Sane_DataType.SANE_String)
                         End If
                     Next
-                    'Debug.Print(Now.ToString & " Done deserializing data")
                 End If
                 Return Status
-
             Else
                 Throw New Exception("Stream does not support reading")
             End If
         Catch ex As Exception
-            'MsgBox(ex.Message)
-            'XXX
+            Logger.ErrorException(ex.Message, ex)
             Throw
         Finally
-            'If stream IsNot Nothing Then stream.Close()
             stream = Nothing
         End Try
 
     End Function
 
-    Friend Function Net_Open(ByRef TCPClient As System.Net.Sockets.TcpClient, ByVal DeviceName As String, ByRef DeviceHandle As Int32) As SANE_Status
+    Friend Function Net_Open(ByRef TCPClient As System.Net.Sockets.TcpClient, ByVal DeviceName As String, ByRef DeviceHandle As Int32, ByVal Username As String, ByVal Password As String) As SANE_Status
         Logger.Debug("")
         Dim stream As System.Net.Sockets.NetworkStream = Nothing
         Dim rstream As New System.IO.MemoryStream
@@ -563,28 +567,30 @@ Class SANE_API
             If stream.CanRead Then
                 Dim bytes As Integer = Me.ReadEntireStream(stream, rstream)
                 Dim Status As Int32 = Me.DeSerialize(stream, rstream, Sane_DataType.SANE_Word)
-                If Status = SANE_Status.SANE_STATUS_GOOD Then
+                DeviceHandle = Me.DeSerialize(stream, rstream, Sane_DataType.SANE_Word)
+                Dim AuthResource As String = Me.DeSerialize(stream, rstream, Sane_DataType.SANE_String)
+
+                'Authenticate if required
+                If Not String.IsNullOrEmpty(AuthResource) Then
+                    Net_Authorize(TCPClient, AuthResource, Username, Password)
+                    rstream = New System.IO.MemoryStream
+                    bytes = Me.ReadEntireStream(stream, rstream)
+                    Status = Me.DeSerialize(stream, rstream, Sane_DataType.SANE_Word)
                     DeviceHandle = Me.DeSerialize(stream, rstream, Sane_DataType.SANE_Word)
-                    'XXX handle "resource" reply
-
-
-
+                    AuthResource = Me.DeSerialize(stream, rstream, Sane_DataType.SANE_String)
                 End If
+                '
+
                 Return Status
             Else
                 Throw New Exception("Stream does not support reading")
             End If
-
-
-
         Catch ex As Exception
-            'XXX
+            Logger.ErrorException(ex.Message, ex)
             Throw
         Finally
-            'If stream IsNot Nothing Then stream.Close()
             stream = Nothing
         End Try
-
     End Function
 
     Friend Sub Net_Close(ByRef TCPClient As System.Net.Sockets.TcpClient, ByVal DeviceHandle As Int32)
@@ -606,22 +612,16 @@ Class SANE_API
 
             If stream.CanRead Then
                 Dim bytes As Integer = Me.ReadEntireStream(stream, rstream)
-
                 Dim Dummy As Int32 = Me.DeSerialize(stream, rstream, Sane_DataType.SANE_Word)
             Else
                 Throw New Exception("Stream does not support reading")
             End If
-
-
-
         Catch ex As Exception
-            'XXX
+            Logger.ErrorException(ex.Message, ex)
             Throw
         Finally
-            'If stream IsNot Nothing Then stream.Close()
             stream = Nothing
         End Try
-
     End Sub
 
     Friend Function Net_Get_Option_Descriptors(ByRef TCPClient As System.Net.Sockets.TcpClient, ByVal DeviceHandle As Int32) As SANE_Option_Descriptor()
@@ -697,16 +697,15 @@ Class SANE_API
             End If
 
         Catch ex As Exception
-            'XXX
+            Logger.ErrorException(ex.Message, ex)
             Throw
         Finally
-
             stream = Nothing
         End Try
 
     End Function
 
-    Friend Function Net_Control_Option(ByRef TCPClient As System.Net.Sockets.TcpClient, ByVal Request As SANENetControlOption_Request, ByRef Reply As SANENetControlOption_Reply) As SANE_Status
+    Friend Function Net_Control_Option(ByRef TCPClient As System.Net.Sockets.TcpClient, ByVal Request As SANENetControlOption_Request, ByRef Reply As SANENetControlOption_Reply, ByVal Username As String, ByVal Password As String) As SANE_Status
         Logger.Debug("Option={0}, Action={1}", CurrentDevice.OptionDescriptors(Request.option_).name, Request.action)
         Select Case Request.value_type
             Case SANE_Value_Type.SANE_TYPE_GROUP
@@ -787,59 +786,65 @@ Class SANE_API
                         Reply.info = Me.DeSerialize(stream, rstream, Sane_DataType.SANE_Word)
                         Reply.value_type = Me.DeSerialize(stream, rstream, Sane_DataType.SANE_Word)
                         Reply.value_size = Me.DeSerialize(stream, rstream, Sane_DataType.SANE_Word)
-                        'Dim ArrayLen As Int32 = Me.DeSerialize(stream, rstream, Sane_DataType.SANE_Word)
-
-                        Select Case Reply.value_type
-                            Case SANE_Value_Type.SANE_TYPE_BOOL
-                                Dim ArrayLen As Int32 = Me.DeSerialize(stream, rstream, Sane_DataType.SANE_Word)
-                                ReDim Reply.values(ArrayLen - 1)
-                                For i As Integer = 0 To ArrayLen - 1
-                                    Reply.values(i) = Me.DeSerialize(stream, rstream, Sane_DataType.SANE_Boolean)
-                                Next
-                            Case SANE_Value_Type.SANE_TYPE_BUTTON
-                                Dim ArrayLen As Int32 = Me.DeSerialize(stream, rstream, Sane_DataType.SANE_Word)
-                                ReDim Reply.values(ArrayLen - 1)
-                            Case SANE_Value_Type.SANE_TYPE_FIXED
-                                Dim ArrayLen As Int32 = Me.DeSerialize(stream, rstream, Sane_DataType.SANE_Word)
-                                ReDim Reply.values(ArrayLen - 1)
-                                For i As Integer = 0 To ArrayLen - 1
-                                    Reply.values(i) = SANE_UNFIX(Me.DeSerialize(stream, rstream, Sane_DataType.SANE_Word))
-                                Next
-                            Case SANE_Value_Type.SANE_TYPE_INT
-                                Dim ArrayLen As Int32 = Me.DeSerialize(stream, rstream, Sane_DataType.SANE_Word)
-                                ReDim Reply.values(ArrayLen - 1)
-                                For i As Integer = 0 To ArrayLen - 1
-                                    Reply.values(i) = Me.DeSerialize(stream, rstream, Sane_DataType.SANE_Word)
-                                Next
-                            Case SANE_Value_Type.SANE_TYPE_STRING
-                                'XXX could there be an array of strings?
-                                ReDim Reply.values(0)
-                                Reply.values(0) = Me.DeSerialize(stream, rstream, Sane_DataType.SANE_String)
-                                If Reply.values(0) IsNot Nothing Then Reply.values(0) = Reply.values(0).Replace(Chr(0), "")
-                        End Select
-
-
+                        GetControlOptionReplyValues(Reply, stream, rstream)
                         Reply.resource = Me.DeSerialize(stream, rstream, Sane_DataType.SANE_String)
 
+                        'Authenticate if required
+                        If Not String.IsNullOrEmpty(Reply.resource) Then
+                            Net_Authorize(TCPClient, Reply.resource, Username, Password)
+                            rstream = New System.IO.MemoryStream
+                            ReadBytes = Me.ReadEntireStream(stream, rstream)
+                            Reply.status = Me.DeSerialize(stream, rstream, Sane_DataType.SANE_Word)
+                            Reply.info = Me.DeSerialize(stream, rstream, Sane_DataType.SANE_Word)
+                            Reply.value_type = Me.DeSerialize(stream, rstream, Sane_DataType.SANE_Word)
+                            Reply.value_size = Me.DeSerialize(stream, rstream, Sane_DataType.SANE_Word)
+                            GetControlOptionReplyValues(Reply, stream, rstream)
+                            Reply.resource = Me.DeSerialize(stream, rstream, Sane_DataType.SANE_String)
+                        End If
+                        '
 
-                        'XXX status isn't valid unless resource is null!
                         Return Reply.status
-
                     Else
                         Throw New Exception("Stream does not support reading")
                     End If
-
                 Catch ex As Exception
-
-                    'XXX
                     Throw
                 Finally
-
                     stream = Nothing
                 End Try
         End Select
-
     End Function
+
+    Private Sub GetControlOptionReplyValues(ByRef Reply As SANENetControlOption_Reply, ByRef stream As System.Net.Sockets.NetworkStream, ByRef rstream As System.IO.MemoryStream)
+        Select Case Reply.value_type
+            Case SANE_Value_Type.SANE_TYPE_BOOL
+                Dim ArrayLen As Int32 = Me.DeSerialize(stream, rstream, Sane_DataType.SANE_Word)
+                ReDim Reply.values(ArrayLen - 1)
+                For i As Integer = 0 To ArrayLen - 1
+                    Reply.values(i) = Me.DeSerialize(stream, rstream, Sane_DataType.SANE_Boolean)
+                Next
+            Case SANE_Value_Type.SANE_TYPE_BUTTON
+                Dim ArrayLen As Int32 = Me.DeSerialize(stream, rstream, Sane_DataType.SANE_Word)
+                ReDim Reply.values(ArrayLen - 1)
+            Case SANE_Value_Type.SANE_TYPE_FIXED
+                Dim ArrayLen As Int32 = Me.DeSerialize(stream, rstream, Sane_DataType.SANE_Word)
+                ReDim Reply.values(ArrayLen - 1)
+                For i As Integer = 0 To ArrayLen - 1
+                    Reply.values(i) = SANE_UNFIX(Me.DeSerialize(stream, rstream, Sane_DataType.SANE_Word))
+                Next
+            Case SANE_Value_Type.SANE_TYPE_INT
+                Dim ArrayLen As Int32 = Me.DeSerialize(stream, rstream, Sane_DataType.SANE_Word)
+                ReDim Reply.values(ArrayLen - 1)
+                For i As Integer = 0 To ArrayLen - 1
+                    Reply.values(i) = Me.DeSerialize(stream, rstream, Sane_DataType.SANE_Word)
+                Next
+            Case SANE_Value_Type.SANE_TYPE_STRING
+                'XXX could there be an array of strings?
+                ReDim Reply.values(0)
+                Reply.values(0) = Me.DeSerialize(stream, rstream, Sane_DataType.SANE_String)
+                If Reply.values(0) IsNot Nothing Then Reply.values(0) = Reply.values(0).Replace(Chr(0), "")
+        End Select
+    End Sub
 
     Friend Function Net_Get_Parameters(ByRef TCPClient As System.Net.Sockets.TcpClient, ByVal DeviceHandle As Int32, ByRef Params As SANE_Parameters) As SANE_Status
         Logger.Debug("")
@@ -874,18 +879,15 @@ Class SANE_API
             Else
                 Throw New Exception("Stream does not support reading")
             End If
-
         Catch ex As Exception
-            'XXX
             Throw
         Finally
-            'If stream IsNot Nothing Then stream.Close()
             stream = Nothing
         End Try
 
     End Function
 
-    Friend Function Net_Start(ByRef TCPClient As System.Net.Sockets.TcpClient, ByVal DeviceHandle As Int32, ByRef Port As Int32, ByRef ByteOrder As SANE_Net_Byte_Order) As SANE_Status
+    Friend Function Net_Start(ByRef TCPClient As System.Net.Sockets.TcpClient, ByVal DeviceHandle As Int32, ByRef Port As Int32, ByRef ByteOrder As SANE_Net_Byte_Order, ByVal Username As String, ByVal Password As String) As SANE_Status
         Logger.Debug("")
         Dim stream As System.Net.Sockets.NetworkStream = Nothing
         Dim rstream As New System.IO.MemoryStream
@@ -904,34 +906,93 @@ Class SANE_API
 
             If stream.CanRead Then
                 Dim bytes As Integer = Me.ReadEntireStream(stream, rstream)
-
                 Dim Status As SANE_Status = Me.DeSerialize(stream, rstream, Sane_DataType.SANE_Word)
                 Port = Me.DeSerialize(stream, rstream, Sane_DataType.SANE_Word)
                 ByteOrder = Me.DeSerialize(stream, rstream, Sane_DataType.SANE_Word)
-                Dim Resource As String = Me.DeSerialize(stream, rstream, Sane_DataType.SANE_String)
+                Dim AuthResource As String = Me.DeSerialize(stream, rstream, Sane_DataType.SANE_String)
 
-                If Resource IsNot Nothing Then
-                    If Resource.Length Then
-                        'XXX
-                        Throw New Exception("Authorization requested using resource '" & Resource & "'")
-                    End If
+                'Authenticate if required
+                If Not String.IsNullOrEmpty(AuthResource) Then
+                    Net_Authorize(TCPClient, AuthResource, Username, Password)
+                    rstream = New System.IO.MemoryStream
+                    bytes = Me.ReadEntireStream(stream, rstream)
+                    Status = Me.DeSerialize(stream, rstream, Sane_DataType.SANE_Word)
+                    Port = Me.DeSerialize(stream, rstream, Sane_DataType.SANE_Word)
+                    ByteOrder = Me.DeSerialize(stream, rstream, Sane_DataType.SANE_Word)
+                    AuthResource = Me.DeSerialize(stream, rstream, Sane_DataType.SANE_String)
                 End If
+                '
 
                 Return Status
-
             Else
                 Throw New Exception("Stream does not support reading")
             End If
-
         Catch ex As Exception
-            'XXX
             Throw
         Finally
-            'If stream IsNot Nothing Then stream.Close()
             stream = Nothing
         End Try
-
     End Function
+
+    Friend Sub Net_Authorize(ByRef TCPClient As System.Net.Sockets.TcpClient, ByVal Resource As String, ByVal Username As String, ByVal Password As String)
+        Logger.Debug("")
+        If Not String.IsNullOrEmpty(Resource) Then
+            Dim MD5_String As String = Nothing
+            If Resource.ToUpper.Contains("$MD5$") Then
+                Dim p As Integer = Resource.ToUpper.IndexOf("$MD5$")
+                If (p > 0) And ((p + 5) < Resource.Length) Then
+                    MD5_String = Resource.Substring(p + 5)
+                    If MD5_String.Length <= 128 Then
+                        'Resource = Resource.Substring(0, p)
+                        Dim md5 As System.Security.Cryptography.MD5 = System.Security.Cryptography.MD5.Create()
+                        Dim data As Byte() = md5.ComputeHash(System.Text.Encoding.Default.GetBytes(MD5_String & Password))
+                        Dim sBuilder As New System.Text.StringBuilder()
+                        For i As Integer = 0 To data.Length - 1
+                            sBuilder.Append(data(i).ToString("x2"))
+                        Next
+                        Password = "$MD5$" & sBuilder.ToString()
+                    Else
+                        Throw New Exception("The MD5 portion of the resource string is too long")
+                    End If
+                Else
+                    Throw New Exception("The resource string is malformed")
+                End If
+            End If
+
+            Dim stream As System.Net.Sockets.NetworkStream = Nothing
+            Dim rstream As New System.IO.MemoryStream
+            Try
+                stream = TCPClient.GetStream
+                Dim RPCCode As SANE_Net_Procedure_Number = SANE_Net_Procedure_Number.SANE_NET_AUTHORIZE
+                Dim sbuf(-1) As Byte
+                Me.Serialize(CInt(RPCCode), sbuf, Sane_DataType.SANE_Word)
+                Me.Serialize(Resource, sbuf, Sane_DataType.SANE_String)
+                Me.Serialize(Username, sbuf, Sane_DataType.SANE_String)
+                Me.Serialize(Password, sbuf, Sane_DataType.SANE_String)
+
+                If stream.CanWrite Then
+                    stream.Write(sbuf, 0, sbuf.Length)
+                Else
+                    Throw New Exception("Stream does not support writing")
+                End If
+
+                If stream.CanRead Then
+                    'Dim bytes As Integer = Me.ReadEntireStream(stream, rstream)
+                    Dim bytes As Integer = Me.ReadWord(stream, rstream)
+                    Dim Dummy As Int32 = Me.DeSerialize(stream, rstream, Sane_DataType.SANE_Word) 'Dummy reply is unused and meaningless
+                Else
+                    Throw New Exception("Stream does not support reading")
+                End If
+
+            Catch ex As Exception
+                Throw
+            Finally
+                stream = Nothing
+            End Try
+        Else
+            Throw New Exception("Resource cannot be Nothing")
+        End If
+    End Sub
 
     Friend Sub Net_Exit(ByRef TCPClient As System.Net.Sockets.TcpClient)
         Logger.Debug("")
@@ -947,12 +1008,9 @@ Class SANE_API
             Else
                 Throw New Exception("Stream does not support writing")
             End If
-
         Catch ex As Exception
-            'XXX
             Throw
         Finally
-            'If stream IsNot Nothing Then stream.Close()
             stream = Nothing
         End Try
     End Sub

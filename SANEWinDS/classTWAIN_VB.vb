@@ -3914,14 +3914,16 @@ Namespace TWAIN_VB
                                     Dim status As SANE_API.SANE_Status
                                     SANE.CurrentDevice = New SANE_API.CurrentDeviceInfo
                                     net.Connect(CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).NameOrAddress, CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Port)
-                                    status = SANE.Net_Init(net, CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Username)
+                                    'status = SANE.Net_Init(net, CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Username)
+                                    status = SANE.Net_Init(net, Environment.UserName)
                                     Logger.Debug("Net_Init returned status '{0}'", status)
                                     If status = SANE_API.SANE_Status.SANE_STATUS_GOOD Then
                                         CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Open = True
                                         Dim DeviceHandle As Integer
-                                        status = SANE.Net_Open(net, CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Device, DeviceHandle)
+                                        status = SANE.Net_Open(net, CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Device, DeviceHandle, _
+                                                              CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Username, _
+                                                              CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Password)
                                         Logger.Debug("Net_Open returned status '{0}'", status)
-
                                         If status = SANE_API.SANE_Status.SANE_STATUS_INVAL Then  'Auto-Locate
                                             If CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).AutoLocateDevice IsNot Nothing AndAlso CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).AutoLocateDevice.Length > 0 Then
                                                 Logger.Debug("Attempting to auto-locate devices matching '{0}'", CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).AutoLocateDevice)
@@ -3933,7 +3935,9 @@ Namespace TWAIN_VB
                                                         If Devices(i).name.Trim.Length >= CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).AutoLocateDevice.Length Then
                                                             If Devices(i).name.Trim.Substring(0, CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).AutoLocateDevice.Length) = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).AutoLocateDevice Then
                                                                 Logger.Debug("Auto-located device '{0}'; attempting to open...", Devices(i).name)
-                                                                status = SANE.Net_Open(net, Devices(i).name, DeviceHandle)
+                                                                status = SANE.Net_Open(net, Devices(i).name, DeviceHandle, _
+                                                                                       CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Username, _
+                                                                                       CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Password)
                                                                 Logger.Debug("Net_Open returned status '{0}'", status)
                                                                 If status = SANE_API.SANE_Status.SANE_STATUS_GOOD Then CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Device = Devices(i).name
                                                                 Exit For

@@ -28,6 +28,7 @@ Public Class SharedSettings
         Dim UseTSClientIP As Boolean 'Are we currently using the TS client ip as the NameOrAddress?
         Dim Port As Integer
         Dim Username As String
+        Dim Password As String
         Dim TCP_Timeout_ms As Integer
         Dim Open As Boolean
         Dim Device As String
@@ -151,6 +152,7 @@ Public Class SharedSettings
                     INI.SetKeyValue(SectionName, "UseTSClientIP", .UseTSClientIP.ToString)
                     INI.SetKeyValue(SectionName, "Port", .Port.ToString)
                     INI.SetKeyValue(SectionName, "Username", .Username)
+                    INI.SetKeyValue(SectionName, "Password", .Password)
                     INI.SetKeyValue(SectionName, "Timeout_ms", .TCP_Timeout_ms.ToString)
                     INI.SetKeyValue(SectionName, "Device", .Device)
                     INI.SetKeyValue(SectionName, "AutoLocateDevice", .AutoLocateDevice)
@@ -299,6 +301,7 @@ Public Class SharedSettings
                                 If .TCP_Timeout_ms = 0 Then .TCP_Timeout_ms = 5000
                                 If .TCP_Timeout_ms < 1000 Then .TCP_Timeout_ms = 1000
                                 .Username = INI.GetKeyValue(SectionName, "Username")
+                                .Password = INI.GetKeyValue(SectionName, "Password")
                                 .Device = INI.GetKeyValue(SectionName, "Device")
                                 .AutoLocateDevice = INI.GetKeyValue(SectionName, "AutoLocateDevice")
                             End With

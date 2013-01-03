@@ -47,12 +47,14 @@ Module modGlobals
         Dim Status As SANE_API.SANE_Status = 0
         Dim Port As Int32 = 0
         Dim ByteOrder As SANE_API.SANE_Net_Byte_Order
+        Dim AuthResource As String = Nothing
 
         Dim SANEImage As New SANE_API.SANEImage
         Dim CurrentFrame As Integer = 0
         Do
-            Status = SANE.Net_Start(net, SANE.CurrentDevice.Handle, Port, ByteOrder)
-
+            Status = SANE.Net_Start(net, SANE.CurrentDevice.Handle, Port, ByteOrder, _
+                                    CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Username, _
+                                    CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Password)
             If Status = SANE_API.SANE_Status.SANE_STATUS_GOOD Then
                 ReDim Preserve SANEImage.Frames(CurrentFrame)
                 Try

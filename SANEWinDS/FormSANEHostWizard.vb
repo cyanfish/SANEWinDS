@@ -51,7 +51,8 @@ Public Class FormSANEHostWizard
                                     Logger.Debug("TCPClient Receive buffer length is {0}", net.ReceiveBufferSize)
                                     Me.Cursor = Windows.Forms.Cursors.WaitCursor
                                     net.Connect(Host.NameOrAddress, Host.Port)
-                                    Dim Status As SANE_API.SANE_Status = SANE.Net_Init(net, Host.Username)
+                                    'Dim Status As SANE_API.SANE_Status = SANE.Net_Init(net, Host.Username)
+                                    Dim Status As SANE_API.SANE_Status = SANE.Net_Init(net, Environment.UserName)
                                     Logger.Debug("Net_Init returned status '{0}'", Status)
                                     If Status = SANE_API.SANE_Status.SANE_STATUS_GOOD Then
                                         Host.Open = True
@@ -76,6 +77,8 @@ Public Class FormSANEHostWizard
                                             Next
                                             If Host_Index > -1 Then
                                                 CurrentSettings.SANE.CurrentHostIndex = Host_Index
+                                                Host.Password = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Password 'preserve existing password
+                                                CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex) = Host
                                             Else
                                                 ReDim Preserve CurrentSettings.SANE.Hosts(CurrentSettings.SANE.Hosts.Count)
                                                 CurrentSettings.SANE.Hosts(CurrentSettings.SANE.Hosts.Count - 1) = Host
@@ -151,7 +154,8 @@ Public Class FormSANEHostWizard
         Else
             Me.TextBoxPort.Text = "6566"
             Me.TextBoxTimeout.Text = "5000"
-            Me.TextBoxUserName.Text = CurrentSettings.ProductName.Name
+            'Me.TextBoxUserName.Text = CurrentSettings.ProductName.Name
+            Me.TextBoxUserName.Text = Environment.UserName
         End If
 
         'With CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex)

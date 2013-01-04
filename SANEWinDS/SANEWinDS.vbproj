@@ -106,6 +106,7 @@
     <Compile Include="classPageSize.vb" />
     <Compile Include="classSANE.vb" />
     <Compile Include="classSharedSettings.vb" />
+    <Compile Include="classSimpleCrypto.vb" />
     <Compile Include="classTSAPI.vb" />
     <Compile Include="classTWAIN_VB.vb" />
     <Compile Include="classUniversalConverter.vb" />

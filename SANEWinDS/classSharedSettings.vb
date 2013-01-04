@@ -152,7 +152,12 @@ Public Class SharedSettings
                     INI.SetKeyValue(SectionName, "UseTSClientIP", .UseTSClientIP.ToString)
                     INI.SetKeyValue(SectionName, "Port", .Port.ToString)
                     INI.SetKeyValue(SectionName, "Username", .Username)
-                    INI.SetKeyValue(SectionName, "Password", .Password)
+                    Dim crypto As New SimpleCrypto
+                    Try
+                        INI.SetKeyValue(SectionName, "Password", crypto.Encrypt(.Password))
+                    Catch ex As Exception
+                        Logger.ErrorException(ex.Message, ex)
+                    End Try
                     INI.SetKeyValue(SectionName, "Timeout_ms", .TCP_Timeout_ms.ToString)
                     INI.SetKeyValue(SectionName, "Device", .Device)
                     INI.SetKeyValue(SectionName, "AutoLocateDevice", .AutoLocateDevice)
@@ -302,6 +307,14 @@ Public Class SharedSettings
                                 If .TCP_Timeout_ms < 1000 Then .TCP_Timeout_ms = 1000
                                 .Username = INI.GetKeyValue(SectionName, "Username")
                                 .Password = INI.GetKeyValue(SectionName, "Password")
+                                Try
+                                    Dim crypto As New SimpleCrypto
+                                    If crypto.IsEncrypted(.Password) Then .Password = crypto.Decrypt(.Password)
+                                Catch ex As SimpleCryptoExceptions.SuppliedStringNotEncryptedException
+                                    Logger.WarnException(ex.Message, ex)
+                                Catch ex As Exception
+                                    Logger.ErrorException(ex.Message, ex)
+                                End Try
                                 .Device = INI.GetKeyValue(SectionName, "Device")
                                 .AutoLocateDevice = INI.GetKeyValue(SectionName, "AutoLocateDevice")
                             End With

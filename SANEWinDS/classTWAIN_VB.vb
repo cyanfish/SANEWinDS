@@ -3920,50 +3920,64 @@ Namespace TWAIN_VB
                                     If status = SANE_API.SANE_Status.SANE_STATUS_GOOD Then
                                         CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Open = True
                                         Dim DeviceHandle As Integer
-                                        status = SANE.Net_Open(net, CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Device, DeviceHandle, _
-                                                              CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Username, _
-                                                              CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Password)
-                                        Logger.Debug("Net_Open returned status '{0}'", status)
-                                        If status = SANE_API.SANE_Status.SANE_STATUS_INVAL Then  'Auto-Locate
-                                            If CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).AutoLocateDevice IsNot Nothing AndAlso CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).AutoLocateDevice.Length > 0 Then
-                                                Logger.Debug("Attempting to auto-locate devices matching '{0}'", CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).AutoLocateDevice)
-                                                Dim Devices(-1) As SANE_API.SANE_Device
-                                                status = SANE.Net_Get_Devices(net, Devices)
-                                                If status = SANE_API.SANE_Status.SANE_STATUS_GOOD Then
-                                                    For i As Integer = 0 To Devices.Length - 1
-                                                        status = SANE_API.SANE_Status.SANE_STATUS_INVAL
-                                                        If Devices(i).name.Trim.Length >= CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).AutoLocateDevice.Length Then
-                                                            If Devices(i).name.Trim.Substring(0, CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).AutoLocateDevice.Length) = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).AutoLocateDevice Then
-                                                                Logger.Debug("Auto-located device '{0}'; attempting to open...", Devices(i).name)
-                                                                status = SANE.Net_Open(net, Devices(i).name, DeviceHandle, _
-                                                                                       CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Username, _
-                                                                                       CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Password)
-                                                                Logger.Debug("Net_Open returned status '{0}'", status)
-                                                                If status = SANE_API.SANE_Status.SANE_STATUS_GOOD Then CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Device = Devices(i).name
-                                                                Exit For
+
+                                        Do
+                                            status = SANE.Net_Open(net, CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Device, DeviceHandle, _
+                                                                  CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Username, _
+                                                                  CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Password)
+                                            Logger.Debug("Net_Open returned status '{0}'", status)
+                                            If status = SANE_API.SANE_Status.SANE_STATUS_INVAL Then  'Auto-Locate
+                                                If CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).AutoLocateDevice IsNot Nothing AndAlso CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).AutoLocateDevice.Length > 0 Then
+                                                    Logger.Debug("Attempting to auto-locate devices matching '{0}'", CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).AutoLocateDevice)
+                                                    Dim Devices(-1) As SANE_API.SANE_Device
+                                                    status = SANE.Net_Get_Devices(net, Devices)
+                                                    If status = SANE_API.SANE_Status.SANE_STATUS_GOOD Then
+                                                        For i As Integer = 0 To Devices.Length - 1
+                                                            status = SANE_API.SANE_Status.SANE_STATUS_INVAL
+                                                            If Devices(i).name.Trim.Length >= CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).AutoLocateDevice.Length Then
+                                                                If Devices(i).name.Trim.Substring(0, CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).AutoLocateDevice.Length) = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).AutoLocateDevice Then
+                                                                    Logger.Debug("Auto-located device '{0}'; attempting to open...", Devices(i).name)
+                                                                    status = SANE.Net_Open(net, Devices(i).name, DeviceHandle, _
+                                                                                           CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Username, _
+                                                                                           CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Password)
+                                                                    Logger.Debug("Net_Open returned status '{0}'", status)
+                                                                    If status = SANE_API.SANE_Status.SANE_STATUS_GOOD Then CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Device = Devices(i).name
+                                                                    Exit For
+                                                                End If
                                                             End If
-                                                        End If
-                                                    Next
+                                                        Next
+                                                    End If
                                                 End If
                                             End If
-                                        End If
 
-                                        If status = SANE_API.SANE_Status.SANE_STATUS_GOOD Then
-                                            SANE.CurrentDevice.Name = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Device
-                                            SANE.CurrentDevice.Handle = DeviceHandle
-                                            SANE.CurrentDevice.Open = True
+                                            If status = SANE_API.SANE_Status.SANE_STATUS_GOOD Then
+                                                SANE.CurrentDevice.Name = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Device
+                                                SANE.CurrentDevice.Handle = DeviceHandle
+                                                SANE.CurrentDevice.Open = True
 
-                                            MyForm.GetOpts(True) 'must occur prior to reading GetDeviceConfigFileName()!
+                                                MyForm.GetOpts(True) 'must occur prior to reading GetDeviceConfigFileName()!
 
-                                            CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI = New IniFile.IniFile
-                                            Dim s As String = CurrentSettings.GetDeviceConfigFileName()
-                                            If s IsNot Nothing AndAlso s.Length > 0 Then CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.Load(s)
+                                                CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI = New IniFile.IniFile
+                                                Dim s As String = CurrentSettings.GetDeviceConfigFileName()
+                                                If s IsNot Nothing AndAlso s.Length > 0 Then CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.Load(s)
 
-                                            Import_SANE_Options()
-                                            MyForm.SetUserDefaults()
-                                            'Me.InitPageSizes()
-                                            'MyForm.ButtonOK.Enabled = True
-                                        End If
+                                                Import_SANE_Options()
+                                                MyForm.SetUserDefaults()
+                                                'Me.InitPageSizes()
+                                                'MyForm.ButtonOK.Enabled = True
+                                                Exit Do
+                                            ElseIf status = SANE_API.SANE_Status.SANE_STATUS_ACCESS_DENIED Then
+                                                Dim PwdBox As New FormSANEAuth
+                                                PwdBox.UsernameTextBox.Text = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Username
+                                                If PwdBox.ShowDialog = Windows.Forms.DialogResult.Cancel Then Exit Do
+                                                CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Username = PwdBox.UsernameTextBox.Text
+                                                CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Password = PwdBox.PasswordTextBox.Text
+                                            Else
+                                                Dim msg As String = "The SANE backend reported " & status.ToString & " during initialization"
+                                                Logger.Warn(msg)
+                                                If MsgBox(msg, MsgBoxStyle.Exclamation + MsgBoxStyle.RetryCancel) = MsgBoxResult.Cancel Then Exit Do
+                                            End If
+                                        Loop
                                     End If
 
                                     If Not SANE.CurrentDevice.Open Then

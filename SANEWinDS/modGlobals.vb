@@ -69,8 +69,14 @@ Module modGlobals
                 Else
                     CurrentFrame += 1
                 End If
+            ElseIf Status = SANE_API.SANE_Status.SANE_STATUS_ACCESS_DENIED Then
+                Dim PwdBox As New FormSANEAuth
+                PwdBox.UsernameTextBox.Text = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Username
+                If PwdBox.ShowDialog = Windows.Forms.DialogResult.Cancel Then Exit Do
+                CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Username = PwdBox.UsernameTextBox.Text
+                CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Password = PwdBox.PasswordTextBox.Text
             End If
-        Loop While Status = SANE_API.SANE_Status.SANE_STATUS_GOOD
+        Loop While (Status = SANE_API.SANE_Status.SANE_STATUS_GOOD) Or (Status = SANE_API.SANE_Status.SANE_STATUS_ACCESS_DENIED)
 
         If Status = SANE_API.SANE_Status.SANE_STATUS_GOOD Then
 

@@ -262,10 +262,10 @@ Public Class SharedSettings
             If .NameOrAddress IsNot Nothing AndAlso .NameOrAddress.Length Then
                 If .Port > 0 Then
                     If .TCP_Timeout_ms > 1000 Then
-                        If .Username IsNot Nothing AndAlso .Username.Length Then
-                            Logger.Log(NLog.LogLevel.Debug, "Returning True")
-                            Return True
-                        End If
+                        'If .Username IsNot Nothing AndAlso .Username.Length Then
+                        Logger.Log(NLog.LogLevel.Debug, "Returning True")
+                        Return True
+                        'End If
                     End If
                 End If
             End If

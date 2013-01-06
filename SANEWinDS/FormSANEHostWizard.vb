@@ -36,7 +36,7 @@ Public Class FormSANEHostWizard
                                 .NameOrAddress = Me.ComboBoxHost.Text
                                 .Port = n
                                 .TCP_Timeout_ms = tmout
-                                .Username = Me.TextBoxUserName.Text
+                                '.Username = Me.TextBoxUserName.Text
                             End With
                             Try
 
@@ -129,7 +129,7 @@ Public Class FormSANEHostWizard
                         .NameOrAddress = Me.ComboBoxHost.Text
                         .Port = CInt(Me.TextBoxPort.Text)
                         .TCP_Timeout_ms = CInt(Me.TextBoxTimeout.Text)
-                        .Username = Me.TextBoxUserName.Text
+                        '.Username = Me.TextBoxUserName.Text
                     End With
                     CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Device = Me.ComboBoxDevices.Text.Trim
                     Me.DialogResult = Windows.Forms.DialogResult.OK
@@ -155,7 +155,7 @@ Public Class FormSANEHostWizard
             Me.TextBoxPort.Text = "6566"
             Me.TextBoxTimeout.Text = "5000"
             'Me.TextBoxUserName.Text = CurrentSettings.ProductName.Name
-            Me.TextBoxUserName.Text = Environment.UserName
+            'Me.TextBoxUserName.Text = Environment.UserName
         End If
 
         'With CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex)
@@ -203,7 +203,7 @@ Public Class FormSANEHostWizard
                 'If .NameOrAddress IsNot Nothing Then Me.ComboBoxHost.Text = .NameOrAddress
                 If .Port > 0 Then Me.TextBoxPort.Text = .Port.ToString Else Me.TextBoxPort.Text = "6566"
                 If .TCP_Timeout_ms > 1000 Then Me.TextBoxTimeout.Text = .TCP_Timeout_ms.ToString Else Me.TextBoxTimeout.Text = "5000"
-                If .Username IsNot Nothing AndAlso .Username.Trim.Length Then Me.TextBoxUserName.Text = .Username.Trim Else Me.TextBoxUserName.Text = CurrentSettings.ProductName.Name
+                'If .Username IsNot Nothing AndAlso .Username.Trim.Length Then Me.TextBoxUserName.Text = .Username.Trim Else Me.TextBoxUserName.Text = CurrentSettings.ProductName.Name
             End With
         End If
     End Sub

@@ -35,6 +35,7 @@ Partial Class FormSANEAuth
         Me.PasswordTextBox = New System.Windows.Forms.TextBox()
         Me.OK = New System.Windows.Forms.Button()
         Me.Cancel = New System.Windows.Forms.Button()
+        Me.LabelCaseSensitive = New System.Windows.Forms.Label()
         Me.SuspendLayout()
         '
         'UsernameLabel
@@ -77,7 +78,7 @@ Partial Class FormSANEAuth
         'OK
         '
         Me.OK.Anchor = CType((System.Windows.Forms.AnchorStyles.Bottom Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
-        Me.OK.Location = New System.Drawing.Point(45, 64)
+        Me.OK.Location = New System.Drawing.Point(30, 91)
         Me.OK.Name = "OK"
         Me.OK.Size = New System.Drawing.Size(94, 23)
         Me.OK.TabIndex = 4
@@ -87,19 +88,31 @@ Partial Class FormSANEAuth
         '
         Me.Cancel.Anchor = CType((System.Windows.Forms.AnchorStyles.Bottom Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
         Me.Cancel.DialogResult = System.Windows.Forms.DialogResult.Cancel
-        Me.Cancel.Location = New System.Drawing.Point(148, 64)
+        Me.Cancel.Location = New System.Drawing.Point(133, 91)
         Me.Cancel.Name = "Cancel"
         Me.Cancel.Size = New System.Drawing.Size(94, 23)
         Me.Cancel.TabIndex = 5
         Me.Cancel.Text = "&Cancel"
         '
-        'LoginForm1
+        'LabelCaseSensitive
+        '
+        Me.LabelCaseSensitive.AutoSize = True
+        Me.LabelCaseSensitive.Font = New System.Drawing.Font("Microsoft Sans Serif", 8.25!, System.Drawing.FontStyle.Italic, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
+        Me.LabelCaseSensitive.Location = New System.Drawing.Point(86, 66)
+        Me.LabelCaseSensitive.Name = "LabelCaseSensitive"
+        Me.LabelCaseSensitive.Size = New System.Drawing.Size(147, 13)
+        Me.LabelCaseSensitive.TabIndex = 7
+        Me.LabelCaseSensitive.Text = "Both fields are case sensitive!"
+        Me.LabelCaseSensitive.TextAlign = System.Drawing.ContentAlignment.TopCenter
+        '
+        'FormSANEAuth
         '
         Me.AcceptButton = Me.OK
         Me.AutoScaleDimensions = New System.Drawing.SizeF(6.0!, 13.0!)
         Me.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font
         Me.CancelButton = Me.Cancel
-        Me.ClientSize = New System.Drawing.Size(257, 99)
+        Me.ClientSize = New System.Drawing.Size(257, 127)
+        Me.Controls.Add(Me.LabelCaseSensitive)
         Me.Controls.Add(Me.Cancel)
         Me.Controls.Add(Me.OK)
         Me.Controls.Add(Me.PasswordTextBox)
@@ -109,7 +122,7 @@ Partial Class FormSANEAuth
         Me.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog
         Me.MaximizeBox = False
         Me.MinimizeBox = False
-        Me.Name = "LoginForm1"
+        Me.Name = "FormSANEAuth"
         Me.SizeGripStyle = System.Windows.Forms.SizeGripStyle.Hide
         Me.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent
         Me.Text = "SANE Authentication"
@@ -117,5 +130,6 @@ Partial Class FormSANEAuth
         Me.PerformLayout()
 
     End Sub
+    Friend WithEvents LabelCaseSensitive As System.Windows.Forms.Label
 
 End Class

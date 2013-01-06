@@ -15,7 +15,8 @@
 
     Private Sub FormSANEAuth_Shown(sender As Object, e As EventArgs) Handles Me.Shown
         Try
-            Me.PasswordTextBox.Focus()
+            If String.IsNullOrEmpty(Me.UsernameTextBox.Text) Then Me.UsernameTextBox.Text = Environment.UserName
+            If Not String.IsNullOrEmpty(Me.UsernameTextBox.Text) Then Me.PasswordTextBox.Focus()
         Catch ex As Exception
 
         End Try

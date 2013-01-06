@@ -936,6 +936,13 @@ Class SANE_API
 
     Friend Sub Net_Authorize(ByRef TCPClient As System.Net.Sockets.TcpClient, ByVal Resource As String, ByVal Username As String, ByVal Password As String)
         Logger.Debug("")
+        If TCPClient Is Nothing Then Throw New ArgumentNullException("TCPClient")
+        If Resource Is Nothing Then Throw New ArgumentNullException("Resource")
+        'If Username Is Nothing Then Throw New ArgumentNullException("Username")
+        If Username Is Nothing Then Username = ""
+        'If Password Is Nothing Then Throw New ArgumentNullException("Password")
+        If Password Is Nothing Then Password = ""
+
         If Not String.IsNullOrEmpty(Resource) Then
             Dim MD5_String As String = Nothing
             If Resource.ToUpper.Contains("$MD5$") Then

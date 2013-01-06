@@ -92,7 +92,9 @@ Public Class FormStartup
 
 
         'Me.Visible = False
-        Me.Text = Application.ProductName & " " & Application.ProductVersion
+        'Me.Text = Application.ProductName & " " & Application.ProductVersion 'Assembly File Version
+        Me.Text = My.Application.Info.ProductName & " " & My.Application.Info.Version.ToString 'Assembly Version
+
         Me.MinimumSize = Me.Size
 
         Dim UseRoamingAppData As Boolean = True

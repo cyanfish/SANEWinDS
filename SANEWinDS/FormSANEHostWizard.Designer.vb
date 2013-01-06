@@ -24,8 +24,6 @@ Partial Class FormSANEHostWizard
     Private Sub InitializeComponent()
         Me.ButtonNext = New System.Windows.Forms.Button()
         Me.PanelHost = New System.Windows.Forms.Panel()
-        Me.Label4 = New System.Windows.Forms.Label()
-        Me.TextBoxUserName = New System.Windows.Forms.TextBox()
         Me.Label3 = New System.Windows.Forms.Label()
         Me.TextBoxTimeout = New System.Windows.Forms.TextBox()
         Me.Label2 = New System.Windows.Forms.Label()
@@ -33,8 +31,8 @@ Partial Class FormSANEHostWizard
         Me.Label1 = New System.Windows.Forms.Label()
         Me.ComboBoxHost = New System.Windows.Forms.ComboBox()
         Me.PanelDevice = New System.Windows.Forms.Panel()
-        Me.ComboBoxDevices = New System.Windows.Forms.ComboBox()
         Me.Label5 = New System.Windows.Forms.Label()
+        Me.ComboBoxDevices = New System.Windows.Forms.ComboBox()
         Me.ButtonPrevious = New System.Windows.Forms.Button()
         Me.ButtonCancel = New System.Windows.Forms.Button()
         Me.PanelHost.SuspendLayout()
@@ -43,7 +41,7 @@ Partial Class FormSANEHostWizard
         '
         'ButtonNext
         '
-        Me.ButtonNext.Location = New System.Drawing.Point(268, 125)
+        Me.ButtonNext.Location = New System.Drawing.Point(268, 102)
         Me.ButtonNext.Name = "ButtonNext"
         Me.ButtonNext.Size = New System.Drawing.Size(75, 23)
         Me.ButtonNext.TabIndex = 0
@@ -53,9 +51,7 @@ Partial Class FormSANEHostWizard
         'PanelHost
         '
         Me.PanelHost.Anchor = CType(((System.Windows.Forms.AnchorStyles.Top Or System.Windows.Forms.AnchorStyles.Left) _
-                    Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
-        Me.PanelHost.Controls.Add(Me.Label4)
-        Me.PanelHost.Controls.Add(Me.TextBoxUserName)
+            Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
         Me.PanelHost.Controls.Add(Me.Label3)
         Me.PanelHost.Controls.Add(Me.TextBoxTimeout)
         Me.PanelHost.Controls.Add(Me.Label2)
@@ -64,24 +60,8 @@ Partial Class FormSANEHostWizard
         Me.PanelHost.Controls.Add(Me.ComboBoxHost)
         Me.PanelHost.Location = New System.Drawing.Point(1, 0)
         Me.PanelHost.Name = "PanelHost"
-        Me.PanelHost.Size = New System.Drawing.Size(356, 119)
+        Me.PanelHost.Size = New System.Drawing.Size(356, 96)
         Me.PanelHost.TabIndex = 1
-        '
-        'Label4
-        '
-        Me.Label4.AutoSize = True
-        Me.Label4.Location = New System.Drawing.Point(8, 94)
-        Me.Label4.Name = "Label4"
-        Me.Label4.Size = New System.Drawing.Size(60, 13)
-        Me.Label4.TabIndex = 7
-        Me.Label4.Text = "User Name"
-        '
-        'TextBoxUserName
-        '
-        Me.TextBoxUserName.Location = New System.Drawing.Point(140, 91)
-        Me.TextBoxUserName.Name = "TextBoxUserName"
-        Me.TextBoxUserName.Size = New System.Drawing.Size(100, 20)
-        Me.TextBoxUserName.TabIndex = 6
         '
         'Label3
         '
@@ -141,14 +121,6 @@ Partial Class FormSANEHostWizard
         Me.PanelDevice.Size = New System.Drawing.Size(204, 40)
         Me.PanelDevice.TabIndex = 2
         '
-        'ComboBoxDevices
-        '
-        Me.ComboBoxDevices.FormattingEnabled = True
-        Me.ComboBoxDevices.Location = New System.Drawing.Point(55, 11)
-        Me.ComboBoxDevices.Name = "ComboBoxDevices"
-        Me.ComboBoxDevices.Size = New System.Drawing.Size(146, 21)
-        Me.ComboBoxDevices.TabIndex = 0
-        '
         'Label5
         '
         Me.Label5.AutoSize = True
@@ -158,9 +130,17 @@ Partial Class FormSANEHostWizard
         Me.Label5.TabIndex = 2
         Me.Label5.Text = "Device"
         '
+        'ComboBoxDevices
+        '
+        Me.ComboBoxDevices.FormattingEnabled = True
+        Me.ComboBoxDevices.Location = New System.Drawing.Point(55, 11)
+        Me.ComboBoxDevices.Name = "ComboBoxDevices"
+        Me.ComboBoxDevices.Size = New System.Drawing.Size(146, 21)
+        Me.ComboBoxDevices.TabIndex = 0
+        '
         'ButtonPrevious
         '
-        Me.ButtonPrevious.Location = New System.Drawing.Point(187, 125)
+        Me.ButtonPrevious.Location = New System.Drawing.Point(187, 102)
         Me.ButtonPrevious.Name = "ButtonPrevious"
         Me.ButtonPrevious.Size = New System.Drawing.Size(75, 23)
         Me.ButtonPrevious.TabIndex = 3
@@ -169,7 +149,7 @@ Partial Class FormSANEHostWizard
         '
         'ButtonCancel
         '
-        Me.ButtonCancel.Location = New System.Drawing.Point(12, 125)
+        Me.ButtonCancel.Location = New System.Drawing.Point(12, 102)
         Me.ButtonCancel.Name = "ButtonCancel"
         Me.ButtonCancel.Size = New System.Drawing.Size(75, 23)
         Me.ButtonCancel.TabIndex = 4
@@ -180,7 +160,7 @@ Partial Class FormSANEHostWizard
         '
         Me.AutoScaleDimensions = New System.Drawing.SizeF(6.0!, 13.0!)
         Me.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font
-        Me.ClientSize = New System.Drawing.Size(357, 153)
+        Me.ClientSize = New System.Drawing.Size(357, 133)
         Me.ControlBox = False
         Me.Controls.Add(Me.ButtonCancel)
         Me.Controls.Add(Me.ButtonPrevious)
@@ -198,8 +178,6 @@ Partial Class FormSANEHostWizard
     End Sub
     Friend WithEvents ButtonNext As System.Windows.Forms.Button
     Friend WithEvents PanelHost As System.Windows.Forms.Panel
-    Friend WithEvents Label4 As System.Windows.Forms.Label
-    Friend WithEvents TextBoxUserName As System.Windows.Forms.TextBox
     Friend WithEvents Label3 As System.Windows.Forms.Label
     Friend WithEvents TextBoxTimeout As System.Windows.Forms.TextBox
     Friend WithEvents Label2 As System.Windows.Forms.Label

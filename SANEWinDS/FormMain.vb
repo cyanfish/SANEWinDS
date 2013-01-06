@@ -309,7 +309,7 @@ Public Class FormMain
                         Logger.Debug("TCPClient Receive buffer length is {0}", net.ReceiveBufferSize)
                         net.Connect(CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).NameOrAddress, CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Port)
                         'Dim Status As SANE_API.SANE_Status = SANE.Net_Init(net, CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Username)
-                        Dim Status As SANE_API.SANE_Status = SANE.Net_Init(net, Environment.UserName)
+                        Dim Status As SANE_API.SANE_Status = SANE.Net_Init(net, IIf(String.IsNullOrEmpty(Environment.UserName), Me.ProductName, Environment.UserName))
                         Logger.Debug("Net_Init returned status {0}'", Status)
                         If Status = SANE_API.SANE_Status.SANE_STATUS_GOOD Then CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Open = True
                         If CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Open Then

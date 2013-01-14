@@ -74,6 +74,8 @@ Public Class FormStartup
 
     Private frmStatus As Form
 
+    Private GUIForm_Shown As Boolean = False
+
     Private Sub FormStartup_FormClosed(sender As Object, e As FormClosedEventArgs) Handles Me.FormClosed
         If Me.INI IsNot Nothing Then
             If Me.INIFileName IsNot Nothing AndAlso Me.INIFileName.Trim.Length > 0 Then
@@ -84,8 +86,10 @@ Public Class FormStartup
 
     Private Sub FormStartup_FormClosing(sender As Object, e As FormClosingEventArgs) Handles Me.FormClosing
         RemoveHandler GUIForm.FormClosing, AddressOf Me.GUIForm_FormClosing 'This handler hides the form instead of closing it
-        GUIForm.Show() 'XXX MS bug: The FormClosing and FormClosed events don't fire when the form is hidden
-        GUIForm.Close()
+        If Me.GUIForm_Shown Then
+            GUIForm.Show() 'XXX MS bug: The FormClosing and FormClosed events don't fire when the form is hidden
+            GUIForm.Close()
+        End If
     End Sub
 
     Private Sub FormStartup_Load(ByVal sender As Object, ByVal e As System.EventArgs) Handles Me.Load
@@ -674,6 +678,7 @@ Public Class FormStartup
 
     Private Sub ButtonAcquire_Click(sender As Object, e As EventArgs) Handles ButtonAcquire.Click
         Try
+            Me.GUIForm_Shown = True
             Dim DialogResult As DialogResult = GUIForm.ShowDialog
         Catch ex As Exception
             MsgBox(ex.Message)

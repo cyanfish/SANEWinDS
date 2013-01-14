@@ -140,7 +140,7 @@ Class SANE_API
     End Function
 
     Friend Function SANE_UNFIX(ByVal w As Int32) As Double
-        Return CDbl(w) / CDbl(1 << SANE_FIXED_SCALE_SHIFT)
+        Return Math.Round(CDbl(w) / CDbl(1 << SANE_FIXED_SCALE_SHIFT), 4, MidpointRounding.AwayFromZero)
     End Function
 
     Friend Enum SANE_Status

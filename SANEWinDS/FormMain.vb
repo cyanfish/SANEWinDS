@@ -431,7 +431,7 @@ Public Class FormMain
                     chk.Top = vOffs
                     vOffs += chk.Height + BorderHeight
                     chk.Text = SANE.UnitString(od.unit)
-                    chk.Name = "ctl_" & od.name
+                    chk.Name = "ctl_" & od.name & "_" & j.ToString
                     chk.AutoSize = True
 
                     chk.Enabled = SANE.SANE_OPTION_IS_ACTIVE(od.cap) And SANE.SANE_OPTION_IS_SETTABLE(od.cap)
@@ -512,14 +512,17 @@ Public Class FormMain
                             ctl = ud
                         Case SANE_API.SANE_Constraint_Type.SANE_CONSTRAINT_WORD_LIST
                             Dim cb As New ComboBox
+                            cb.Top = vOffs
+                            vOffs += cb.Height + BorderHeight
                             For k As Integer = 0 To od.constraint.word_list.Length - 1
                                 cb.Items.Add(SANE.SANE_UNFIX(od.constraint.word_list(k)))
                             Next
+                            cb.DropDownStyle = ComboBoxStyle.DropDownList
                             ctl = cb
                         Case Else
                             MsgBox("Unexpected constraint type '" & od.constraint_type.ToString & "' for value type '" & od.type.ToString & "'")
                     End Select
-                    ctl.Name = "ctl_" & od.name
+                    ctl.Name = "ctl_" & od.name & "_" & j.ToString
                     ctl.Enabled = SANE.SANE_OPTION_IS_ACTIVE(od.cap) And SANE.SANE_OPTION_IS_SETTABLE(od.cap)
                     Me.OptionValueControls(j) = ctl
 
@@ -555,7 +558,13 @@ Public Class FormMain
                         End If
                     End If
 
-                    AddHandler ctl.TextChanged, AddressOf OptionControl_TextChanged
+                    'MS bug: TextChanged event does not fire on a combobox when DropDownStyle is set to DropDownList.
+                    If ctl.GetType = GetType(ComboBox) Then
+                        Dim cb As ComboBox = DirectCast(ctl, ComboBox)
+                        AddHandler cb.SelectedIndexChanged, AddressOf OptionControl_TextChanged
+                    Else
+                        AddHandler ctl.TextChanged, AddressOf OptionControl_TextChanged
+                    End If
                     AddHandler ctl.Leave, AddressOf OptionControl_Leave
                     PanelOpt.Controls.Add(ctl)
                     PanelOpt.Controls.Add(ulbl)
@@ -607,14 +616,17 @@ Public Class FormMain
                             ctl = ud
                         Case SANE_API.SANE_Constraint_Type.SANE_CONSTRAINT_WORD_LIST
                             Dim cb As New ComboBox
+                            cb.Top = vOffs
+                            vOffs += cb.Height + BorderHeight
                             For k As Integer = 0 To od.constraint.word_list.Length - 1
                                 cb.Items.Add(od.constraint.word_list(k))
                             Next
+                            cb.DropDownStyle = ComboBoxStyle.DropDownList
                             ctl = cb
                         Case Else
                             MsgBox("Unexpected constraint type '" & od.constraint_type.ToString & "' for value type '" & od.type.ToString & "'")
                     End Select
-                    ctl.Name = "ctl_" & od.name
+                    ctl.Name = "ctl_" & od.name & "_" & j.ToString
                     ctl.Enabled = SANE.SANE_OPTION_IS_ACTIVE(od.cap) And SANE.SANE_OPTION_IS_SETTABLE(od.cap)
                     Me.OptionValueControls(j) = ctl
 
@@ -650,7 +662,13 @@ Public Class FormMain
                     ulbl.Anchor = AnchorStyles.Left
                     ulbl.Enabled = ctl.Enabled
 
-                    AddHandler ctl.TextChanged, AddressOf OptionControl_TextChanged
+                    'MS bug: TextChanged event does not fire on a combobox when DropDownStyle is set to DropDownList.
+                    If ctl.GetType = GetType(ComboBox) Then
+                        Dim cb As ComboBox = DirectCast(ctl, ComboBox)
+                        AddHandler cb.SelectedIndexChanged, AddressOf OptionControl_TextChanged
+                    Else
+                        AddHandler ctl.TextChanged, AddressOf OptionControl_TextChanged
+                    End If
                     AddHandler ctl.Leave, AddressOf OptionControl_Leave
                     PanelOpt.Controls.Add(ctl)
                     PanelOpt.Controls.Add(ulbl)
@@ -702,6 +720,7 @@ Public Class FormMain
                         Else
                             cb.Width = GetTextWidth(StrDup(cb.MaxLength + 2, "A"), cb) '+2 to compensate for the dropdown control
                         End If
+                        cb.DropDownStyle = ComboBoxStyle.DropDownList
                         ctl = cb
                     Case Else
                         MsgBox("Unexpected constraint type '" & od.constraint_type.ToString & "' for value type '" & od.type.ToString & "'")
@@ -720,7 +739,13 @@ Public Class FormMain
                 End If
 
                 Me.OptionValueControls(0) = ctl
-                AddHandler ctl.TextChanged, AddressOf OptionControl_TextChanged
+                'MS bug: TextChanged event does not fire on a combobox when DropDownStyle is set to DropDownList.
+                If ctl.GetType = GetType(ComboBox) Then
+                    Dim cb As ComboBox = DirectCast(ctl, ComboBox)
+                    AddHandler cb.SelectedIndexChanged, AddressOf OptionControl_TextChanged
+                Else
+                    AddHandler ctl.TextChanged, AddressOf OptionControl_TextChanged
+                End If
                 AddHandler ctl.Leave, AddressOf OptionControl_Leave
                 PanelOpt.Controls.Add(ctl)
 
@@ -758,14 +783,22 @@ Public Class FormMain
 
     Private Sub OptionControl_TextChanged(ByVal sender As System.Object, ByVal e As System.EventArgs)
         Me.PanelOptIsDirty = True
+        'for comboboxes and checkboxes set the option immediately.  
+        'This allows the GUI to immediately show whether 'scan continuously' will be enabled or not when the ADF option changes.
+        Select Case sender.GetType
+            Case GetType(ComboBox), GetType(CheckBox)
+                Try
+                    Dim ControlName As String = sender.Name
+                    SetOption()
+                    Me.PanelOpt.Controls(ControlName).Focus()
+                Catch ex As Exception
+
+                End Try
+        End Select
     End Sub
 
     Private Sub OptionControl_Leave(ByVal sender As System.Object, ByVal e As System.EventArgs)
-        If Me.PanelOptIsDirty Then
-            SetOption()
-        Else
-            'MsgBox("Not dirty!")
-        End If
+        If Me.PanelOptIsDirty Then SetOption()
     End Sub
 
     Public Sub SetUserDefaults()

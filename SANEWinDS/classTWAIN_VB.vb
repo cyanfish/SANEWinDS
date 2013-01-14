@@ -4697,7 +4697,7 @@ Namespace TWAIN_VB
         End Function
 
         Public Function FIX32ToFloat(ByVal _fix32 As TW_FIX32) As Double
-            Return CType(_fix32.Whole, Double) + CType(_fix32.Frac / 65536.0, Double)
+            Return Math.Round(CType(_fix32.Whole, Double) + CType(_fix32.Frac / 65536.0, Double), 4, MidpointRounding.AwayFromZero)
         End Function
 
         Friend Sub InitPageSizes()

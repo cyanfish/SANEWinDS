@@ -368,8 +368,10 @@ Public Class SharedSettings
 
     Private Function SANE_Option_Defined(OptionName As String) As Boolean
         For i As Integer = 1 To modGlobals.SANE.CurrentDevice.OptionDescriptors.Count - 1 'skip the first option, which is just the option count
-            If modGlobals.SANE.CurrentDevice.OptionDescriptors(i).name.ToLower.Trim = OptionName.ToLower.Trim Then
-                Return True
+            If modGlobals.SANE.CurrentDevice.OptionDescriptors(i).name IsNot Nothing Then
+                If modGlobals.SANE.CurrentDevice.OptionDescriptors(i).name.ToLower.Trim = OptionName.ToLower.Trim Then
+                    Return True
+                End If
             End If
         Next
         Return False

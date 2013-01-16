@@ -3087,7 +3087,9 @@ Namespace TWAIN_VB
                                 End If
                             Next
 
-                            MyForm.PanelOpt.Controls.Clear()
+                            'MyForm.PanelOpt.Controls.Clear()
+                            MyForm.ClearPanelControls()
+
                             'MyForm.GetOpts(False)
 
                             CurrentSettings.ScanContinuouslyUserConfigured = cds.ScanContinouslyUserConfigured

@@ -124,7 +124,7 @@ Public Class FormMain
             Else
                 RaiseEvent ImageError(PageNo, "The SANE device name is not defined")
             End If
-            WinAPI.SetProcessWorkingSetSize(Process.GetCurrentProcess().Handle, -1, -1)
+            WinAPI.SetProcessWorkingSetSize(Process.GetCurrentProcess().Handle, -1, -1) 'reclaim memory
         End If
     End Sub
 
@@ -333,7 +333,7 @@ Public Class FormMain
                                                 If Devices(i).name.Trim.Length >= CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).AutoLocateDevice.Length Then
                                                     If Devices(i).name.Trim.Substring(0, CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).AutoLocateDevice.Length) = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).AutoLocateDevice Then
                                                         Logger.Debug("Auto-located device '{0}'; attempting to open...", Devices(i).name)
-                                                        Status = SANE.Net_Open(net, CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Device, DeviceHandle, _
+                                                        Status = SANE.Net_Open(net, Devices(i).name, DeviceHandle, _
                                                                               CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Username, _
                                                                               CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Password)
                                                         Logger.Debug("Net_Open returned status '{0}'", Status)
@@ -419,7 +419,11 @@ Public Class FormMain
             BorderWidth = System.Windows.Forms.SystemInformation.BorderSize.Width
         End If
 
-        PanelOpt.Controls.Clear()
+        'PanelOpt.Controls.Clear()
+        Me.ClearPanelControls()
+
+        'WinAPI.SetProcessWorkingSetSize(Process.GetCurrentProcess().Handle, -1, -1) 'reclaim memory
+
         ReDim OptionValueControls(SANE.CurrentDevice.OptionValues(OptionIndex).Length - 1)
 
         Select Case od.type
@@ -507,7 +511,7 @@ Public Class FormMain
                             vOffs += ud.Height + BorderHeight
                             ud.Minimum = SANE.SANE_UNFIX(od.constraint.range.min)
                             ud.Maximum = SANE.SANE_UNFIX(od.constraint.range.max)
-                            ud.Increment = SANE.SANE_UNFIX(od.constraint.range.quant)
+                            ud.Increment = IIf(od.constraint.range.quant <> 0, SANE.SANE_UNFIX(od.constraint.range.quant), 1)
                             ud.DecimalPlaces = 4
                             ctl = ud
                         Case SANE_API.SANE_Constraint_Type.SANE_CONSTRAINT_WORD_LIST
@@ -611,7 +615,7 @@ Public Class FormMain
                             vOffs += ud.Height + BorderHeight
                             ud.Minimum = od.constraint.range.min
                             ud.Maximum = od.constraint.range.max
-                            ud.Increment = od.constraint.range.quant
+                            ud.Increment = IIf(od.constraint.range.quant <> 0, od.constraint.range.quant, 1)
                             ud.DecimalPlaces = 0
                             ctl = ud
                         Case SANE_API.SANE_Constraint_Type.SANE_CONSTRAINT_WORD_LIST
@@ -798,7 +802,11 @@ Public Class FormMain
     End Sub
 
     Private Sub OptionControl_Leave(ByVal sender As System.Object, ByVal e As System.EventArgs)
-        If Me.PanelOptIsDirty Then SetOption()
+        Try
+            If Me.PanelOptIsDirty Then SetOption()
+        Catch ex As Exception
+            Logger.ErrorException(ex.Message, ex)
+        End Try
     End Sub
 
     Public Sub SetUserDefaults()
@@ -937,7 +945,8 @@ Public Class FormMain
                 End If
             End If
             '
-            Me.PanelOpt.Controls.Clear()
+            'Me.PanelOpt.Controls.Clear()
+            Me.ClearPanelControls()
         Else
             Logger.Warn("Backend configuration file uninitialized; backend-specific default values were not configured")
         End If
@@ -1070,20 +1079,26 @@ Public Class FormMain
     End Sub
 
     Public Function GetSANEOptionUnit(ByVal OptionName As String) As Integer
+        If OptionName Is Nothing Then OptionName = String.Empty
         For Index As Integer = 1 To SANE.CurrentDevice.OptionDescriptors.Length - 1
             Dim od As SANE_API.SANE_Option_Descriptor = SANE.CurrentDevice.OptionDescriptors(Index)
-            If od.name.ToUpper.Trim = OptionName.ToUpper.Trim Then
-                Return SANE.CurrentDevice.OptionDescriptors(Index).unit
+            If Not String.IsNullOrEmpty(od.name) Then
+                If od.name.ToUpper.Trim = OptionName.ToUpper.Trim Then
+                    Return SANE.CurrentDevice.OptionDescriptors(Index).unit
+                End If
             End If
         Next
         Return SANE_API.SANE_Unit.SANE_UNIT_NONE
     End Function
 
     Public Function GetSANEOption(ByVal OptionName As String) As Object()
+        If OptionName Is Nothing Then OptionName = String.Empty
         For Index As Integer = 0 To SANE.CurrentDevice.OptionDescriptors.Length - 1
             Dim od As SANE_API.SANE_Option_Descriptor = SANE.CurrentDevice.OptionDescriptors(Index)
-            If od.name.ToUpper.Trim = OptionName.ToUpper.Trim Then
-                Return SANE.CurrentDevice.OptionValues(Index)
+            If Not String.IsNullOrEmpty(od.name) Then
+                If od.name.ToUpper.Trim = OptionName.ToUpper.Trim Then
+                    Return SANE.CurrentDevice.OptionValues(Index)
+                End If
             End If
         Next
         Return Nothing
@@ -1094,10 +1109,13 @@ Public Class FormMain
     End Function
 
     Private Function SetOpt(ByVal OptionName As String, ByVal Values() As Object) As SANE_API.SANE_Status
-        For Index As Integer = 0 To SANE.CurrentDevice.OptionDescriptors.Length - 1
+        If OptionName Is Nothing Then OptionName = String.Empty
+        For Index As Integer = 1 To SANE.CurrentDevice.OptionDescriptors.Length - 1 'skip the first option, which is just the option count
             Dim od As SANE_API.SANE_Option_Descriptor = SANE.CurrentDevice.OptionDescriptors(Index)
-            If od.name.ToUpper.Trim = OptionName.ToUpper.Trim Then
-                Return SetOpt(Index, Values)
+            If Not String.IsNullOrEmpty(od.name) Then
+                If od.name.ToUpper.Trim = OptionName.ToUpper.Trim Then
+                    Return SetOpt(Index, Values)
+                End If
             End If
         Next
         Return SANE_API.SANE_Status.SANE_STATUS_INVAL
@@ -1172,7 +1190,8 @@ Public Class FormMain
                             Me.DisplayOption(Me.PanelOpt, Me.TreeViewOptions.SelectedNode.Tag)
                         End If
                     Else
-                        Me.PanelOpt.Controls.Clear()
+                        'Me.PanelOpt.Controls.Clear()
+                        Me.ClearPanelControls()
                     End If
 
                     If Me.TWAIN_Is_Active Then
@@ -1205,6 +1224,10 @@ Public Class FormMain
         End Try
 
     End Function
+
+    Private Sub SetOption(sender As Object, e As EventArgs)
+        SetOption()
+    End Sub
     Private Sub SetOption()
         Dim Values(Me.OptionValueControls.Length - 1) As Object
         For ctl_i As Integer = 0 To Me.OptionValueControls.Length - 1
@@ -1241,13 +1264,15 @@ Public Class FormMain
                 Me.DisplayOption(Me.PanelOpt, Me.TreeViewOptions.SelectedNode.Tag)
             End If
         Else
-            Me.PanelOpt.Controls.Clear()
+            'Me.PanelOpt.Controls.Clear()
+            Me.ClearPanelControls()
         End If
 
     End Sub
 
     Private Sub TreeViewOptions_AfterSelect(ByVal sender As Object, ByVal e As System.Windows.Forms.TreeViewEventArgs) Handles TreeViewOptions.AfterSelect
-        PanelOpt.Controls.Clear()
+        'PanelOpt.Controls.Clear()
+        Me.ClearPanelControls()
         For Index As Integer = 0 To SANE.CurrentDevice.OptionDescriptors.Length - 1
             If Index = e.Node.Tag Then
                 Me.DisplayOption(Me.PanelOpt, Index)
@@ -1340,6 +1365,31 @@ Public Class FormMain
         Catch ex As Exception
             Logger.ErrorException("Error setting page dimensions: " & ex.Message, ex)
         End Try
+    End Sub
+
+    Public Sub ClearPanelControls()
+        Try
+            For Each ctl As Control In Me.PanelOpt.Controls
+                Select Case ctl.GetType
+                    Case GetType(CheckBox)
+                        Dim chk As CheckBox = DirectCast(ctl, CheckBox)
+                        RemoveHandler chk.CheckedChanged, AddressOf OptionControl_TextChanged
+                    Case GetType(ComboBox)
+                        Dim cb As ComboBox = DirectCast(ctl, ComboBox)
+                        RemoveHandler cb.SelectedIndexChanged, AddressOf OptionControl_TextChanged
+                    Case GetType(Button)
+                        Dim bt As Button = DirectCast(ctl, Button)
+                        RemoveHandler bt.Click, AddressOf SetOption
+                End Select
+                RemoveHandler ctl.Leave, AddressOf OptionControl_Leave
+                RemoveHandler ctl.TextChanged, AddressOf OptionControl_TextChanged
+                'ctl.Dispose()
+                ctl = Nothing
+            Next
+        Catch ex As Exception
+            Logger.ErrorException("Error removing event handlers from panel controls: " & ex.Message, ex)
+        End Try
+        Me.PanelOpt.Controls.Clear()
     End Sub
 
 End Class

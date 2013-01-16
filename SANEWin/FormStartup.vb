@@ -681,7 +681,7 @@ Public Class FormStartup
             Me.GUIForm_Shown = True
             Dim DialogResult As DialogResult = GUIForm.ShowDialog
         Catch ex As Exception
-            MsgBox(ex.Message)
+            MsgBox(ex.Message & vbCrLf & ex.StackTrace)
             Me.ClosePDF()
             Me.CloseTIFF()
         End Try

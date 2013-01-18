@@ -599,105 +599,119 @@ Public Class FormMain
             Case SANE_API.SANE_Value_Type.SANE_TYPE_GROUP
 
             Case SANE_API.SANE_Value_Type.SANE_TYPE_INT
-                Dim vOffs As Integer = 0
-                For j = 0 To SANE.CurrentDevice.OptionValues(OptionIndex).Length - 1
+                'look for a gamma-table option
+                If od.name IsNot Nothing _
+                    AndAlso od.name.ToLower.Contains("gamma-table") _
+                    AndAlso od.constraint_type = SANE_API.SANE_Constraint_Type.SANE_CONSTRAINT_RANGE _
+                    AndAlso SANE.CurrentDevice.OptionValues(OptionIndex).Length >= 255 Then
 
-                    Dim ctl As Control = Nothing
-                    Select Case od.constraint_type
-                        Case SANE_API.SANE_Constraint_Type.SANE_CONSTRAINT_NONE
-                            Dim tb As New TextBox
-                            tb.Top = vOffs
-                            vOffs += tb.Height + BorderHeight
-                            ctl = tb
-                        Case SANE_API.SANE_Constraint_Type.SANE_CONSTRAINT_RANGE
-                            Dim ud As New NumericUpDown
-                            ud.Top = vOffs
-                            vOffs += ud.Height + BorderHeight
-                            ud.Minimum = od.constraint.range.min
-                            ud.Maximum = od.constraint.range.max
-                            ud.Increment = IIf(od.constraint.range.quant <> 0, od.constraint.range.quant, 1)
-                            ud.DecimalPlaces = 0
-                            ctl = ud
-                        Case SANE_API.SANE_Constraint_Type.SANE_CONSTRAINT_WORD_LIST
-                            Dim cb As New ComboBox
-                            cb.Top = vOffs
-                            vOffs += cb.Height + BorderHeight
-                            For k As Integer = 0 To od.constraint.word_list.Length - 1
-                                cb.Items.Add(od.constraint.word_list(k))
-                            Next
-                            cb.DropDownStyle = ComboBoxStyle.DropDownList
-                            ctl = cb
-                        Case Else
-                            MsgBox("Unexpected constraint type '" & od.constraint_type.ToString & "' for value type '" & od.type.ToString & "'")
-                    End Select
-                    ctl.Name = "ctl_" & od.name & "_" & j.ToString
-                    ctl.Enabled = SANE.SANE_OPTION_IS_ACTIVE(od.cap) And SANE.SANE_OPTION_IS_SETTABLE(od.cap)
-                    Me.OptionValueControls(j) = ctl
+                    Dim ic As New ImageCurve(SANE.CurrentDevice.OptionValues(OptionIndex).Length, od.constraint.range.max)
+                    ic.Top = 20
+                    ic.Left = 20
+                    ic.BorderStyle = BorderStyle.Fixed3D
+                    PanelOpt.Controls.Add(ic)
 
-                    If SANE.CurrentDevice.OptionValues IsNot Nothing Then
-                        If SANE.CurrentDevice.OptionValues(OptionIndex) IsNot Nothing Then
-                            If SANE.CurrentDevice.OptionValues(OptionIndex).length - 1 >= j Then
-                                If SANE.CurrentDevice.OptionValues(OptionIndex)(j) IsNot Nothing Then
-                                    If ctl.GetType = GetType(NumericUpDown) Then
-                                        Dim ud As NumericUpDown = DirectCast(ctl, NumericUpDown)
-                                        ud.Value = SANE.CurrentDevice.OptionValues(OptionIndex)(j)
-                                    Else
-                                        ctl.Text = SANE.CurrentDevice.OptionValues(OptionIndex)(j).ToString
+                Else
+                    Dim vOffs As Integer = 0
+                    For j = 0 To SANE.CurrentDevice.OptionValues(OptionIndex).Length - 1
+
+                        Dim ctl As Control = Nothing
+                        Select Case od.constraint_type
+                            Case SANE_API.SANE_Constraint_Type.SANE_CONSTRAINT_NONE
+                                Dim tb As New TextBox
+                                tb.Top = vOffs
+                                vOffs += tb.Height + BorderHeight
+                                ctl = tb
+                            Case SANE_API.SANE_Constraint_Type.SANE_CONSTRAINT_RANGE
+                                Dim ud As New NumericUpDown
+                                ud.Top = vOffs
+                                vOffs += ud.Height + BorderHeight
+                                ud.Minimum = od.constraint.range.min
+                                ud.Maximum = od.constraint.range.max
+                                ud.Increment = IIf(od.constraint.range.quant <> 0, od.constraint.range.quant, 1)
+                                ud.DecimalPlaces = 0
+                                ctl = ud
+                            Case SANE_API.SANE_Constraint_Type.SANE_CONSTRAINT_WORD_LIST
+                                Dim cb As New ComboBox
+                                cb.Top = vOffs
+                                vOffs += cb.Height + BorderHeight
+                                For k As Integer = 0 To od.constraint.word_list.Length - 1
+                                    cb.Items.Add(od.constraint.word_list(k))
+                                Next
+                                cb.DropDownStyle = ComboBoxStyle.DropDownList
+                                ctl = cb
+                            Case Else
+                                MsgBox("Unexpected constraint type '" & od.constraint_type.ToString & "' for value type '" & od.type.ToString & "'")
+                        End Select
+                        ctl.Name = "ctl_" & od.name & "_" & j.ToString
+                        ctl.Enabled = SANE.SANE_OPTION_IS_ACTIVE(od.cap) And SANE.SANE_OPTION_IS_SETTABLE(od.cap)
+                        Me.OptionValueControls(j) = ctl
+
+                        If SANE.CurrentDevice.OptionValues IsNot Nothing Then
+                            If SANE.CurrentDevice.OptionValues(OptionIndex) IsNot Nothing Then
+                                If SANE.CurrentDevice.OptionValues(OptionIndex).length - 1 >= j Then
+                                    If SANE.CurrentDevice.OptionValues(OptionIndex)(j) IsNot Nothing Then
+                                        If ctl.GetType = GetType(NumericUpDown) Then
+                                            Dim ud As NumericUpDown = DirectCast(ctl, NumericUpDown)
+                                            ud.Value = SANE.CurrentDevice.OptionValues(OptionIndex)(j)
+                                        Else
+                                            ctl.Text = SANE.CurrentDevice.OptionValues(OptionIndex)(j).ToString
+                                        End If
                                     End If
                                 End If
                             End If
                         End If
-                    End If
 
-                    Dim ulbl As New Label
-                    ulbl.Top = ctl.Top
-                    ulbl.Left = ctl.Right + BorderWidth
-                    ulbl.Width = PanelOpt.Right - ctl.Right - (BorderWidth * 2)
-                    ulbl.TextAlign = ContentAlignment.MiddleLeft
-                    ulbl.Text = SANE.UnitString(od.unit)
-                    If od.constraint_type = SANE_API.SANE_Constraint_Type.SANE_CONSTRAINT_RANGE Then
-                        ulbl.Text += " (" & od.constraint.range.min.ToString & " to " & od.constraint.range.max.ToString
-                        If od.constraint.range.quant > 0 Then
-                            ulbl.Text += " in steps of " & od.constraint.range.quant.ToString
+                        Dim ulbl As New Label
+                        ulbl.Top = ctl.Top
+                        ulbl.Left = ctl.Right + BorderWidth
+                        ulbl.Width = PanelOpt.Right - ctl.Right - (BorderWidth * 2)
+                        ulbl.TextAlign = ContentAlignment.MiddleLeft
+                        ulbl.Text = SANE.UnitString(od.unit)
+                        If od.constraint_type = SANE_API.SANE_Constraint_Type.SANE_CONSTRAINT_RANGE Then
+                            ulbl.Text += " (" & od.constraint.range.min.ToString & " to " & od.constraint.range.max.ToString
+                            If od.constraint.range.quant > 0 Then
+                                ulbl.Text += " in steps of " & od.constraint.range.quant.ToString
+                            End If
+                            ulbl.Text += ")"
                         End If
-                        ulbl.Text += ")"
-                    End If
-                    ulbl.AutoSize = False
-                    ulbl.Anchor = AnchorStyles.Left
-                    ulbl.Enabled = ctl.Enabled
+                        ulbl.AutoSize = False
+                        ulbl.Anchor = AnchorStyles.Left
+                        ulbl.Enabled = ctl.Enabled
 
-                    'MS bug: TextChanged event does not fire on a combobox when DropDownStyle is set to DropDownList.
-                    If ctl.GetType = GetType(ComboBox) Then
-                        Dim cb As ComboBox = DirectCast(ctl, ComboBox)
-                        AddHandler cb.SelectedIndexChanged, AddressOf OptionControl_TextChanged
+                        'MS bug: TextChanged event does not fire on a combobox when DropDownStyle is set to DropDownList.
+                        If ctl.GetType = GetType(ComboBox) Then
+                            Dim cb As ComboBox = DirectCast(ctl, ComboBox)
+                            AddHandler cb.SelectedIndexChanged, AddressOf OptionControl_TextChanged
+                        Else
+                            AddHandler ctl.TextChanged, AddressOf OptionControl_TextChanged
+                        End If
+                        AddHandler ctl.Leave, AddressOf OptionControl_Leave
+                        PanelOpt.Controls.Add(ctl)
+                        PanelOpt.Controls.Add(ulbl)
+
+                    Next
+
+                    Dim lbl As New Label
+
+                    If Me.OptionValueControls.Length > 0 Then
+                        lbl.Top = Me.OptionValueControls(Me.OptionValueControls.Length - 1).Bottom + 10
+                        lbl.Height = PanelOpt.Bottom - Me.OptionValueControls(Me.OptionValueControls.Length - 1).Top - 10
+                        lbl.Left = Me.OptionValueControls(Me.OptionValueControls.Length - 1).Left
+                        lbl.Enabled = Me.OptionValueControls(Me.OptionValueControls.Length - 1).Enabled
                     Else
-                        AddHandler ctl.TextChanged, AddressOf OptionControl_TextChanged
+                        lbl.Top = 0
+                        lbl.Height = PanelOpt.Height
+                        lbl.Left = 0
+                        lbl.Enabled = False
                     End If
-                    AddHandler ctl.Leave, AddressOf OptionControl_Leave
-                    PanelOpt.Controls.Add(ctl)
-                    PanelOpt.Controls.Add(ulbl)
+                    lbl.Width = PanelOpt.Width
+                    lbl.TextAlign = ContentAlignment.TopLeft
+                    lbl.Text = od.desc
+                    lbl.AutoSize = False
 
-                Next
-
-                Dim lbl As New Label
-
-                If Me.OptionValueControls.Length > 0 Then
-                    lbl.Top = Me.OptionValueControls(Me.OptionValueControls.Length - 1).Bottom + 10
-                    lbl.Height = PanelOpt.Bottom - Me.OptionValueControls(Me.OptionValueControls.Length - 1).Top - 10
-                    lbl.Left = Me.OptionValueControls(Me.OptionValueControls.Length - 1).Left
-                    lbl.Enabled = Me.OptionValueControls(Me.OptionValueControls.Length - 1).Enabled
-                Else
-                    lbl.Top = 0
-                    lbl.Height = PanelOpt.Height
-                    lbl.Left = 0
-                    lbl.Enabled = False
+                    PanelOpt.Controls.Add(lbl)
                 End If
-                lbl.Width = PanelOpt.Width
-                lbl.TextAlign = ContentAlignment.TopLeft
-                lbl.Text = od.desc
-                lbl.AutoSize = False
-
-                PanelOpt.Controls.Add(lbl)
 
             Case SANE_API.SANE_Value_Type.SANE_TYPE_STRING
                 'XXX could there be an array of strings?

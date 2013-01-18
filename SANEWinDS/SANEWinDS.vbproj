@@ -129,6 +129,11 @@
     <Compile Include="FormSANEAuth.vb">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="Gamma Control\classImageCurve.vb">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Gamma Control\classSpline.vb" />
+    <Compile Include="Gamma Control\classVector.vb" />
     <Compile Include="modGlobals.vb" />
     <Compile Include="My Project\AssemblyInfo.vb" />
     <Compile Include="My Project\Application.Designer.vb">
@@ -190,6 +195,7 @@
       <Name>IniFile</Name>
     </ProjectReference>
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.VisualBasic.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

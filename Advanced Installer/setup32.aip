@@ -12,7 +12,7 @@
     <ROW Property="ProductCode" Value="1033:{F6DA3998-1467-4B00-BF67-18335585EEEA} " Type="16"/>
     <ROW Property="ProductLanguage" Value="1033"/>
     <ROW Property="ProductName" Value="SANEWinDS"/>
-    <ROW Property="ProductVersion" Value="0.8.4762" Type="32"/>
+    <ROW Property="ProductVersion" Value="0.8.4766" Type="32"/>
     <ROW Property="SecureCustomProperties" Value="OLDPRODUCTS;AI_NEWERPRODUCTFOUND"/>
     <ROW Property="UpgradeCode" Value="{28BC51C6-EB6A-40B0-A11C-01E9313074C3}"/>
     <ROW Property="WindowsType9X" MultiBuildValue="DefaultBuild:Windows 9x/ME" ValueLocId="-"/>
@@ -52,8 +52,8 @@
     <ATTRIBUTE name="CurrentFeature" value="MainFeature"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiFilesComponent">
-    <ROW File="IniFile.dll" Component_="IniFile.dll" FileName="IniFile.dll" Attributes="0" SourcePath="..\IniFile\bin\Release\IniFile.dll" SelfReg="false" NextFile="itextsharp.dll"/>
-    <ROW File="IniFile.dll_1" Component_="IniFile.dll_1" FileName="IniFile.dll" Attributes="0" SourcePath="..\IniFile\bin\Release\IniFile.dll" SelfReg="false" NextFile="LICENSE.txt"/>
+    <ROW File="IniFile.dll" Component_="IniFile.dll" FileName="IniFile.dll" Attributes="0" SourcePath="..\IniFile\bin\Debug\IniFile.dll" SelfReg="false" NextFile="itextsharp.dll"/>
+    <ROW File="IniFile.dll_1" Component_="IniFile.dll_1" FileName="IniFile.dll" Attributes="0" SourcePath="..\IniFile\bin\Debug\IniFile.dll" SelfReg="false" NextFile="LICENSE.txt"/>
     <ROW File="LICENSE.txt" Component_="NLog.config" FileName="LICENSE.txt" Attributes="0" SourcePath="..\LICENSE.txt" SelfReg="false" NextFile="NLog.config"/>
     <ROW File="LICENSE.txt_1" Component_="NLog.config_1" FileName="LICENSE.txt" Attributes="0" SourcePath="..\LICENSE.txt" SelfReg="false" NextFile="ReadMe_NLog.txt_1"/>
     <ROW File="NLog.config" Component_="NLog.config" FileName="NLog~1.con|NLog.config" Attributes="0" SourcePath="..\SANEWinDS\NLog.config" SelfReg="false" NextFile="NLog.dll_1"/>
@@ -62,10 +62,10 @@
     <ROW File="NLog.dll_1" Component_="NLog.dll_1" FileName="NLog.dll" Attributes="0" SourcePath="..\packages\NLog.2.0.0.2000\lib\net40\NLog.dll" SelfReg="false" NextFile="ReadMe_NLog.txt"/>
     <ROW File="ReadMe_NLog.txt" Component_="NLog.config" FileName="ReadMe~1.txt|ReadMe_NLog.txt" Attributes="0" SourcePath="..\ReadMe_NLog.txt" SelfReg="false" NextFile="SANEWinDS.dll_1"/>
     <ROW File="ReadMe_NLog.txt_1" Component_="NLog.config_1" FileName="ReadMe~1.txt|ReadMe_NLog.txt" Attributes="0" SourcePath="..\ReadMe_NLog.txt" SelfReg="false" NextFile="IniFile.dll_1"/>
-    <ROW File="SANEWin.exe" Component_="SANEWin.exe" FileName="SANEWin.exe" Attributes="0" SourcePath="..\SANEWin\bin\Release\SANEWin.exe" SelfReg="false" NextFile="IniFile.dll" DigSign="true"/>
+    <ROW File="SANEWin.exe" Component_="SANEWin.exe" FileName="SANEWin.exe" Attributes="0" SourcePath="..\SANEWin\bin\Debug\SANEWin.exe" SelfReg="false" NextFile="IniFile.dll" DigSign="true"/>
     <ROW File="SANEWinCDS32.ds" Component_="NLog.config" FileName="SANEWi~1.ds|SANEWinCDS32.ds" Attributes="0" SourcePath="..\SANEWinCDS\Twain_DS_sample01\visual_studio\Release32\SANEWinCDS32.ds" SelfReg="false" NextFile="NLog.config_1"/>
-    <ROW File="SANEWinDS.dll" Component_="SANEWinDS.dll" FileName="SANEWi~1.dll|SANEWinDS.dll" Attributes="0" SourcePath="..\SANEWin\bin\Release\SANEWinDS.dll" SelfReg="false" NextFile="NLog.dll"/>
-    <ROW File="SANEWinDS.dll_1" Component_="SANEWinDS.dll_1" FileName="SANEWi~1.dll|SANEWinDS.dll" Attributes="0" SourcePath="..\SANEWin\bin\Release\SANEWinDS.dll" SelfReg="false"/>
+    <ROW File="SANEWinDS.dll" Component_="SANEWinDS.dll" FileName="SANEWi~1.dll|SANEWinDS.dll" Attributes="0" SourcePath="..\SANEWin\bin\Debug\SANEWinDS.dll" SelfReg="false" NextFile="NLog.dll"/>
+    <ROW File="SANEWinDS.dll_1" Component_="SANEWinDS.dll_1" FileName="SANEWi~1.dll|SANEWinDS.dll" Attributes="0" SourcePath="..\SANEWin\bin\Debug\SANEWinDS.dll" SelfReg="false"/>
     <ROW File="canon_dr.ini" Component_="canon_dr.ini" FileName="canon_dr.ini" Attributes="0" SourcePath="..\SANEWinDS\backend.ini\canon_dr.ini" SelfReg="false" NextFile="test.ini"/>
     <ROW File="itextsharp.dll" Component_="itextsharp.dll" FileName="itexts~1.dll|itextsharp.dll" Attributes="0" SourcePath="..\SANEWin\itextsharp.dll" SelfReg="false" NextFile="SANEWinDS.dll"/>
     <ROW File="test.ini" Component_="canon_dr.ini" FileName="test.ini" Attributes="0" SourcePath="..\SANEWinDS\backend.ini\test.ini" SelfReg="false" NextFile="LICENSE.txt_1"/>

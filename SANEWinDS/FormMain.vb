@@ -97,6 +97,7 @@ Public Class FormMain
                         PageNo += 1
                         Dim bmp As Bitmap = Nothing
                         Try
+                            Me.Cursor = Cursors.WaitCursor
                             Status = AcquireImage(bmp)
                             If Status = SANE_API.SANE_Status.SANE_STATUS_GOOD Then
                                 If bmp IsNot Nothing Then
@@ -116,6 +117,8 @@ Public Class FormMain
                         Catch ex As Exception
                             RaiseEvent ImageError(PageNo, ex.Message)
                             Exit Do
+                        Finally
+                            Me.Cursor = Cursors.Default
                         End Try
                     Loop While Status = SANE_API.SANE_Status.SANE_STATUS_GOOD And CurrentSettings.ScanContinuously = True
                 Else
@@ -607,9 +610,17 @@ Public Class FormMain
 
                     Dim ic As New ImageCurve(SANE.CurrentDevice.OptionValues(OptionIndex).Length, od.constraint.range.max)
                     ic.Top = 20
-                    ic.Left = 20
+                    ic.Left = 100
+                    ic.Width = 200
+                    ic.Height = ic.Width
                     ic.BorderStyle = BorderStyle.Fixed3D
                     PanelOpt.Controls.Add(ic)
+                    ic.Name = "ctl_" & od.name
+                    ic.Enabled = SANE.SANE_OPTION_IS_ACTIVE(od.cap) And SANE.SANE_OPTION_IS_SETTABLE(od.cap)
+                    ReDim OptionValueControls(0)
+                    Me.OptionValueControls(0) = ic
+
+
 
                 Else
                     Dim vOffs As Integer = 0

@@ -129,11 +129,11 @@
     <Compile Include="FormSANEAuth.vb">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Gamma Control\classImageCurve.vb">
+    <Compile Include="ImageCurve Control\classImageCurve.vb">
       <SubType>UserControl</SubType>
     </Compile>
-    <Compile Include="Gamma Control\classSpline.vb" />
-    <Compile Include="Gamma Control\classVector.vb" />
+    <Compile Include="ImageCurve Control\classSpline.vb" />
+    <Compile Include="ImageCurve Control\classVector.vb" />
     <Compile Include="modGlobals.vb" />
     <Compile Include="My Project\AssemblyInfo.vb" />
     <Compile Include="My Project\Application.Designer.vb">

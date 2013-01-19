@@ -30,6 +30,7 @@ Public Class SharedSettings
         Dim Username As String
         Dim Password As String
         Dim TCP_Timeout_ms As Integer
+        Dim Image_Timeout_s As Integer
         Dim Open As Boolean
         Dim Device As String
         Dim DeviceINI As IniFile.IniFile
@@ -158,8 +159,19 @@ Public Class SharedSettings
                     Catch ex As Exception
                         Logger.ErrorException(ex.Message, ex)
                     End Try
-                    INI.SetKeyValue(SectionName, "Timeout_ms", .TCP_Timeout_ms.ToString)
+                    INI.SetKeyValue(SectionName, "TCP_Timeout_ms", .TCP_Timeout_ms.ToString)
+                    INI.SetKeyValue(SectionName, "Image_Timeout_s", .Image_Timeout_s)
                     INI.SetKeyValue(SectionName, "Device", .Device)
+
+                    If String.IsNullOrEmpty(.AutoLocateDevice) Then
+                        If Not String.IsNullOrEmpty(.Device) Then
+                            Dim p As Integer = .Device.IndexOf(":")
+                            If p Then
+                                .AutoLocateDevice = .Device.Substring(0, p)
+                            End If
+                        End If
+                    End If
+
                     INI.SetKeyValue(SectionName, "AutoLocateDevice", .AutoLocateDevice)
                 End With
             End If
@@ -302,9 +314,13 @@ Public Class SharedSettings
                                 .NameOrAddress = NameOrAddress.Trim
                                 .UseTSClientIP = UseTSClientIP
                                 .Port = Port
-                                Integer.TryParse(INI.GetKeyValue(SectionName, "Timeout_ms"), .TCP_Timeout_ms)
+                                Integer.TryParse(INI.GetKeyValue(SectionName, "TCP_Timeout_ms"), .TCP_Timeout_ms)
                                 If .TCP_Timeout_ms = 0 Then .TCP_Timeout_ms = 5000
                                 If .TCP_Timeout_ms < 1000 Then .TCP_Timeout_ms = 1000
+
+                                Integer.TryParse(INI.GetKeyValue(SectionName, "Image_Timeout_s"), .Image_Timeout_s)
+                                If .Image_Timeout_s = 0 Then .Image_Timeout_s = 30
+
                                 .Username = INI.GetKeyValue(SectionName, "Username")
                                 .Password = INI.GetKeyValue(SectionName, "Password")
                                 Try

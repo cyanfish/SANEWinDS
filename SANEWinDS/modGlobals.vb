@@ -51,6 +51,7 @@ Module modGlobals
 
         Dim SANEImage As New SANE_API.SANEImage
         Dim CurrentFrame As Integer = 0
+        net.ReceiveTimeout = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Image_Timeout_s * 1000
         Do
             Status = SANE.Net_Start(net, SANE.CurrentDevice.Handle, Port, ByteOrder, _
                                     CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Username, _
@@ -58,7 +59,7 @@ Module modGlobals
             If Status = SANE_API.SANE_Status.SANE_STATUS_GOOD Then
                 ReDim Preserve SANEImage.Frames(CurrentFrame)
                 Try
-                    SANEImage.Frames(CurrentFrame) = SANE.AcquireFrame(net, Port, ByteOrder, CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).TCP_Timeout_ms)
+                    SANEImage.Frames(CurrentFrame) = SANE.AcquireFrame(net, Port, ByteOrder, net.ReceiveTimeout) 'CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).TCP_Timeout_ms)
                 Catch ex As Exception
                     Logger.ErrorException("AcquireFrame returned exception: " & ex.Message, ex)
                     Status = SANE_API.SANE_Status.SANE_STATUS_IO_ERROR
@@ -77,6 +78,7 @@ Module modGlobals
                 CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Password = PwdBox.PasswordTextBox.Text
             End If
         Loop While (Status = SANE_API.SANE_Status.SANE_STATUS_GOOD) Or (Status = SANE_API.SANE_Status.SANE_STATUS_ACCESS_DENIED)
+        net.ReceiveTimeout = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).TCP_Timeout_ms
 
         If Status = SANE_API.SANE_Status.SANE_STATUS_GOOD Then
 

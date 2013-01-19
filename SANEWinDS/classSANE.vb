@@ -1047,10 +1047,12 @@ Class SANE_API
             ReDim Frame.Data(Frame.Params.bytes_per_line * Frame.Params.lines - 1)
 
             Dim ImageBufOffs As UInt32 = 0
+            Dim LastGoodRead As Date = Now
             Do
                 Dim buf(3) As Byte
                 Dim bytes As Integer = stream.Read(buf, 0, 4)
                 If bytes = 4 Then
+                    LastGoodRead = Now
                     Dim datalen As UInt32 = BitConverter.ToUInt32(buf, 0)
                     datalen = Me.SwapEndian(datalen)
 
@@ -1067,6 +1069,8 @@ Class SANE_API
                         Loop While TotalBytes < datalen
                         TransferredBytes += TotalBytes
                     End If
+                Else
+                    If Now > LastGoodRead.AddMilliseconds(net.ReceiveTimeout) Then Throw New Exception("Timeout waiting for image data")
                 End If
             Loop
 

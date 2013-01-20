@@ -128,6 +128,7 @@ Public Class ImageCurve
 
     Private moveflag As Integer
     Private drag As Boolean = False
+    Private removing_point As Boolean = False
     Protected Overrides Sub OnMouseDown(e As MouseEventArgs)
         MyBase.OnMouseDown(e)
         If e.Button = Windows.Forms.MouseButtons.Left Then
@@ -150,6 +151,7 @@ Public Class ImageCurve
                     moveflag = i
                 Else
                     If i > 0 And i < keyPt.Count - 1 Then
+                        removing_point = True
                         keyPt.RemoveAt(i)
                         Invalidate()
                     End If
@@ -202,8 +204,9 @@ Public Class ImageCurve
 
     Protected Overrides Sub OnMouseUp(e As MouseEventArgs)
         MyBase.OnMouseUp(e)
-        If drag Then
+        If drag Or removing_point Then
             drag = False
+            removing_point = False
             getImageLevel()
             OnLevelChanged(New ImageLevelEventArgs(level))
         End If

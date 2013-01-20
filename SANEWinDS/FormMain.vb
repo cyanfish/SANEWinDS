@@ -41,6 +41,8 @@ Public Class FormMain
     Public Mode As UIMode = UIMode.Scan
     Private PanelOptIsDirty As Boolean
     Private Initialized As Boolean 'Has the Load() event already been executed? Workaround for Load() always firing when using ShowDialog().
+    Dim ImageCurve_KeyPoints As New System.Collections.Generic.Dictionary(Of String, System.Collections.Generic.List(Of System.Drawing.Point)) 'key is SANE option name
+
     Private Sub CloseCurrentHost()
         Logger.Debug("")
         Try
@@ -258,6 +260,8 @@ Public Class FormMain
             Me.Initialized = True
             Me.Text = My.Application.Info.ProductName & " " & My.Application.Info.Version.ToString
             Me.MinimumSize = Me.Size
+
+            Me.TreeViewOptions.HideSelection = False
 
             Dim UseRoamingAppData As Boolean = False
             Try
@@ -604,23 +608,43 @@ Public Class FormMain
             Case SANE_API.SANE_Value_Type.SANE_TYPE_INT
                 'look for a gamma-table option
                 If od.name IsNot Nothing _
-                    AndAlso od.name.ToLower.Contains("gamma-table") _
-                    AndAlso od.constraint_type = SANE_API.SANE_Constraint_Type.SANE_CONSTRAINT_RANGE _
-                    AndAlso SANE.CurrentDevice.OptionValues(OptionIndex).Length >= 255 Then
+                  AndAlso od.name.ToLower.Contains("gamma-table") _
+                  AndAlso od.constraint_type = SANE_API.SANE_Constraint_Type.SANE_CONSTRAINT_RANGE _
+                  AndAlso SANE.CurrentDevice.OptionValues(OptionIndex).Length >= 255 Then
 
                     Dim ic As New ImageCurve(SANE.CurrentDevice.OptionValues(OptionIndex).Length, od.constraint.range.max)
-                    ic.Top = 20
-                    ic.Left = 100
+                    ic.Top = 4
+                    ic.Left = 75
                     ic.Width = 200
                     ic.Height = ic.Width
-                    ic.BorderStyle = BorderStyle.Fixed3D
                     PanelOpt.Controls.Add(ic)
                     ic.Name = "ctl_" & od.name
                     ic.Enabled = SANE.SANE_OPTION_IS_ACTIVE(od.cap) And SANE.SANE_OPTION_IS_SETTABLE(od.cap)
                     ReDim OptionValueControls(0)
                     Me.OptionValueControls(0) = ic
 
+                    'restore keypoints
+                    If Me.ImageCurve_KeyPoints.ContainsKey(ic.Name) Then
+                        ic.keyPt = Me.ImageCurve_KeyPoints(ic.Name).ToList
+                    End If
 
+                    'save keypoints
+                    AddHandler ic.ImageLevelChanged, AddressOf imageCurve_ImageLevelChanged
+
+                    'save values
+                    AddHandler ic.Leave, AddressOf OptionControl_Leave
+
+                    Dim lbl As New Label
+                    lbl.Top = ic.Bottom + 35
+                    lbl.Height = PanelOpt.Bottom - ic.Top - 10
+                    'lbl.Left = ic.Left
+                    lbl.Enabled = ic.Enabled
+                    lbl.Width = PanelOpt.Width
+                    lbl.TextAlign = ContentAlignment.TopLeft
+                    lbl.Text = od.desc
+                    lbl.AutoSize = False
+
+                    PanelOpt.Controls.Add(lbl)
 
                 Else
                     Dim vOffs As Integer = 0
@@ -801,7 +825,7 @@ Public Class FormMain
                 PanelOpt.Controls.Add(lbl)
 
         End Select
-
+        Me.PanelOpt.Invalidate()
     End Sub
 
     Private Function GetTextWidth(ByVal Text As String, ByVal DestinationControl As Control) As Integer
@@ -1264,6 +1288,10 @@ Public Class FormMain
                     Dim chkbox As CheckBox
                     chkbox = DirectCast(ctl, CheckBox)
                     Values(ctl_i) = chkbox.Checked
+                Case GetType(ImageCurve)
+                    Dim ic As ImageCurve = DirectCast(ctl, ImageCurve)
+                    ReDim Values(ic.LevelValue.Length - 1)
+                    ic.LevelValue.CopyTo(Values, 0)
             End Select
         Next
 
@@ -1417,5 +1445,93 @@ Public Class FormMain
         Me.PanelOpt.Controls.Clear()
     End Sub
 
+    Private Sub imageCurve_ImageLevelChanged(sender As Object, e As ImageLevelEventArgs)
+        Me.PanelOptIsDirty = True
+        If Not String.IsNullOrEmpty(sender.Name) Then
+            Dim Keypoints As List(Of System.Drawing.Point) = DirectCast(sender.KeyPt, List(Of System.Drawing.Point))
+            Dim NewList As List(Of System.Drawing.Point) = Keypoints.ToList()
+            If Me.ImageCurve_KeyPoints.ContainsKey(sender.Name) Then
+                Me.ImageCurve_KeyPoints(sender.Name) = NewList
+            Else
+                Me.ImageCurve_KeyPoints.Add(sender.Name, NewList)
+            End If
+        End If
+    End Sub
+
+    Private Sub PanelOpt_Paint(sender As Object, e As PaintEventArgs) Handles PanelOpt.Paint
+        MyBase.OnPaint(e)
+
+        For Each ctl As Control In PanelOpt.Controls
+            If ctl.GetType() = GetType(ImageCurve) Then
+
+                Try
+                    Dim BorderColor As Color = System.Drawing.SystemColors.ControlText
+                    If Not ctl.Enabled Then BorderColor = System.Drawing.SystemColors.GrayText
+
+                    Dim ic As ImageCurve = DirectCast(ctl, ImageCurve)
+                    Dim imCurveRect As Rectangle = New Rectangle(ic.Left - 2, ic.Top - 2, ic.Width + 4, ic.Height + 4)
+
+                    Dim g As Graphics = e.Graphics
+
+                    ' draw X ruler
+                    Dim x0 As Integer = 0
+                    Dim x2 As Integer = ic.MaxX
+                    Dim unitX As Single = CSng(ic.Width) / CSng(ic.MaxX)
+
+                    Dim incr As Integer = GetImageCurveScaleIncrement(x2)
+
+                    For i As Integer = x0 To x2
+                        If i Mod incr = 0 Then
+                            g.DrawLine(New Pen(BorderColor), New PointF((i - x0) * unitX + ic.Left, imCurveRect.Bottom), New PointF((i - x0) * unitX + ic.Left, imCurveRect.Bottom + 5))
+                        End If
+                        ' ruler line
+                        If i Mod (incr * 5) = 0 Then
+                            g.DrawLine(New Pen(BorderColor, 2.0F), New PointF((i - x0) * unitX + ic.Left, imCurveRect.Bottom), New PointF((i - x0) * unitX + ic.Left, imCurveRect.Bottom + 12))
+                            Dim stringSize As SizeF = g.MeasureString(i.ToString(), Me.Font)
+                            Dim stringLoc As New PointF((i - x0) * unitX + ic.Left - stringSize.Width / 2, imCurveRect.Bottom + 12)
+                            g.DrawString(i.ToString(), Me.Font, New SolidBrush(BorderColor), stringLoc)
+                        End If
+                    Next
+
+                    ' draw Y ruler
+                    Dim y0 As Integer = 0
+                    Dim y2 As Integer = ic.MaxY
+                    Dim unitY As Single = CSng(ic.Height) / CSng(y2)
+
+                    incr = GetImageCurveScaleIncrement(y2)
+
+                    For i As Integer = y0 To y2
+                        If i Mod incr = 0 Then
+                            g.DrawLine(New Pen(BorderColor), New PointF(imCurveRect.Left - 5, ic.Bottom - (i - y0) * unitY), New PointF(imCurveRect.Left, ic.Bottom - (i - y0) * unitY))
+                        End If
+                        ' ruler line
+                        If i Mod (incr * 5) = 0 Then
+                            g.DrawLine(New Pen(BorderColor, 2.0F), New PointF(imCurveRect.Left - 10, ic.Bottom - (i - y0) * unitY), New PointF(imCurveRect.Left, ic.Bottom - (i - y0) * unitY))
+                            Dim stringSize As SizeF = g.MeasureString(i.ToString(), Me.Font)
+                            Dim stringLoc As New PointF(imCurveRect.Left - 10 - stringSize.Width, ic.Bottom - (i - y0) * unitY - stringSize.Height / 2)
+                            g.DrawString(i.ToString(), Me.Font, New SolidBrush(BorderColor), stringLoc)
+                        End If
+                    Next
+
+                    g.DrawRectangle(New Pen(BorderColor, 2), imCurveRect)
+                Catch ex As Exception
+                    Logger.ErrorException("Error painting ImageCurve rulers: " & ex.Message, ex)
+                End Try
+
+                Exit For
+            End If
+        Next
+    End Sub
+
+    Private Function GetImageCurveScaleIncrement(ByVal MaxVal As Integer) As Integer
+        Dim incr As Integer = MaxVal \ 25
+        Dim power As Integer = 0
+        Do
+            If incr < 10 Then Exit Do
+            If incr > 0 Then power += 1 Else Exit Do
+            incr = incr \ 10
+        Loop
+        Return (incr * 10 ^ power)
+    End Function
 End Class
 

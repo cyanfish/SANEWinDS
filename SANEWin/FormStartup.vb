@@ -87,7 +87,14 @@ Public Class FormStartup
     Private Sub FormStartup_FormClosing(sender As Object, e As FormClosingEventArgs) Handles Me.FormClosing
         RemoveHandler GUIForm.FormClosing, AddressOf Me.GUIForm_FormClosing 'This handler hides the form instead of closing it
         If Me.GUIForm_Shown Then
-            GUIForm.Show() 'XXX MS bug: The FormClosing and FormClosed events don't fire when the form is hidden
+            'XXX MS bug: The FormClosing and FormClosed events don't fire when the form is hidden.
+            '            Make the form as inconspicuous as possible before showing it.
+            GUIForm.Controls.Clear()
+            GUIForm.ControlBox = False
+            GUIForm.FormBorderStyle = Windows.Forms.FormBorderStyle.None
+            GUIForm.Size = New Size(0, 0)
+            GUIForm.Show()
+            '
             GUIForm.Close()
         End If
     End Sub

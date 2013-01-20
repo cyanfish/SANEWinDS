@@ -22,6 +22,7 @@ Public Class ImageLevelEventArgs
             Return m_levelValue
         End Get
     End Property
+
 End Class
 
 'Declare a delegate 
@@ -38,9 +39,9 @@ Public Class ImageCurve
         Me.Init(MaxX, MaxY)
     End Sub
     Public Sub Init(MaxX As Integer, MaxY As Integer)
-        _MaxX = MaxX
-        _MaxY = MaxY
-        ReDim level(MaxX)
+        _MaxX = MaxX - 1
+        _MaxY = MaxY - 1
+        ReDim level(_MaxX)
     End Sub
 
     Private _MaxX, _MaxY As Integer
@@ -54,7 +55,7 @@ Public Class ImageCurve
             Return _MaxY
         End Get
     End Property
-    Private keyPt As New List(Of Point)()
+    Public keyPt As New List(Of Point)()
     Private level() As Integer
 
     Public Event ImageLevelChanged As ImageLevelChangedEventHandler
@@ -129,21 +130,31 @@ Public Class ImageCurve
     Private drag As Boolean = False
     Protected Overrides Sub OnMouseDown(e As MouseEventArgs)
         MyBase.OnMouseDown(e)
-        For i As Integer = 1 To keyPt.Count - 1
-            If e.X > keyPt(i - 1).X + 20 AndAlso e.Y > 0 AndAlso e.X < keyPt(i).X - 20 AndAlso e.Y < Me.Height Then
-                keyPt.Insert(i, e.Location)
-                drag = True
-                moveflag = i
-                Me.Cursor = Cursors.Hand
-                Invalidate()
-            End If
-        Next
+        If e.Button = Windows.Forms.MouseButtons.Left Then
+            For i As Integer = 1 To keyPt.Count - 1
+                If e.X > keyPt(i - 1).X + 20 AndAlso e.Y > 0 AndAlso e.X < keyPt(i).X - 20 AndAlso e.Y < Me.Height Then
+                    keyPt.Insert(i, e.Location)
+                    drag = True
+                    moveflag = i
+                    Me.Cursor = Cursors.Hand
+                    Invalidate()
+                End If
+            Next
+        End If
 
         Dim r As New Rectangle(e.X - 20, e.Y - 20, 40, 40)
         For i As Integer = 0 To keyPt.Count - 1
             If r.Contains(keyPt(i)) Then
-                drag = True
-                moveflag = i
+                If e.Button = Windows.Forms.MouseButtons.Left Then
+                    drag = True
+                    moveflag = i
+                Else
+                    If i > 0 And i < keyPt.Count - 1 Then
+                        keyPt.RemoveAt(i)
+                        Invalidate()
+                    End If
+                End If
+                Exit For
             End If
         Next
     End Sub

@@ -408,7 +408,7 @@ Public Class SharedSettings
             fs.WriteLine(";MaxPaperWidth=8.5")
             fs.WriteLine(";MaxPaperHeight=14")
             fs.WriteLine("")
-            fs.WriteLine(";DefaultPaperSize is the name of the paper size as displayed in the SANEWin GUI.")
+            fs.WriteLine(";DefaultPaperSize is the name of the paper size as displayed in the SANEWinDS GUI.")
             fs.WriteLine(";DefaultPaperSize=Letter")
             fs.WriteLine("")
             For i As Integer = 1 To modGlobals.SANE.CurrentDevice.OptionDescriptors.Count - 1 'skip the first option, which is just the option count

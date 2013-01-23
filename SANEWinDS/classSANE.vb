@@ -1034,6 +1034,8 @@ Class SANE_API
         'ImageConn.ReceiveBufferSize = 65536
         'ImageConn.SendBufferSize = 65536
 
+        Dim stream As System.Net.Sockets.NetworkStream = Nothing
+        Dim ImageStream As System.IO.MemoryStream = Nothing
         Try
             Dim StartTime As DateTime = Now
             Dim TransferredBytes As UInt32 = 0
@@ -1042,11 +1044,11 @@ Class SANE_API
 
             ImageConn.Connect(HostIP, Port)
             Dim Status As Int32 = Me.Net_Get_Parameters(TCPClient, Me.CurrentDevice.Handle, Frame.Params)
-            Dim stream As System.Net.Sockets.NetworkStream = ImageConn.GetStream
+            stream = ImageConn.GetStream
 
-            ReDim Frame.Data(Frame.Params.bytes_per_line * Frame.Params.lines - 1)
+            ImageStream = New System.IO.MemoryStream
+            Dim ImageBuf(TCPClient.ReceiveBufferSize - 1) As Byte
 
-            Dim ImageBufOffs As UInt32 = 0
             Dim LastGoodRead As Date = Now
             Do
                 Dim buf(3) As Byte
@@ -1055,7 +1057,6 @@ Class SANE_API
                     LastGoodRead = Now
                     Dim datalen As UInt32 = BitConverter.ToUInt32(buf, 0)
                     datalen = Me.SwapEndian(datalen)
-
                     If datalen = CUInt(&HFFFFFFFFUI) Then
                         Logger.Debug("Received EOF")
                         Exit Do
@@ -1063,8 +1064,9 @@ Class SANE_API
                     If datalen > 0 Then
                         Dim TotalBytes As UInt32 = 0
                         Do
-                            Dim ImageBytes As UInt32 = stream.Read(Frame.Data, ImageBufOffs, datalen - TotalBytes)
-                            ImageBufOffs += ImageBytes
+                            If Now > LastGoodRead.AddMilliseconds(net.ReceiveTimeout) Then Throw New Exception("Timeout waiting for image data")
+                            Dim ImageBytes As UInt32 = stream.Read(ImageBuf, 0, datalen - TotalBytes)
+                            ImageStream.Write(ImageBuf, 0, ImageBytes)
                             TotalBytes += ImageBytes
                         Loop While TotalBytes < datalen
                         TransferredBytes += TotalBytes
@@ -1079,13 +1081,23 @@ Class SANE_API
             If ElapsedSeconds < 0.001 Then ElapsedSeconds = 0.001 'avoid divide by zero
             Logger.Debug("Transferred " & TransferredBytes.ToString & " bytes in " & ElapsedSeconds.ToString("0.00") & " seconds with a throughput of " & (TransferredMbits / ElapsedSeconds).ToString("0.00") & " Mbps")
 
+            ReDim Frame.Data(ImageStream.Length - 1)
+            Frame.Data = ImageStream.ToArray
+
             Return Frame
 
         Catch ex As Exception
             Logger.ErrorException("Error acquiring image frame: " & ex.Message, ex)
             Throw
         Finally
-            If ImageConn.Connected Then ImageConn.Close()
+            Try
+                If ImageStream IsNot Nothing Then ImageStream.Close()
+                If stream IsNot Nothing Then stream.Close()
+                If ImageConn.Connected Then ImageConn.Close()
+            Catch
+            End Try
+            ImageStream = Nothing
+            stream = Nothing
             ImageConn = Nothing
         End Try
 

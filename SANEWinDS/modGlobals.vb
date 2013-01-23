@@ -95,6 +95,10 @@ Module modGlobals
                 Dim w As Integer = SANEImage.Frames(0).Params.pixels_per_line
                 Dim Stride As Integer = SANEImage.Frames(0).Params.bytes_per_line
 
+                If h < 0 Then '-1 if the number of lines is unknown, e.g. a hand scanner.
+                    h = SANEImage.Frames(0).Data.Length \ Stride
+                End If
+
                 Dim bounds As Rectangle = New Rectangle(0, 0, w, h)
                 Dim PixelFormat As Imaging.PixelFormat = Nothing
                 Dim Palette As Imaging.ColorPalette = Nothing

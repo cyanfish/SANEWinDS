@@ -1064,7 +1064,6 @@ Class SANE_API
                     If datalen > 0 Then
                         Dim TotalBytes As UInt32 = 0
                         Do
-                            If Now > LastGoodRead.AddMilliseconds(net.ReceiveTimeout) Then Throw New Exception("Timeout waiting for image data")
                             Dim ImageBytes As UInt32 = stream.Read(ImageBuf, 0, datalen - TotalBytes)
                             ImageStream.Write(ImageBuf, 0, ImageBytes)
                             TotalBytes += ImageBytes

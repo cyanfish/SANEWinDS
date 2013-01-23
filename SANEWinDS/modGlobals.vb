@@ -89,7 +89,7 @@ Module modGlobals
             Dim bmp_data As Imaging.BitmapData
             Try
                 'create image from SANE frames
-                'XXX combine frames for 3-pass?
+                If SANEImage.Frames.Length > 1 Then SANEImage.Frames = CombineImageFrames(SANEImage.Frames) 'combine frames for 3-pass scanners
 
                 Dim h As Integer = SANEImage.Frames(0).Params.lines
                 Dim w As Integer = SANEImage.Frames(0).Params.pixels_per_line
@@ -165,10 +165,69 @@ Module modGlobals
         Return Status
     End Function
 
+    Private Function CombineImageFrames(Frames() As SANE_API.SANEImageFrame) As SANE_API.SANEImageFrame()
+        Dim CombinedFrame As SANE_API.SANEImageFrame = Nothing
+        With CombinedFrame.Params
+            .format = SANE_API.SANE_Frame.SANE_FRAME_RGB
+            .last_frame = True
+            .lines = Frames(0).Params.lines
+            .pixels_per_line = Frames(0).Params.pixels_per_line
+            .bytes_per_line = Frames(0).Params.bytes_per_line * 3
+            .depth = Frames(0).Params.depth
+        End With
+        Dim CombinedStream As New System.IO.MemoryStream
+        Dim RedStream As System.IO.MemoryStream = Nothing
+        Dim GreenStream As System.IO.MemoryStream = Nothing
+        Dim BlueStream As System.IO.MemoryStream = Nothing
+        Try
+            For FrameIndex = 0 To Frames.Length - 1
+                Select Case Frames(FrameIndex).Params.format
+                    Case SANE_API.SANE_Frame.SANE_FRAME_RED
+                        RedStream = New System.IO.MemoryStream(Frames(FrameIndex).Data)
+                    Case SANE_API.SANE_Frame.SANE_FRAME_GREEN
+                        GreenStream = New System.IO.MemoryStream(Frames(FrameIndex).Data)
+                    Case SANE_API.SANE_Frame.SANE_FRAME_BLUE
+                        BlueStream = New System.IO.MemoryStream(Frames(FrameIndex).Data)
+                End Select
+            Next
+            If RedStream Is Nothing Or GreenStream Is Nothing Or BlueStream Is Nothing Then Throw New Exception("One or more frames is missing from the image data")
+            Dim samplebytes As Integer = 1 'this should work for 1bpp and 8bpp
+            If CombinedFrame.Params.depth = 16 Then samplebytes = 2
+            For sample As UInt32 = 0 To (RedStream.Length - 1) \ samplebytes
+                For samplebyte As Byte = 1 To samplebytes
+                    CombinedStream.WriteByte(RedStream.ReadByte)
+                Next
+                For samplebyte As Byte = 1 To samplebytes
+                    CombinedStream.WriteByte(GreenStream.ReadByte)
+                Next
+                For samplebyte As Byte = 1 To samplebytes
+                    CombinedStream.WriteByte(BlueStream.ReadByte)
+                Next
+            Next
+            CombinedFrame.Data = CombinedStream.ToArray
+            Dim Result(0) As SANE_API.SANEImageFrame
+            Result(0) = CombinedFrame
+            Return Result
+        Catch ex As Exception
+            Throw
+        Finally
+            If CombinedStream IsNot Nothing Then CombinedStream.Close()
+            If RedStream IsNot Nothing Then RedStream.Close()
+            If GreenStream IsNot Nothing Then GreenStream.Close()
+            If BlueStream IsNot Nothing Then BlueStream.Close()
+            CombinedStream = Nothing
+            RedStream = Nothing
+            GreenStream = Nothing
+            BlueStream = Nothing
+        End Try
+        Return Nothing
+    End Function
+
     Public Sub RGBtoBGR(ByRef bytes() As Byte, ByVal BitsPerColor As Integer)
         Select Case BitsPerColor
             Case 1
                 'XXX
+                Throw New Exception("1bpp images are not yet supported")
             Case 8
                 For i As UInt32 = 0 To bytes.Length - 1 Step 3
                     If i < bytes.Length - 2 Then

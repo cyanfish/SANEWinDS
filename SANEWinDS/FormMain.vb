@@ -329,7 +329,7 @@ Public Class FormMain
                                                        CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Username, _
                                                        CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Password)
                                 Logger.Debug("Net_Open returned status '{0}'", Status)
-                                If Status = SANE_API.SANE_Status.SANE_STATUS_INVAL Then  'Auto-Locate
+                                If (Status = SANE_API.SANE_Status.SANE_STATUS_INVAL) Or (Status = SANE_API.SANE_Status.SANE_STATUS_IO_ERROR) Then  'Auto-Locate
                                     If CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).AutoLocateDevice IsNot Nothing AndAlso CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).AutoLocateDevice.Length > 0 Then
                                         Logger.Debug("Attempting to auto-locate devices matching '{0}'", CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).AutoLocateDevice)
                                         Dim Devices(-1) As SANE_API.SANE_Device

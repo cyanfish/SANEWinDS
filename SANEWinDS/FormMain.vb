@@ -87,6 +87,14 @@ Public Class FormMain
         End Try
     End Sub
 
+    Public Sub CancelScan()
+        If SANE IsNot Nothing Then
+            If SANE.CurrentDevice.Open Then
+                SANE.Net_Cancel(net, SANE.CurrentDevice.Handle)
+            End If
+        End If
+    End Sub
+
     Private Sub ButtonOK_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles ButtonOK.Click
         Logger.Debug("")
         If Not TWAIN_Is_Active Then 'TWAIN_VB registers its own event handler
@@ -335,10 +343,12 @@ Public Class FormMain
                                         Dim Devices(-1) As SANE_API.SANE_Device
                                         Status = SANE.Net_Get_Devices(net, Devices)
                                         If Status = SANE_API.SANE_Status.SANE_STATUS_GOOD Then
+                                            Dim FoundDevice As Boolean = False
                                             For i As Integer = 0 To Devices.Length - 1
                                                 Status = SANE_API.SANE_Status.SANE_STATUS_INVAL
                                                 If Devices(i).name.Trim.Length >= CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).AutoLocateDevice.Length Then
                                                     If Devices(i).name.Trim.Substring(0, CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).AutoLocateDevice.Length) = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).AutoLocateDevice Then
+                                                        FoundDevice = True
                                                         Logger.Debug("Auto-located device '{0}'; attempting to open...", Devices(i).name)
                                                         Status = SANE.Net_Open(net, Devices(i).name, DeviceHandle, _
                                                                               CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Username, _
@@ -349,6 +359,7 @@ Public Class FormMain
                                                     End If
                                                 End If
                                             Next
+                                            If Not FoundDevice Then MsgBox("No device using the '" & CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).AutoLocateDevice & "' backend was found on '" & CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).NameOrAddress & "'", MsgBoxStyle.Exclamation, "Device not found")
                                         End If
                                     End If
                                 End If

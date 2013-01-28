@@ -82,6 +82,7 @@ Public Class SharedSettings
 
     Public PageSizes As New ArrayList
     Private Const MAX_HOSTS As Integer = 50
+    Private Const Current_INI_Ver = 0.8
 
     Public Sub New(ByVal _UseRoamingAppData As Boolean)
         If Not Initialized Then
@@ -101,6 +102,12 @@ Public Class SharedSettings
         Dim INI As New IniFile.IniFile
         Dim UserSettingsFileName As String = Me.GetUserConfigFileName
         INI.Load(UserSettingsFileName)
+
+        If INI.GetSection("General") Is Nothing Then
+            INI.AddSection("General")
+            INI.SetKeyValue("General", "INI_Version", Current_INI_Ver)
+            INI.Save(UserSettingsFileName)
+        End If
 
         If INI.GetSection("Log") Is Nothing Then
             INI.AddSection("Log")
@@ -230,7 +237,19 @@ Public Class SharedSettings
         Dim INI As New IniFile.IniFile
         INI.Load(UserSettingsFileName)
 
+        Dim INI_Version As String = INI.GetKeyValue("General", "INI_Version")
+        Dim INI_Ver As Double = 0
+        Double.TryParse(INI_Version, INI_Ver)
+
         SANE.Hosts = GetSANEHostsFromINI(INI)
+
+        'increase the timeout for image acquisition.  1200 is the default beginning with INI version 0.8.
+        If INI_Ver < 0.8 Then
+            For i As Integer = 0 To SANE.Hosts.Length - 1
+                SANE.Hosts(i).Image_Timeout_s = 1200
+            Next
+        End If
+
         SANE.CurrentHostIndex = -1
         Dim CurrentHostIndex As Integer = -1
         Dim s As String = INI.GetKeyValue("SANE", "DefaultHost")
@@ -319,7 +338,7 @@ Public Class SharedSettings
                                 If .TCP_Timeout_ms < 1000 Then .TCP_Timeout_ms = 1000
 
                                 Integer.TryParse(INI.GetKeyValue(SectionName, "Image_Timeout_s"), .Image_Timeout_s)
-                                If .Image_Timeout_s = 0 Then .Image_Timeout_s = 30
+                                If .Image_Timeout_s = 0 Then .Image_Timeout_s = 1200 '20 minutes
 
                                 .Username = INI.GetKeyValue(SectionName, "Username")
                                 .Password = INI.GetKeyValue(SectionName, "Password")

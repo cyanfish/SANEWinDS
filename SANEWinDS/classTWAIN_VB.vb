@@ -3934,10 +3934,12 @@ Namespace TWAIN_VB
                                                     Dim Devices(-1) As SANE_API.SANE_Device
                                                     status = SANE.Net_Get_Devices(net, Devices)
                                                     If status = SANE_API.SANE_Status.SANE_STATUS_GOOD Then
+                                                        Dim FoundDevice As Boolean = False
                                                         For i As Integer = 0 To Devices.Length - 1
                                                             status = SANE_API.SANE_Status.SANE_STATUS_INVAL
                                                             If Devices(i).name.Trim.Length >= CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).AutoLocateDevice.Length Then
                                                                 If Devices(i).name.Trim.Substring(0, CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).AutoLocateDevice.Length) = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).AutoLocateDevice Then
+                                                                    FoundDevice = True
                                                                     Logger.Debug("Auto-located device '{0}'; attempting to open...", Devices(i).name)
                                                                     status = SANE.Net_Open(net, Devices(i).name, DeviceHandle, _
                                                                                            CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Username, _
@@ -3948,6 +3950,7 @@ Namespace TWAIN_VB
                                                                 End If
                                                             End If
                                                         Next
+                                                        If Not FoundDevice Then MsgBox("No device using the '" & CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).AutoLocateDevice & "' backend was found on '" & CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).NameOrAddress & "'", MsgBoxStyle.Exclamation, "Device not found")
                                                     End If
                                                 End If
                                             End If

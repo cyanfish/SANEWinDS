@@ -132,7 +132,12 @@ Module modGlobals
                         End Select
                 End Select
                 If Status = SANE_API.SANE_Status.SANE_STATUS_GOOD Then
-                    bmp = New Bitmap(w, h, PixelFormat)
+                    Try
+                        bmp = New Bitmap(w, h, PixelFormat)
+                    Catch ex As ArgumentException
+                        MsgBox("GDI+ was unable to allocate enough memory to store the image", MsgBoxStyle.Critical, "Error")
+                        Throw
+                    End Try
                     If Palette IsNot Nothing Then bmp.Palette = Palette
                     bmp_data = bmp.LockBits(bounds, Imaging.ImageLockMode.ReadWrite, PixelFormat)
                     If Stride < bmp_data.Stride Then

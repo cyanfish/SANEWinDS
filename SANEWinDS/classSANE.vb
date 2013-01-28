@@ -593,6 +593,37 @@ Class SANE_API
         End Try
     End Function
 
+    Friend Sub Net_Cancel(ByRef TCPClient As System.Net.Sockets.TcpClient, ByVal DeviceHandle As Int32)
+        Logger.Debug("")
+        Dim stream As System.Net.Sockets.NetworkStream = Nothing
+        Dim rstream As New System.IO.MemoryStream
+        Try
+            stream = TCPClient.GetStream
+            Dim RPCCode As SANE_Net_Procedure_Number = SANE_Net_Procedure_Number.SANE_NET_CANCEL
+            Dim sbuf(-1) As Byte
+            Me.Serialize(CInt(RPCCode), sbuf, Sane_DataType.SANE_Word)
+            Me.Serialize(DeviceHandle, sbuf, Sane_DataType.SANE_Word)
+
+            If stream.CanWrite Then
+                stream.Write(sbuf, 0, sbuf.Length)
+            Else
+                Throw New Exception("Stream does not support writing")
+            End If
+
+            If stream.CanRead Then
+                Dim bytes As Integer = Me.ReadEntireStream(stream, rstream)
+                Dim Dummy As Int32 = Me.DeSerialize(stream, rstream, Sane_DataType.SANE_Word)
+            Else
+                Throw New Exception("Stream does not support reading")
+            End If
+        Catch ex As Exception
+            Logger.ErrorException(ex.Message, ex)
+            Throw
+        Finally
+            stream = Nothing
+        End Try
+    End Sub
+
     Friend Sub Net_Close(ByRef TCPClient As System.Net.Sockets.TcpClient, ByVal DeviceHandle As Int32)
         Logger.Debug("")
         Dim stream As System.Net.Sockets.NetworkStream = Nothing
@@ -1049,6 +1080,14 @@ Class SANE_API
             ImageStream = New System.IO.MemoryStream
             Dim ImageBuf(TCPClient.ReceiveBufferSize - 1) As Byte
 
+            Dim Expected_Total_Bytes As UInt32 = 0
+            If Frame.Params.lines > 0 Then
+                Expected_Total_Bytes = Frame.Params.lines * Frame.Params.bytes_per_line
+                Logger.Debug("Expecting {0} lines of {1} bytes each, for a total of {2} bytes", Frame.Params.lines, Frame.Params.bytes_per_line, Expected_Total_Bytes)
+            Else
+                Logger.Debug("The backend doesn't know how many lines this frame will have")
+            End If
+
             Dim LastGoodRead As Date = Now
             Do
                 Dim buf(3) As Byte
@@ -1058,22 +1097,44 @@ Class SANE_API
                     Dim datalen As UInt32 = BitConverter.ToUInt32(buf, 0)
                     datalen = Me.SwapEndian(datalen)
                     If datalen = CUInt(&HFFFFFFFFUI) Then
-                        Logger.Debug("Received EOF")
+                        Logger.Debug("Server sent EOF")
                         Exit Do
+                    ElseIf (Expected_Total_Bytes > 0) AndAlso (TransferredBytes >= Expected_Total_Bytes) Then
+                        Logger.Debug("Server overran the expected byte count without sending EOF; aborting")
+                        'Me.Net_Cancel(TCPClient, Me.CurrentDevice.Handle)
+                        Exit Do
+                    Else
+                        Logger.Debug("Server said to expect " & datalen & " bytes")
                     End If
-                    If datalen > 0 Then
+
+                    'datalen is typically ReceiveBufferSize - 4 (the length of datalen itself).
+                    'The plustek backend at 16bit color and 400dpi (at least) sends garbage instead of EOF at the end of the transfer.
+                    'Usually the garbage looks like a huge number in datalen, so look for it here.
+                    If (datalen > 0) And (datalen < TCPClient.ReceiveBufferSize) Then
                         Dim TotalBytes As UInt32 = 0
                         Do
                             Dim ImageBytes As UInt32 = stream.Read(ImageBuf, 0, datalen - TotalBytes)
+                            Logger.Debug("Received " & ImageBytes.ToString & " bytes")
                             ImageStream.Write(ImageBuf, 0, ImageBytes)
                             TotalBytes += ImageBytes
                         Loop While TotalBytes < datalen
                         TransferredBytes += TotalBytes
+                        Logger.Debug("Received a total of " & TransferredBytes.ToString & " bytes so far")
+                    Else
+                        Logger.Warn("The value of the data length field looks bogus: &H" & Hex(datalen) & "; aborting transfer")
+                        'Me.Net_Cancel(TCPClient, Me.CurrentDevice.Handle)
+                        Exit Do
                     End If
                 Else
                     If Now > LastGoodRead.AddMilliseconds(net.ReceiveTimeout) Then Throw New Exception("Timeout waiting for image data")
                 End If
             Loop
+
+            If TransferredBytes < Expected_Total_Bytes Then
+                Dim Filler(Expected_Total_Bytes - TransferredBytes) As Byte
+                ImageStream.Write(Filler, 0, Filler.Length)
+                ReDim Filler(-1)
+            End If
 
             Dim TransferredMbits As UInt64 = (TransferredBytes * 8UL) / 1024 / 1024
             Dim ElapsedSeconds As Double = (Now - StartTime).TotalSeconds
@@ -1091,7 +1152,13 @@ Class SANE_API
         Finally
             Try
                 If ImageStream IsNot Nothing Then ImageStream.Close()
-                If stream IsNot Nothing Then stream.Close()
+                If stream IsNot Nothing Then
+                    Dim buf(ImageConn.ReceiveBufferSize - 1) As Byte
+                    Do While stream.DataAvailable 'hopefully prevent the server from staying in SANE_STATUS_BUSY
+                        stream.Read(buf, 0, buf.Length)
+                    Loop
+                    stream.Close()
+                End If
                 If ImageConn.Connected Then ImageConn.Close()
             Catch
             End Try

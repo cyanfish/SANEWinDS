@@ -241,7 +241,7 @@ Public Class FormStartup
                 Case ImageType.PDF
                     Me.ClosePDF()
                 Case ImageType.TIFF
-                    Me.CloseTIFF()
+                    Me.CloseTIFF(Pages)
                 Case Else
                     'MsgBox("Successfully acquired " & Pages.ToString & " pages")
             End Select
@@ -272,7 +272,7 @@ Public Class FormStartup
             Case ImageType.PDF
                 Me.ClosePDF()
             Case ImageType.TIFF
-                Me.CloseTIFF()
+                Me.CloseTIFF(PageNumber)
         End Select
         frmStatus.Close()
 
@@ -559,10 +559,10 @@ Public Class FormStartup
         Me.CurrentImage.FileName = Nothing
     End Sub
 
-    Private Sub CloseTIFF()
+    Private Sub CloseTIFF(Pages As Integer)
         With Me.CurrentImage.TIFF
             Try
-                If Me.CurrentImage.TIFF.FirstPage IsNot Nothing Then
+                If Me.CurrentImage.TIFF.FirstPage IsNot Nothing AndAlso Pages > 1 Then
                     ' Close the multiple-frame file.
                     Dim myEncoderParameter As System.Drawing.Imaging.EncoderParameter
                     myEncoderParameter = New System.Drawing.Imaging.EncoderParameter(Me.CurrentImage.TIFF.SaveEncoder, Fix(System.Drawing.Imaging.EncoderValue.Flush))
@@ -690,7 +690,7 @@ Public Class FormStartup
         Catch ex As Exception
             MsgBox(ex.Message & vbCrLf & ex.StackTrace)
             Me.ClosePDF()
-            Me.CloseTIFF()
+            Me.CloseTIFF(0)
         End Try
     End Sub
 

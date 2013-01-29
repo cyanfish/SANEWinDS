@@ -625,9 +625,9 @@ Public Class FormMain
 
                     Dim ic As New ImageCurve(SANE.CurrentDevice.OptionValues(OptionIndex).Length, od.constraint.range.max)
                     ic.Top = 4
-                    ic.Left = 50 '75
+                    ic.Left = 50
                     ic.Width = 300
-                    ic.Height = 200 'ic.Width
+                    ic.Height = 200
                     PanelOpt.Controls.Add(ic)
                     ic.Name = "ctl_" & od.name
                     ic.Enabled = SANE.SANE_OPTION_IS_ACTIVE(od.cap) And SANE.SANE_OPTION_IS_SETTABLE(od.cap)

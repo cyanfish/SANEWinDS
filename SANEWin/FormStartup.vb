@@ -101,10 +101,9 @@ Public Class FormStartup
 
     Private Sub FormStartup_Load(ByVal sender As Object, ByVal e As System.EventArgs) Handles Me.Load
 
-
         'Me.Visible = False
         'Me.Text = Application.ProductName & " " & Application.ProductVersion 'Assembly File Version
-        Me.Text = My.Application.Info.ProductName & " " & My.Application.Info.Version.ToString 'Assembly Version
+        Me.Text = My.Application.Info.ProductName & " " & My.Application.Info.Version.ToString & " Alpha" 'Assembly Version
 
         Me.MinimumSize = Me.Size
 
@@ -201,9 +200,16 @@ Public Class FormStartup
         lbl.Name = "Status"
         lbl.Text = Text
         lbl.Dock = DockStyle.Fill
+        'lbl.Anchor = AnchorStyles.Top And AnchorStyles.Left And AnchorStyles.Left
         lbl.Font = New Font("Arial", 14)
         lbl.TextAlign = ContentAlignment.MiddleCenter
         lbl.Parent = frmStatus
+        'Dim btn As New Button
+        'btn.Text = "Cancel"
+        'btn.Parent = frmStatus
+        'btn.Top = lbl.Bottom + 10
+        'btn.Width = lbl.Width
+        'AddHandler btn.Click, AddressOf Me.CancelScan_Click
         frmStatus.Height = lbl.Font.Height * 5
         frmStatus.Width = frmStatus.Height * 3
         frmStatus.StartPosition = FormStartPosition.CenterScreen
@@ -211,6 +217,12 @@ Public Class FormStartup
         frmStatus.BringToFront()
         Application.DoEvents()
 
+    End Sub
+
+    Private Sub CancelScan_Click(sender As Object, e As System.EventArgs)
+        If GUIForm IsNot Nothing Then
+            GUIForm.CancelScan()
+        End If
     End Sub
 
     Private Sub OnBatchStarted() Handles GUIForm.BatchStarted
@@ -366,10 +378,7 @@ Public Class FormStartup
                 Catch ex As Exception
                     MsgBox(ex.Message)
                     Me.ClosePDF()
-                Finally
-                    bmp.Dispose()
-                    bmp = Nothing
-                End Try
+                 End Try
             Case ImageType.TIFF
                 Try
                     If bmp IsNot Nothing Then
@@ -422,9 +431,6 @@ Public Class FormStartup
                             End If
                         Catch ex As Exception
                             Throw
-                        Finally
-                            bmp.Dispose()
-                            bmp = Nothing
                         End Try
                     End If
 
@@ -440,9 +446,7 @@ Public Class FormStartup
                     bmp.Save(fname, Imaging.ImageFormat.Png)
                 Catch ex As Exception
                     MsgBox("Error saving file: " & ex.Message)
-                Finally
-                    bmp = Nothing
-                End Try
+                 End Try
             Case ImageType.JPEG
                 Try
                     Dim fname As String = FileNameBase & "_Page"
@@ -452,9 +456,7 @@ Public Class FormStartup
                     bmp.Save(fname, Imaging.ImageFormat.Jpeg)
                 Catch ex As Exception
                     MsgBox("Error saving file: " & ex.Message)
-                Finally
-                    bmp = Nothing
-                End Try
+                 End Try
             Case ImageType.GIF
                 Try
                     Dim fname As String = FileNameBase & "_Page"
@@ -464,8 +466,6 @@ Public Class FormStartup
                     bmp.Save(fname, Imaging.ImageFormat.Gif)
                 Catch ex As Exception
                     MsgBox("Error saving file: " & ex.Message)
-                Finally
-                    bmp = Nothing
                 End Try
             Case ImageType.WMF
                 Try
@@ -476,8 +476,6 @@ Public Class FormStartup
                     bmp.Save(fname, Imaging.ImageFormat.Wmf)
                 Catch ex As Exception
                     MsgBox("Error saving file: " & ex.Message)
-                Finally
-                    bmp = Nothing
                 End Try
             Case ImageType.EMF
                 Try
@@ -488,8 +486,6 @@ Public Class FormStartup
                     bmp.Save(fname, Imaging.ImageFormat.Emf)
                 Catch ex As Exception
                     MsgBox("Error saving file: " & ex.Message)
-                Finally
-                    bmp = Nothing
                 End Try
             Case ImageType.BMP
                 Try
@@ -500,11 +496,15 @@ Public Class FormStartup
                     bmp.Save(fname, Imaging.ImageFormat.Bmp)
                 Catch ex As Exception
                     MsgBox("Error saving file: " & ex.Message)
-                Finally
-                    bmp = Nothing
                 End Try
 
         End Select
+
+        If bmp IsNot Nothing Then
+            bmp.Dispose()
+            bmp = Nothing
+        End If
+
         If PageNumber = 1 Then Me.CurrentImage.FileNamePage1 = Me.CurrentImage.FileName
         ShowStatus("Acquiring page " & (PageNumber + 1).ToString & "...")
 

@@ -266,7 +266,7 @@ Public Class FormMain
     Private Sub Form1_Load(ByVal sender As Object, ByVal e As System.EventArgs) Handles Me.Load
         If Not Me.Initialized Then
             Me.Initialized = True
-            Me.Text = My.Application.Info.ProductName & " " & My.Application.Info.Version.ToString
+            Me.Text = My.Application.Info.ProductName & " " & My.Application.Info.Version.ToString & " Alpha"
             Me.MinimumSize = Me.Size
 
             Me.TreeViewOptions.HideSelection = False
@@ -625,9 +625,9 @@ Public Class FormMain
 
                     Dim ic As New ImageCurve(SANE.CurrentDevice.OptionValues(OptionIndex).Length, od.constraint.range.max)
                     ic.Top = 4
-                    ic.Left = 75
-                    ic.Width = 200
-                    ic.Height = ic.Width
+                    ic.Left = 50 '75
+                    ic.Width = 300
+                    ic.Height = 200 'ic.Width
                     PanelOpt.Controls.Add(ic)
                     ic.Name = "ctl_" & od.name
                     ic.Enabled = SANE.SANE_OPTION_IS_ACTIVE(od.cap) And SANE.SANE_OPTION_IS_SETTABLE(od.cap)
@@ -1347,6 +1347,9 @@ Public Class FormMain
 
     Private Sub FormMain_Shown(ByVal sender As Object, ByVal e As System.EventArgs) Handles Me.Shown
         Update_Host_GUI()
+        If Me.TreeViewOptions.SelectedNode IsNot Nothing Then
+            Me.TreeViewOptions_AfterSelect(Me, New TreeViewEventArgs(Me.TreeViewOptions.SelectedNode))
+        End If
     End Sub
 
     Private Sub Update_Host_GUI()
@@ -1520,6 +1523,7 @@ Public Class FormMain
                             g.DrawLine(New Pen(BorderColor, 2.0F), New PointF(imCurveRect.Left - 10, ic.Bottom - (i - y0) * unitY), New PointF(imCurveRect.Left, ic.Bottom - (i - y0) * unitY))
                             Dim stringSize As SizeF = g.MeasureString(i.ToString(), Me.Font)
                             Dim stringLoc As New PointF(imCurveRect.Left - 10 - stringSize.Width, ic.Bottom - (i - y0) * unitY - stringSize.Height / 2)
+
                             g.DrawString(i.ToString(), Me.Font, New SolidBrush(BorderColor), stringLoc)
                         End If
                     Next

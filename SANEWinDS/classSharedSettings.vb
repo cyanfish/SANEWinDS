@@ -105,9 +105,10 @@ Public Class SharedSettings
 
         If INI.GetSection("General") Is Nothing Then
             INI.AddSection("General")
-            INI.SetKeyValue("General", "INI_Version", Current_INI_Ver)
             INI.Save(UserSettingsFileName)
         End If
+        INI.SetKeyValue("General", "INI_Version", Current_INI_Ver)
+        INI.SetKeyValue("General", "Version", My.Application.Info.Version.ToString)
 
         If INI.GetSection("Log") Is Nothing Then
             INI.AddSection("Log")
@@ -240,6 +241,16 @@ Public Class SharedSettings
         Dim INI_Version As String = INI.GetKeyValue("General", "INI_Version")
         Dim INI_Ver As Double = 0
         Double.TryParse(INI_Version, INI_Ver)
+
+        Dim App_Version As String = INI.GetKeyValue("General", "Version")
+
+        If App_Version <> My.Application.Info.Version.ToString Then
+            Dim r As MsgBoxResult = MsgBox("Please note that this software is in the alpha stage of development.  Expect numerous bugs.  When you encounter a bug, please notify the authors " _
+                 & "by opening a ticket or posting in the forum at http://sourceforge.net/projects/sanewinds/.", MsgBoxStyle.Exclamation + MsgBoxStyle.OkOnly, "Alpha Software Alert")
+            r = MsgBox("SANEWinDS is hosted by SourceForge.  If you downloaded it from any other site you probably don't have the most recent version.  The current version is " _
+                     & "available at http://sourceforge.net/projects/sanewinds/ along with configuration instructions and a forum for bug reporting, feature requests, and " _
+                     & "backend.ini contributions.", MsgBoxStyle.Information + MsgBoxStyle.OkOnly, "SANEWinDS is hosted by SourceForge!")
+        End If
 
         SANE.Hosts = GetSANEHostsFromINI(INI)
 

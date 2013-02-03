@@ -1108,7 +1108,7 @@ Class SANE_API
                     End If
 
                     'datalen is typically ReceiveBufferSize - 4 (the length of datalen itself).
-                    'The plustek backend at 16bit color and 400dpi (at least) sends garbage instead of EOF at the end of the transfer.
+                    'The plustek backend at 16bit color and 400dpi (at least) sometimes sends garbage during the transfer.
                     'Usually the garbage looks like a huge number in datalen, so look for it here.
                     If (datalen > 0) And (datalen < TCPClient.ReceiveBufferSize) Then
                         Dim TotalBytes As UInt32 = 0
@@ -1128,6 +1128,7 @@ Class SANE_API
                 Else
                     If Now > LastGoodRead.AddMilliseconds(net.ReceiveTimeout) Then Throw New Exception("Timeout waiting for image data")
                 End If
+                'System.Windows.Forms.Application.DoEvents()
             Loop
 
             If TransferredBytes < Expected_Total_Bytes Then

@@ -562,15 +562,17 @@ Public Class FormStartup
     Private Sub CloseTIFF(Pages As Integer)
         With Me.CurrentImage.TIFF
             Try
-                If Me.CurrentImage.TIFF.FirstPage IsNot Nothing AndAlso Pages > 1 Then
-                    ' Close the multiple-frame file.
-                    Dim myEncoderParameter As System.Drawing.Imaging.EncoderParameter
-                    myEncoderParameter = New System.Drawing.Imaging.EncoderParameter(Me.CurrentImage.TIFF.SaveEncoder, Fix(System.Drawing.Imaging.EncoderValue.Flush))
-                    Me.CurrentImage.TIFF.EncoderParameters.Param(0) = myEncoderParameter
-                    Me.CurrentImage.TIFF.FirstPage.SaveAdd(Me.CurrentImage.TIFF.EncoderParameters)
+                If Me.CurrentImage.TIFF.FirstPage IsNot Nothing Then
+                    If Pages > 1 Then
+                        ' Close the multiple-frame file.
+                        Dim myEncoderParameter As System.Drawing.Imaging.EncoderParameter
+                        myEncoderParameter = New System.Drawing.Imaging.EncoderParameter(Me.CurrentImage.TIFF.SaveEncoder, Fix(System.Drawing.Imaging.EncoderValue.Flush))
+                        Me.CurrentImage.TIFF.EncoderParameters.Param(0) = myEncoderParameter
+                        Me.CurrentImage.TIFF.FirstPage.SaveAdd(Me.CurrentImage.TIFF.EncoderParameters)
+                    End If
+                    Me.CurrentImage.TIFF.FirstPage.Dispose()
+                    Me.CurrentImage.TIFF.FirstPage = Nothing
                 End If
-                Me.CurrentImage.TIFF.FirstPage.Dispose()
-                Me.CurrentImage.TIFF.FirstPage = Nothing
                 Me.CurrentImage.FileName = Nothing
             Catch ex As Exception
                 MsgBox(ex.Message)

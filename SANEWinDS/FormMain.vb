@@ -317,7 +317,8 @@ Public Class FormMain
             If net Is Nothing Then net = New System.Net.Sockets.TcpClient
             If net IsNot Nothing Then
                 If (CurrentSettings.SANE.CurrentHostIndex > -1) And (CurrentSettings.SANE.CurrentHostIndex < CurrentSettings.SANE.Hosts.Count) Then
-                    If CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).NameOrAddress IsNot Nothing Then
+                    'If CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).NameOrAddress IsNot Nothing Then
+                    If CurrentSettings.HostIsValid(CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex)) Then
                         net.ReceiveTimeout = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).TCP_Timeout_ms
                         net.SendTimeout = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).TCP_Timeout_ms
                         Logger.Debug("TCPClient Send buffer length is {0}", net.SendBufferSize)
@@ -564,6 +565,14 @@ Public Class FormMain
                                 If SANE.CurrentDevice.OptionValues(OptionIndex)(j) IsNot Nothing Then
                                     If ctl.GetType = GetType(NumericUpDown) Then
                                         Dim ud As NumericUpDown = DirectCast(ctl, NumericUpDown)
+                                        If (SANE.CurrentDevice.OptionValues(OptionIndex)(j) < ud.Minimum) Then
+                                            Logger.Warn("Current option value '{0}' is below the minimum of '{1}' specified in the option constraint; changing value to constraint minimum.", SANE.CurrentDevice.OptionValues(OptionIndex)(j), ud.Minimum)
+                                            SANE.CurrentDevice.OptionValues(OptionIndex)(j) = ud.Minimum
+                                        End If
+                                        If (SANE.CurrentDevice.OptionValues(OptionIndex)(j) > ud.Maximum) Then
+                                            Logger.Warn("Current option value '{0}' is above the maximum of '{1}' specified in the option constraint; changing value to constraint maximum.", SANE.CurrentDevice.OptionValues(OptionIndex)(j), ud.Maximum)
+                                            SANE.CurrentDevice.OptionValues(OptionIndex)(j) = ud.Maximum
+                                        End If
                                         ud.Value = SANE.CurrentDevice.OptionValues(OptionIndex)(j)
 
                                         ulbl.Text += " (" & ud.Minimum.ToString("0.####") & " to " & ud.Maximum.ToString("0.####")
@@ -699,6 +708,14 @@ Public Class FormMain
                                     If SANE.CurrentDevice.OptionValues(OptionIndex)(j) IsNot Nothing Then
                                         If ctl.GetType = GetType(NumericUpDown) Then
                                             Dim ud As NumericUpDown = DirectCast(ctl, NumericUpDown)
+                                            If (SANE.CurrentDevice.OptionValues(OptionIndex)(j) < ud.Minimum) Then
+                                                Logger.Warn("Current option value '{0}' is below the minimum of '{1}' specified in the option constraint; changing value to constraint minimum.", SANE.CurrentDevice.OptionValues(OptionIndex)(j), ud.Minimum)
+                                                SANE.CurrentDevice.OptionValues(OptionIndex)(j) = ud.Minimum
+                                            End If
+                                            If (SANE.CurrentDevice.OptionValues(OptionIndex)(j) > ud.Maximum) Then
+                                                Logger.Warn("Current option value '{0}' is above the maximum of '{1}' specified in the option constraint; changing value to constraint maximum.", SANE.CurrentDevice.OptionValues(OptionIndex)(j), ud.Maximum)
+                                                SANE.CurrentDevice.OptionValues(OptionIndex)(j) = ud.Maximum
+                                            End If
                                             ud.Value = SANE.CurrentDevice.OptionValues(OptionIndex)(j)
                                         Else
                                             ctl.Text = SANE.CurrentDevice.OptionValues(OptionIndex)(j).ToString

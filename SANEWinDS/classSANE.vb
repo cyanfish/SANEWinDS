@@ -549,6 +549,11 @@ Class SANE_API
 
     Friend Function Net_Open(ByRef TCPClient As System.Net.Sockets.TcpClient, ByVal DeviceName As String, ByRef DeviceHandle As Int32, ByVal Username As String, ByVal Password As String) As SANE_Status
         Logger.Debug("")
+
+        If DeviceName Is Nothing Then DeviceName = ""
+        If Username Is Nothing Then Username = ""
+        If Password Is Nothing Then Password = ""
+
         Dim stream As System.Net.Sockets.NetworkStream = Nothing
         Dim rstream As New System.IO.MemoryStream
         Try
@@ -1110,7 +1115,7 @@ Class SANE_API
                     'datalen is typically ReceiveBufferSize - 4 (the length of datalen itself).
                     'The plustek backend at 16bit color and 400dpi (at least) sometimes sends garbage during the transfer.
                     'Usually the garbage looks like a huge number in datalen, so look for it here.
-                    If (datalen > 0) And (datalen < TCPClient.ReceiveBufferSize) Then
+                    If (datalen < TCPClient.ReceiveBufferSize) Then
                         Dim TotalBytes As UInt32 = 0
                         Do
                             Dim ImageBytes As UInt32 = stream.Read(ImageBuf, 0, datalen - TotalBytes)

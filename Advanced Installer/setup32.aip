@@ -65,9 +65,13 @@
     <ROW File="SANEWin.exe" Component_="SANEWin.exe" FileName="SANEWin.exe" Attributes="0" SourcePath="..\SANEWin\bin\Debug\SANEWin.exe" SelfReg="false" NextFile="IniFile.dll" DigSign="true"/>
     <ROW File="SANEWinCDS32.ds" Component_="NLog.config" FileName="SANEWi~1.ds|SANEWinCDS32.ds" Attributes="0" SourcePath="..\SANEWinCDS\Twain_DS_sample01\visual_studio\Release32\SANEWinCDS32.ds" SelfReg="false" NextFile="NLog.config_1"/>
     <ROW File="SANEWinDS.dll" Component_="SANEWinDS.dll" FileName="SANEWi~1.dll|SANEWinDS.dll" Attributes="0" SourcePath="..\SANEWin\bin\Debug\SANEWinDS.dll" SelfReg="false" NextFile="NLog.dll"/>
-    <ROW File="SANEWinDS.dll_1" Component_="SANEWinDS.dll_1" FileName="SANEWi~1.dll|SANEWinDS.dll" Attributes="0" SourcePath="..\SANEWin\bin\Debug\SANEWinDS.dll" SelfReg="false"/>
+    <ROW File="SANEWinDS.dll_1" Component_="SANEWinDS.dll_1" FileName="SANEWi~1.dll|SANEWinDS.dll" Attributes="0" SourcePath="..\SANEWin\bin\Debug\SANEWinDS.dll" SelfReg="false" NextFile="genesys.ini"/>
     <ROW File="canon_dr.ini" Component_="canon_dr.ini" FileName="canon_dr.ini" Attributes="0" SourcePath="..\SANEWinDS\backend.ini\canon_dr.ini" SelfReg="false" NextFile="test.ini"/>
+    <ROW File="genesys.ini" Component_="canon_dr.ini" FileName="genesys.ini" Attributes="0" SourcePath="..\SANEWinDS\backend.ini\genesys.ini" SelfReg="false" NextFile="hp5590.ini"/>
+    <ROW File="hp5590.ini" Component_="canon_dr.ini" FileName="hp5590.ini" Attributes="0" SourcePath="..\SANEWinDS\backend.ini\hp5590.ini" SelfReg="false" NextFile="niash.ini"/>
     <ROW File="itextsharp.dll" Component_="itextsharp.dll" FileName="itexts~1.dll|itextsharp.dll" Attributes="0" SourcePath="..\SANEWin\itextsharp.dll" SelfReg="false" NextFile="SANEWinDS.dll"/>
+    <ROW File="niash.ini" Component_="canon_dr.ini" FileName="niash.ini" Attributes="0" SourcePath="..\SANEWinDS\backend.ini\niash.ini" SelfReg="false" NextFile="plustek.ini"/>
+    <ROW File="plustek.ini" Component_="canon_dr.ini" FileName="plustek.ini" Attributes="0" SourcePath="..\SANEWinDS\backend.ini\plustek.ini" SelfReg="false"/>
     <ROW File="test.ini" Component_="canon_dr.ini" FileName="test.ini" Attributes="0" SourcePath="..\SANEWinDS\backend.ini\test.ini" SelfReg="false" NextFile="LICENSE.txt_1"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.BuildComponent">

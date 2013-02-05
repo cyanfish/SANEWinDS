@@ -180,6 +180,13 @@ Public Class FormMain
                             tn.Text = Descriptors(i).title
 
                             If Descriptors(i).cap And SANE_API.SANE_CAP_ADVANCED Then
+
+                                If AdvancedNode Is Nothing Then
+                                    AdvancedNode = New TreeNode
+                                    AdvancedNode.Tag = -999
+                                    AdvancedNode.Text = "Advanced"
+                                End If
+
                                 If AdvancedNode.Parent Is Nothing Then
                                     If GroupNode IsNot Nothing Then
                                         GroupNode.Nodes.Add(AdvancedNode)

@@ -688,11 +688,14 @@ Public Class FormStartup
     Private Sub ButtonAcquire_Click(sender As Object, e As EventArgs) Handles ButtonAcquire.Click
         Try
             Me.GUIForm_Shown = True
+            Me.Cursor = Cursors.WaitCursor
             Dim DialogResult As DialogResult = GUIForm.ShowDialog
         Catch ex As Exception
             MsgBox(ex.Message & vbCrLf & ex.StackTrace)
             Me.ClosePDF()
             Me.CloseTIFF(0)
+        Finally
+            Me.Cursor = Cursors.Default
         End Try
     End Sub
 

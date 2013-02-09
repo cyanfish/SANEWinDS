@@ -158,6 +158,10 @@ Public Class FormMain
             Dim AdvancedNode As TreeNode = Nothing
             For i As Integer = 1 To Descriptors.Length - 1 'skip the first element, which contains the array length
                 ReDim SANE.CurrentDevice.OptionValues(i)(SANE.OptionValueArrayLength(Descriptors(i).size, Descriptors(i).type) - 1) 'make sure it's not Nothing, even for unreadable options
+
+                'Ignore the avision backend's 'nvram-values' option, which takes forever to read and isn't settable.
+                If Descriptors(i).name = "nvram-values" Then Continue For
+
                 Select Case Descriptors(i).type
                     Case SANE_API.SANE_Value_Type.SANE_TYPE_GROUP
                         If Recreate Then

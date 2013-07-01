@@ -60,6 +60,11 @@ Module modGlobals
                 ReDim Preserve SANEImage.Frames(CurrentFrame)
                 Try
                     SANEImage.Frames(CurrentFrame) = SANE.AcquireFrame(net, Port, ByteOrder, net.ReceiveTimeout) 'CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).TCP_Timeout_ms)
+                Catch ex As EmptyFrameException
+                    Logger.Warn("SANE backend returned an empty frame; simulating SANE_STATUS_NO_DOCS")
+                    Status = SANE_API.SANE_Status.SANE_STATUS_NO_DOCS
+                    ReDim Preserve SANEImage.Frames(CurrentFrame - 1)
+                    Exit Do
                 Catch ex As Exception
                     Logger.ErrorException("AcquireFrame returned exception: " & ex.Message, ex)
                     Status = SANE_API.SANE_Status.SANE_STATUS_IO_ERROR

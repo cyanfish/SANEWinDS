@@ -16,6 +16,21 @@
 '   You should have received a copy of the GNU General Public License
 '   along with SANEWinDS.  If not, see <http://www.gnu.org/licenses/>.
 '
+
+<Serializable()>
+Public Class EmptyFrameException
+    Inherits System.Exception
+    Public Sub New()
+        MyBase.New("An empty image frame was received from the SANE server")
+    End Sub
+    Public Sub New(ByVal message As String)
+        MyBase.New(message)
+    End Sub
+    Public Sub New(ByVal message As String, ByVal innerException As System.Exception)
+        MyBase.New(message, innerException)
+    End Sub
+End Class
+
 Class SANE_API
 #Region "SANE.h"
     Friend Const SANE_FALSE = 0
@@ -1103,13 +1118,18 @@ Class SANE_API
                     datalen = Me.SwapEndian(datalen)
                     If datalen = CUInt(&HFFFFFFFFUI) Then
                         Logger.Debug("Server sent EOF")
+                        If (Expected_Total_Bytes > 0) AndAlso (TransferredBytes < Expected_Total_Bytes) Then
+                            Logger.Debug("Server underran the expected byte count (" & TransferredBytes.ToString & " < " & Expected_Total_Bytes.ToString & ")")
+                            'canondr (not canon_dr) backend from Canon's web site never returns SANE_STATUS_NO_DOCS but instead returns empty frames.
+                            If TransferredBytes = 0 Then Throw New EmptyFrameException
+                        End If
                         Exit Do
                     ElseIf (Expected_Total_Bytes > 0) AndAlso (TransferredBytes >= Expected_Total_Bytes) Then
                         Logger.Debug("Server overran the expected byte count without sending EOF; aborting")
                         'Me.Net_Cancel(TCPClient, Me.CurrentDevice.Handle)
                         Exit Do
                     Else
-                        Logger.Debug("Server said to expect " & datalen & " bytes")
+                        Logger.Debug("Server said to expect " & datalen.ToString & " bytes")
                     End If
 
                     'datalen is typically ReceiveBufferSize - 4 (the length of datalen itself).
@@ -1152,6 +1172,8 @@ Class SANE_API
 
             Return Frame
 
+        Catch ex As EmptyFrameException
+            Throw
         Catch ex As Exception
             Logger.ErrorException("Error acquiring image frame: " & ex.Message, ex)
             Throw

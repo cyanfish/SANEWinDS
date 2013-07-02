@@ -323,9 +323,10 @@ Module modGlobals
                                 For j As Integer = 0 To SANE.CurrentDevice.OptionDescriptors(i).constraint.string_list.Count - 1
                                     Dim s As String = SANE.CurrentDevice.OptionDescriptors(i).constraint.string_list(j).ToLower
                                     If (s.Contains("adf") Or s.Contains("automatic document feeder")) Then
-                                        Return SANE.CurrentDevice.OptionValues(i)(0).ToLower = s.ToLower
+                                        If s = SANE.CurrentDevice.OptionValues(i)(0).ToLower Then Return True
                                     End If
                                 Next
+                                Return false
                         End Select
                 End Select
             ElseIf SANE.CurrentDevice.OptionDescriptors(i).type = SANE_API.SANE_Value_Type.SANE_TYPE_BOOL Then

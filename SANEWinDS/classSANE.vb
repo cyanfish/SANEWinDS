@@ -1120,9 +1120,10 @@ Class SANE_API
                         Logger.Debug("Server sent EOF")
                         If (Expected_Total_Bytes > 0) AndAlso (TransferredBytes < Expected_Total_Bytes) Then
                             Logger.Debug("Server underran the expected byte count (" & TransferredBytes.ToString & " < " & Expected_Total_Bytes.ToString & ")")
-                            'canondr (not canon_dr) backend from Canon's web site never returns SANE_STATUS_NO_DOCS but instead returns empty frames.
-                            If TransferredBytes = 0 Then Throw New EmptyFrameException
                         End If
+                        'canondr (not canon_dr) backend from Canon's web site never returns SANE_STATUS_NO_DOCS but instead returns empty frames.
+                        'avision backend sometimes returns empty frames as well.
+                        If TransferredBytes = 0 Then Throw New EmptyFrameException
                         Exit Do
                     ElseIf (Expected_Total_Bytes > 0) AndAlso (TransferredBytes >= Expected_Total_Bytes) Then
                         Logger.Debug("Server overran the expected byte count without sending EOF; aborting")

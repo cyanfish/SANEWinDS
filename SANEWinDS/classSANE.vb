@@ -1148,7 +1148,7 @@ Class SANE_API
                         Logger.Debug("Received a total of " & TransferredBytes.ToString & " bytes so far")
                     Else
                         Logger.Warn("The value of the data length field looks bogus: &H" & Hex(datalen) & "; aborting transfer")
-                        'Me.Net_Cancel(TCPClient, Me.CurrentDevice.Handle)
+                        Me.Net_Cancel(TCPClient, Me.CurrentDevice.Handle)
                         Exit Do
                     End If
                 Else

@@ -131,6 +131,13 @@ Public Class FormMain
                             Me.Cursor = Cursors.Default
                         End Try
                     Loop While Status = SANE_API.SANE_Status.SANE_STATUS_GOOD And CurrentSettings.ScanContinuously = True
+                    Try
+                        'Some backends expect Net_Cancel() after every batch or they stay in SANE_STATUS_BUSY.
+                        'genesys and gt68xx are examples.
+                        SANE.Net_Cancel(net, SANE.CurrentDevice.Handle)
+                    Catch ex As Exception
+                        Logger.ErrorException("", ex)
+                    End Try
                 Else
                     RaiseEvent ImageError(PageNo, "The SANE device '" & SANE.CurrentDevice.Name & "' has not been opened")
                 End If

@@ -2550,6 +2550,13 @@ Namespace TWAIN_VB
                     If CurrentJob.PendingXfers.Count = 0 Then
                         SetState(TwainState.DS_Enabled)
                         SetXfers(0)
+                        Try
+                            'Some backends expect Net_Cancel() after every batch or they stay in SANE_STATUS_BUSY.
+                            'genesys and gt68xx are examples.
+                            SANE.Net_Cancel(net, SANE.CurrentDevice.Handle)
+                        Catch ex As Exception
+                            Logger.ErrorException("", ex)
+                        End Try
                     End If
                     Marshal.StructureToPtr(CurrentJob.PendingXfers, _pData, True)
                     SetResult(TWRC.TWRC_SUCCESS)
@@ -2560,6 +2567,13 @@ Namespace TWAIN_VB
                         If MyState <> TwainState.DS_Enabled Then SetState(TwainState.DS_Enabled)
                         SetPendingXfers(0)
                         SetXfers(0)
+                        Try
+                            'Some backends expect Net_Cancel() after every batch or they stay in SANE_STATUS_BUSY.
+                            'genesys and gt68xx are examples.
+                            SANE.Net_Cancel(net, SANE.CurrentDevice.Handle)
+                        Catch ex As Exception
+                            Logger.ErrorException("", ex)
+                        End Try
                         Marshal.StructureToPtr(CurrentJob.PendingXfers, _pData, True)
                         SetResult(TWRC.TWRC_SUCCESS)
                         Return MyResult

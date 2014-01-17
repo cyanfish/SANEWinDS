@@ -722,6 +722,13 @@ Class SANE_API
                                     Dim str As String = Me.DeSerialize(stream, rstream, Sane_DataType.SANE_String)
                                     If str IsNot Nothing Then Descriptors(i).constraint.string_list(j) = str
                                 Next
+                                'This is a workaround for the buggy hp3500 backend, which defines the 'mode' option length as 4 bytes but uses 8 bytes.
+                                Dim LongestLength As Integer = -1
+                                For j = 0 To Descriptors(i).constraint.string_list.Length - 1
+                                    LongestLength = Math.Max(LongestLength, Descriptors(i).constraint.string_list(j).Length)
+                                Next
+                                Descriptors(i).size = Math.Max(Descriptors(i).size, LongestLength + 1) '+1 for the trailing null
+                                '
                             Case SANE_Constraint_Type.SANE_CONSTRAINT_WORD_LIST
                                 Dim ListLength As Int32 = Me.DeSerialize(stream, rstream, Sane_DataType.SANE_Word) 'the following word is this - 1
                                 ListLength = Me.DeSerialize(stream, rstream, Sane_DataType.SANE_Word) 'first element is the count (again, now 1 less)
@@ -1136,6 +1143,7 @@ Class SANE_API
                     'datalen is typically ReceiveBufferSize - 4 (the length of datalen itself).
                     'The plustek backend at 16bit color and 400dpi (at least) sometimes sends garbage during the transfer.
                     'Usually the garbage looks like a huge number in datalen, so look for it here.
+                    'This has also been observed with the hp3500 backend, where it appears to be an alignment error in the byte stream (datalen arrives 1 or 2 bytes too soon).
                     If (datalen < TCPClient.ReceiveBufferSize) Then
                         Dim TotalBytes As UInt32 = 0
                         Do

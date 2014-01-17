@@ -164,6 +164,7 @@ Public Class SharedSettings
                     Dim crypto As New SimpleCrypto
                     Try
                         INI.SetKeyValue(SectionName, "Password", crypto.Encrypt(.Password))
+                    Catch ex As System.ArgumentNullException
                     Catch ex As Exception
                         Logger.ErrorException(ex.Message, ex)
                     End Try

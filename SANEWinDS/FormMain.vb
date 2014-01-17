@@ -362,9 +362,9 @@ Public Class FormMain
                                         Dim Devices(-1) As SANE_API.SANE_Device
                                         Status = SANE.Net_Get_Devices(net, Devices)
                                         If Status = SANE_API.SANE_Status.SANE_STATUS_GOOD Then
+                                            Status = SANE_API.SANE_Status.SANE_STATUS_INVAL
                                             Dim FoundDevice As Boolean = False
                                             For i As Integer = 0 To Devices.Length - 1
-                                                Status = SANE_API.SANE_Status.SANE_STATUS_INVAL
                                                 If Devices(i).name.Trim.Length >= CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).AutoLocateDevice.Length Then
                                                     If Devices(i).name.Trim.Substring(0, CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).AutoLocateDevice.Length) = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).AutoLocateDevice Then
                                                         FoundDevice = True

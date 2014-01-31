@@ -13,10 +13,10 @@
     <ROW Property="ARPURLINFOABOUT" Value="http://sourceforge.net/p/sanewinds/"/>
     <ROW Property="ARPURLUPDATEINFO" Value="http://sourceforge.net/p/sanewinds/files/"/>
     <ROW Property="Manufacturer" Value="Alec Skelly"/>
-    <ROW Property="ProductCode" Value="1033:{C3EC5072-A018-4151-96FC-2977A2E15EE8} " Type="16"/>
+    <ROW Property="ProductCode" Value="1033:{0D9AD58D-0A74-47C3-80E1-4D599C915A52} " Type="16"/>
     <ROW Property="ProductLanguage" Value="1033"/>
     <ROW Property="ProductName" Value="SANEWinDS"/>
-    <ROW Property="ProductVersion" Value="0.9.5143" Type="32"/>
+    <ROW Property="ProductVersion" Value="0.9.5144" Type="32"/>
     <ROW Property="SecureCustomProperties" Value="OLDPRODUCTS;AI_NEWERPRODUCTFOUND"/>
     <ROW Property="UpgradeCode" Value="{28BC51C6-EB6A-40B0-A11C-01E9313074C3}"/>
     <ROW Property="WindowsType9X" MultiBuildValue="DefaultBuild:Windows 9x/ME" ValueLocId="-"/>

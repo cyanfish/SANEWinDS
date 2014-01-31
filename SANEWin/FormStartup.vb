@@ -194,46 +194,52 @@ Public Class FormStartup
 
     Private Sub ShowStatus(ByVal Text As String)
         'Show a status form with progress bar during image acquisition.
-        If frmStatus Is Nothing OrElse frmStatus.IsDisposed Then
-            frmStatus = New Form
-            frmStatus.Height = 180
-            frmStatus.Width = 500
+        Try
+            If frmStatus Is Nothing OrElse frmStatus.IsDisposed Then
+                frmStatus = New Form
+                frmStatus.Height = 180
+                frmStatus.Width = 500
 
-            Dim lbl As New Label
-            lbl.Name = "Status"
-            lbl.Text = Text
-            lbl.Top = 10
-            lbl.Width = frmStatus.ClientSize.Width
-            lbl.Height = 40
-            lbl.Anchor = AnchorStyles.Top + AnchorStyles.Left + AnchorStyles.Right
-            lbl.Font = New Font("Arial", 14)
-            lbl.TextAlign = ContentAlignment.MiddleCenter
-            lbl.Parent = frmStatus
+                Dim lbl As New Label
+                lbl.Name = "Status"
+                lbl.Text = Text
+                lbl.Top = 10
+                lbl.Width = frmStatus.ClientSize.Width
+                lbl.Height = 40
+                lbl.Anchor = AnchorStyles.Top + AnchorStyles.Left + AnchorStyles.Right
+                lbl.Font = New Font("Arial", 14)
+                lbl.TextAlign = ContentAlignment.MiddleCenter
+                lbl.Parent = frmStatus
 
-            Dim pbar As New ProgressBar
-            pbar.Name = "Progress"
-            pbar.Top = lbl.Bottom + 10
-            pbar.Width = frmStatus.ClientSize.Width - 40
-            pbar.Left = (frmStatus.ClientSize.Width \ 2) - (pbar.Width \ 2)
-            pbar.Parent = frmStatus
+                Dim pbar As New ProgressBar
+                pbar.Name = "Progress"
+                pbar.Top = lbl.Bottom + 10
+                pbar.Width = frmStatus.ClientSize.Width - 40
+                pbar.Left = (frmStatus.ClientSize.Width \ 2) - (pbar.Width \ 2)
+                pbar.Parent = frmStatus
 
-            Dim btn As New Button
-            btn.Name = "Cancel"
-            btn.Text = "Cancel"
-            btn.Parent = frmStatus
-            btn.Top = pbar.Bottom + 20
-            btn.Width = 60
-            btn.Left = (frmStatus.ClientSize.Width \ 2) - (btn.Width \ 2)
-            btn.Anchor = AnchorStyles.Top
-            AddHandler btn.Click, AddressOf Me.CancelScan_Click
+                Dim btn As New Button
+                btn.Name = "Cancel"
+                btn.Text = "Cancel"
+                btn.Parent = frmStatus
+                btn.Top = pbar.Bottom + 20
+                btn.Width = 60
+                btn.Left = (frmStatus.ClientSize.Width \ 2) - (btn.Width \ 2)
+                btn.Anchor = AnchorStyles.Top
+                AddHandler btn.Click, AddressOf Me.CancelScan_Click
 
-            frmStatus.Text = Me.Text
-            frmStatus.Icon = Me.Icon
-            frmStatus.FormBorderStyle = Windows.Forms.FormBorderStyle.FixedSingle
-            frmStatus.StartPosition = FormStartPosition.CenterScreen
-            frmStatus.Show()
-            frmStatus.BringToFront()
-        End If
+                frmStatus.Text = Me.Text
+                frmStatus.Icon = Me.Icon
+                frmStatus.FormBorderStyle = Windows.Forms.FormBorderStyle.FixedSingle
+                frmStatus.StartPosition = FormStartPosition.CenterScreen
+                frmStatus.Show()
+                frmStatus.BringToFront()
+            Else
+                frmStatus.Controls("Status").Text = Text
+            End If
+        Catch ex As Exception
+            Debug.Print(ex.Message)
+        End Try
     End Sub
 
     Private Sub CancelScan_Click(sender As Object, e As System.EventArgs)

@@ -8,11 +8,11 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{A57A0946-209D-40D9-9E0A-572A11A03C91}</ProjectGuid>
     <OutputType>WinExe</OutputType>
-    <StartupObject>SANEWin.FormStartup</StartupObject>
+    <StartupObject>SANEWin.My.MyApplication</StartupObject>
     <RootNamespace>SANEWin</RootNamespace>
     <AssemblyName>SANEWin</AssemblyName>
     <FileAlignment>512</FileAlignment>
-    <MyType>WindowsFormsWithCustomSubMain</MyType>
+    <MyType>WindowsForms</MyType>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <TargetFrameworkProfile>
     </TargetFrameworkProfile>

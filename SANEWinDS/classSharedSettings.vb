@@ -352,6 +352,7 @@ Public Class SharedSettings
 
                                 Integer.TryParse(INI.GetKeyValue(SectionName, "Image_Timeout_s"), .Image_Timeout_s)
                                 If .Image_Timeout_s = 0 Then .Image_Timeout_s = 1200 '20 minutes
+                                If .Image_Timeout_s < 5 Then .Image_Timeout_s = 5 '5 seconds
 
                                 .Username = INI.GetKeyValue(SectionName, "Username")
                                 .Password = INI.GetKeyValue(SectionName, "Password")

@@ -27,8 +27,10 @@ Public Class FormMain
     Public Event ImageAcquired(ByVal PageNumber As Integer, ByVal Bmp As Bitmap)
     Public Event ImageError(ByVal PageNumber As Integer, ByVal Message As String)
     Public Event BatchCompleted(ByVal Pages As Integer)
+    'Public Event BatchCancelled()
+    Public Event ImageProgress(ByVal PercentComplete As Integer) '0-100, -1 if unknown
 
-    Dim Host As SharedSettings.HostInfo
+    'Dim Host As SharedSettings.HostInfo
 
     Dim OptionValueControls(-1) As Control
     Public Got_MSG_CLOSEDS As Boolean = False
@@ -47,19 +49,21 @@ Public Class FormMain
         Logger.Debug("")
         Try
             Me.CloseCurrentDevice()
-            If net IsNot Nothing Then
-                If net.Connected Then
-                    SANE.Net_Exit(net)
-                    Dim stream As System.Net.Sockets.NetworkStream = net.GetStream
+            If ControlClient IsNot Nothing Then
+                If ControlClient.Connected Then
+                    SANE.Net_Exit(ControlClient)
+                    Dim stream As System.Net.Sockets.NetworkStream = ControlClient.GetStream
                     stream.Close()
                     stream = Nothing
-                    net.Close()
+                    ControlClient.Close()
                 End If
                 'If net.Connected Then net.Close()
-                net = Nothing
+                ControlClient = Nothing
             End If
         Catch ex As Exception
             MsgBox(ex.Message)
+        Finally
+            'CurrentSettings.SANE.CurrentHostIndex = -1 'This jacks up TWAIN
         End Try
     End Sub
 
@@ -77,20 +81,26 @@ Public Class FormMain
             If SANE IsNot Nothing Then
                 If SANE.CurrentDevice.Name IsNot Nothing Then
                     If SANE.CurrentDevice.Open Then
-                        SANE.Net_Close(net, SANE.CurrentDevice.Handle)
-                        SANE.CurrentDevice.Open = False
+                        SANE.Net_Close(ControlClient, SANE.CurrentDevice.Handle)
                     End If
                 End If
             End If
         Catch ex As Exception
             Logger.ErrorException(ex.Message, ex)
+        Finally
+            SANE.CurrentDevice.Open = False
         End Try
     End Sub
 
     Public Sub CancelScan()
         If SANE IsNot Nothing Then
             If SANE.CurrentDevice.Open Then
-                SANE.Net_Cancel(net, SANE.CurrentDevice.Handle)
+                Try
+                    SANE.Net_Cancel(ControlClient, SANE.CurrentDevice.Handle)
+                Catch ex As Exception
+                    Debug.Print(ex.Message)
+                End Try
+                'CancelAcquireImage()
             End If
         End If
     End Sub
@@ -109,21 +119,22 @@ Public Class FormMain
                         Try
                             Me.Cursor = Cursors.WaitCursor
                             Status = AcquireImage(bmp)
-                            If Status = SANE_API.SANE_Status.SANE_STATUS_GOOD Then
-                                If bmp IsNot Nothing Then
-                                    RaiseEvent ImageAcquired(PageNo, bmp)
-                                    'bmp.Dispose() 'let the event consumer decide whether to dispose or not.
-                                    bmp = Nothing
-                                    If Not CurrentSettings.ScanContinuously Then
-                                        RaiseEvent BatchCompleted(PageNo)
-                                        Exit Do
+                            Select Case Status
+                                Case SANE_API.SANE_Status.SANE_STATUS_GOOD
+                                    If bmp IsNot Nothing Then
+                                        RaiseEvent ImageAcquired(PageNo, bmp)
+                                        'bmp.Dispose() 'let the event consumer decide whether to dispose or not.
+                                        bmp = Nothing
+                                        If Not CurrentSettings.ScanContinuously Then
+                                            RaiseEvent BatchCompleted(PageNo)
+                                            Exit Do
+                                        End If
                                     End If
-                                End If
-                            ElseIf Status = SANE_API.SANE_Status.SANE_STATUS_NO_DOCS Then
-                                RaiseEvent BatchCompleted(PageNo - 1)
-                            Else
-                                RaiseEvent ImageError(PageNo, Status.ToString)
-                            End If
+                                Case SANE_API.SANE_Status.SANE_STATUS_NO_DOCS, SANE_API.SANE_Status.SANE_STATUS_CANCELLED
+                                    RaiseEvent BatchCompleted(PageNo - 1)
+                                Case Else
+                                    RaiseEvent ImageError(PageNo, Status.ToString)
+                            End Select
                         Catch ex As Exception
                             RaiseEvent ImageError(PageNo, ex.Message)
                             Exit Do
@@ -134,10 +145,21 @@ Public Class FormMain
                     Try
                         'Some backends expect Net_Cancel() after every batch or they stay in SANE_STATUS_BUSY.
                         'genesys and gt68xx are examples.
-                        SANE.Net_Cancel(net, SANE.CurrentDevice.Handle)
+                        SANE.Net_Cancel(ControlClient, SANE.CurrentDevice.Handle)
                     Catch ex As Exception
                         Logger.ErrorException("", ex)
                     End Try
+                    'If Net_Cancel() was called during the image transfer, the server may have disconnected the control connection (depends on backend).
+                    'We'll need to reconnect and restore all settings.
+                    If Not Client_Is_Connected(ControlClient) Then
+                        If Not Try_Reconnect() Then
+                            Logger.Warn("Try_Reconnect failed.")
+                            'XXX
+                            'SANE.CurrentDevice = Nothing
+                            CloseCurrentHost()
+                            'Me.Close()
+                        End If
+                    End If
                 Else
                     RaiseEvent ImageError(PageNo, "The SANE device '" & SANE.CurrentDevice.Name & "' has not been opened")
                 End If
@@ -148,6 +170,41 @@ Public Class FormMain
         End If
     End Sub
 
+    Private Function Try_Reconnect() As Boolean
+        Try
+            ControlClient.Close()
+            ControlClient = Nothing
+            'store current device info
+            Dim DeviceName As String = SANE.CurrentDevice.Name
+            Dim OptVals() As Object = SANE.CurrentDevice.OptionValues.Clone
+            Try_Init_SANE()
+            Update_Host_GUI()
+
+            If SANE.CurrentDevice.Name = DeviceName Then 'we reconnected to the same device
+                If SANE.CurrentDevice.Open Then
+                    For i As Integer = 1 To SANE.CurrentDevice.OptionDescriptors.Count - 1 'skip the first option, which is just the option count
+                        Select Case SANE.CurrentDevice.OptionDescriptors(i).type
+                            Case SANE_API.SANE_Value_Type.SANE_TYPE_GROUP, SANE_API.SANE_Value_Type.SANE_TYPE_BUTTON
+                                'no need to map these options
+                            Case Else
+                                If OptVals(i) IsNot Nothing Then
+                                    If SANE.SANE_OPTION_IS_ACTIVE(SANE.CurrentDevice.OptionDescriptors(i).cap) And SANE.SANE_OPTION_IS_SETTABLE(SANE.CurrentDevice.OptionDescriptors(i).cap) Then
+                                        SetOpt(i, OptVals(i)) 'sets value for both SANE and TWAIN
+                                    Else
+                                        Logger.Warn("Option '{0}' is not currently settable", SANE.CurrentDevice.OptionDescriptors(i).title)
+                                    End If
+                                End If
+                        End Select
+                    Next
+                End If
+            End If
+            Return SANE.CurrentDevice.Open
+        Catch ex As Exception
+            Logger.ErrorException("", ex)
+            Return SANE.CurrentDevice.Open
+        End Try
+    End Function
+
     Friend Sub GetOpts(ByVal Recreate As Boolean)
         Try
             If Recreate Then
@@ -155,7 +212,7 @@ Public Class FormMain
             End If
 
             Dim Descriptors() As SANE_API.SANE_Option_Descriptor
-            Descriptors = SANE.Net_Get_Option_Descriptors(net, SANE.CurrentDevice.Handle)
+            Descriptors = SANE.Net_Get_Option_Descriptors(ControlClient, SANE.CurrentDevice.Handle)
             SANE.CurrentDevice.OptionDescriptors = Descriptors
             ReDim SANE.CurrentDevice.OptionValues(Descriptors.Length - 1)
 
@@ -227,7 +284,7 @@ Public Class FormMain
                                 OptReq.value_size = Descriptors(i).size
                                 OptReq.values = Nothing
                                 Do
-                                    Dim Status As SANE_API.SANE_Status = SANE.Net_Control_Option(net, OptReq, OptReply, _
+                                    Dim Status As SANE_API.SANE_Status = SANE.Net_Control_Option(ControlClient, OptReq, OptReply, _
                                                                                                  CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Username, _
                                                                                                  CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Password)
                                     If Status = SANE_API.SANE_Status.SANE_STATUS_GOOD Then
@@ -266,19 +323,11 @@ Public Class FormMain
 
     Private Sub FormMain_FormClosed(sender As Object, e As FormClosedEventArgs) Handles Me.FormClosed
         Me.CloseCurrentHost()
-        If net IsNot Nothing Then
-            If net.Connected Then net.Close()
-            net = Nothing
+        If ControlClient IsNot Nothing Then
+            If ControlClient.Connected Then ControlClient.Close()
+            ControlClient = Nothing
         End If
         If CurrentSettings IsNot Nothing Then CurrentSettings.Save()
-    End Sub
-
-    Private Sub Form1_FormClosing(ByVal sender As Object, ByVal e As System.Windows.Forms.FormClosingEventArgs) Handles Me.FormClosing
-        'Me.CloseCurrentHost()
-        'If net IsNot Nothing Then
-        '    If net.Connected Then net.Close()
-        '    net = Nothing
-        'End If
     End Sub
 
     Private Sub Form1_Load(ByVal sender As Object, ByVal e As System.EventArgs) Handles Me.Load
@@ -303,6 +352,7 @@ Public Class FormMain
             Me.ButtonHost.Enabled = Not TWAIN_Is_Active 'XXX is it ok to reconfigure with TWAIN active?
 
             If SANE Is Nothing Then SANE = New SANE_API
+            AddHandler SANE.FrameProgress, AddressOf ImageFrameProgress
 
             If Not TWAIN_Is_Active Then
                 If Not ((CurrentSettings.SANE.CurrentHostIndex > -1) AndAlso _
@@ -318,32 +368,23 @@ Public Class FormMain
                 End If
                 Try_Init_SANE()
             End If
-
-            'If CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).NameOrAddress IsNot Nothing Then
-            If (CurrentSettings.SANE.CurrentHostIndex > -1) AndAlso (CurrentSettings.SANE.CurrentHostIndex < CurrentSettings.SANE.Hosts.Length) Then
-                Host = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex)
-            Else
-
-            End If
-
             If Me.Mode = UIMode.Scan Then Me.ButtonOK.Text = "Scan" Else Me.ButtonOK.Text = "OK"
         End If
     End Sub
 
     Private Sub Try_Init_SANE()
         Try
-            If net Is Nothing Then net = New System.Net.Sockets.TcpClient
-            If net IsNot Nothing Then
+            If ControlClient Is Nothing Then ControlClient = New System.Net.Sockets.TcpClient
+            If ControlClient IsNot Nothing Then
                 If (CurrentSettings.SANE.CurrentHostIndex > -1) And (CurrentSettings.SANE.CurrentHostIndex < CurrentSettings.SANE.Hosts.Count) Then
-                    'If CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).NameOrAddress IsNot Nothing Then
+                    CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Open = False
                     If CurrentSettings.HostIsValid(CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex)) Then
-                        net.ReceiveTimeout = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).TCP_Timeout_ms
-                        net.SendTimeout = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).TCP_Timeout_ms
-                        Logger.Debug("TCPClient Send buffer length is {0}", net.SendBufferSize)
-                        Logger.Debug("TCPClient Receive buffer length is {0}", net.ReceiveBufferSize)
-                        net.Connect(CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).NameOrAddress, CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Port)
-                        'Dim Status As SANE_API.SANE_Status = SANE.Net_Init(net, CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Username)
-                        Dim Status As SANE_API.SANE_Status = SANE.Net_Init(net, IIf(String.IsNullOrEmpty(Environment.UserName), Me.ProductName, Environment.UserName))
+                        ControlClient.ReceiveTimeout = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).TCP_Timeout_ms
+                        ControlClient.SendTimeout = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).TCP_Timeout_ms
+                        Logger.Debug("TCPClient Send buffer length is {0}", ControlClient.SendBufferSize)
+                        Logger.Debug("TCPClient Receive buffer length is {0}", ControlClient.ReceiveBufferSize)
+                        ControlClient.Connect(CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).NameOrAddress, CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Port)
+                        Dim Status As SANE_API.SANE_Status = SANE.Net_Init(ControlClient, IIf(String.IsNullOrEmpty(Environment.UserName), Me.ProductName, Environment.UserName))
                         Logger.Debug("Net_Init returned status {0}'", Status)
                         If Status = SANE_API.SANE_Status.SANE_STATUS_GOOD Then CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Open = True
                         If CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Open Then
@@ -352,7 +393,7 @@ Public Class FormMain
                                 SANE.CurrentDevice = New SANE_API.CurrentDeviceInfo
 
                                 Dim DeviceHandle As Integer
-                                Status = SANE.Net_Open(net, CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Device, DeviceHandle, _
+                                Status = SANE.Net_Open(ControlClient, CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Device, DeviceHandle, _
                                                        CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Username, _
                                                        CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Password)
                                 Logger.Debug("Net_Open returned status '{0}'", Status)
@@ -360,7 +401,7 @@ Public Class FormMain
                                     If CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).AutoLocateDevice IsNot Nothing AndAlso CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).AutoLocateDevice.Length > 0 Then
                                         Logger.Debug("Attempting to auto-locate devices matching '{0}'", CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).AutoLocateDevice)
                                         Dim Devices(-1) As SANE_API.SANE_Device
-                                        Status = SANE.Net_Get_Devices(net, Devices)
+                                        Status = SANE.Net_Get_Devices(ControlClient, Devices)
                                         If Status = SANE_API.SANE_Status.SANE_STATUS_GOOD Then
                                             Status = SANE_API.SANE_Status.SANE_STATUS_INVAL
                                             Dim FoundDevice As Boolean = False
@@ -369,7 +410,7 @@ Public Class FormMain
                                                     If Devices(i).name.Trim.Substring(0, CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).AutoLocateDevice.Length) = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).AutoLocateDevice Then
                                                         FoundDevice = True
                                                         Logger.Debug("Auto-located device '{0}'; attempting to open...", Devices(i).name)
-                                                        Status = SANE.Net_Open(net, Devices(i).name, DeviceHandle, _
+                                                        Status = SANE.Net_Open(ControlClient, Devices(i).name, DeviceHandle, _
                                                                               CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Username, _
                                                                               CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Password)
                                                         Logger.Debug("Net_Open returned status '{0}'", Status)
@@ -1273,7 +1314,7 @@ Public Class FormMain
             Next
             Dim Status As SANE_API.SANE_Status
             Do
-                Status = SANE.Net_Control_Option(net, OptReq, OptReply, _
+                Status = SANE.Net_Control_Option(ControlClient, OptReq, OptReply, _
                                                                              CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Username, _
                                                                              CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Password)
                 If Status = SANE_API.SANE_Status.SANE_STATUS_GOOD Then
@@ -1388,17 +1429,27 @@ Public Class FormMain
     End Sub
 
     Private Sub Update_Host_GUI()
-        If (CurrentSettings.SANE.CurrentHostIndex > -1) AndAlso (CurrentSettings.SANE.CurrentHostIndex < CurrentSettings.SANE.Hosts.Length) Then
+        If (CurrentSettings.SANE.CurrentHostIndex > -1) AndAlso (CurrentSettings.SANE.CurrentHostIndex < CurrentSettings.SANE.Hosts.Length) _
+            AndAlso CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Open Then
             Me.TextBoxHost.Text = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).NameOrAddress
             Me.TextBoxPort.Text = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Port
             Me.TextBoxDevice.Text = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Device
+
+        Else
+            'Me.TextBoxHost.Text = Nothing
+            'Me.TextBoxPort.Text = Nothing
+            'Me.TextBoxDevice.Text = Nothing
+
+            Me.ButtonOK.Enabled = False
+            Me.ClearPanelControls()
+            Me.TreeViewOptions.Nodes.Clear()
+            'Me.ComboBoxPageSize.Enabled = False
         End If
     End Sub
 
     Private Sub ButtonCancel_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles ButtonCancel.Click
-        'If Not TWAIN_Is_Active Then 'TWAIN_VB registers its own event handler
+        'TWAIN_VB will capture the FormClosing event and cancel it, sending MSG_CLOSEDSREQ instead.
         Me.Close()
-        'End If
     End Sub
 
     Private Sub CheckBoxBatchMode_CheckedChanged(ByVal sender As Object, ByVal e As System.EventArgs) Handles CheckBoxBatchMode.CheckedChanged
@@ -1583,5 +1634,41 @@ Public Class FormMain
         Loop
         Return (incr * 10 ^ power)
     End Function
+
+    Private Sub ImageFrameProgress(PercentComplete As Integer)
+        RaiseEvent ImageProgress(PercentComplete)
+    End Sub
+
+    Public Sub SetControlsEnabled(NewState As Boolean)
+        'Disable or enable all controls and controlboxes while preserving their original state, and display a waitcursor if disabled.
+        Static Initialized As Boolean
+        Static CurrentState As Boolean
+        Static OriginalControlState() As Boolean
+        If Not Initialized Then CurrentState = True 'True is the normal, enabled state
+        Try
+            Select Case NewState
+                Case False
+                    If CurrentState = True Then
+                        Me.Cursor = Cursors.WaitCursor
+                        ReDim OriginalControlState(Me.Controls.Count - 1)
+                        For i As Integer = 0 To Me.Controls.Count - 1
+                            OriginalControlState(i) = Me.Controls(i).Enabled
+                            Me.Controls(i).Enabled = False
+                        Next
+                        Me.ControlBox = False
+                    End If
+                Case True
+                    If CurrentState = False Then
+                        Me.Cursor = Cursors.Default
+                        Me.ControlBox = True
+                        For i As Integer = 0 To Me.Controls.Count - 1
+                            Me.Controls(i).Enabled = OriginalControlState(i)
+                        Next
+                     End If
+            End Select
+        Catch ex As Exception
+            Logger.ErrorException("", ex)
+        End Try
+    End Sub
 End Class
 

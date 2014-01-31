@@ -192,31 +192,48 @@ Public Class FormStartup
         End If
     End Sub
 
-    Private Sub ShowStatus(Text As String)
-        If frmStatus Is Nothing OrElse frmStatus.IsDisposed Then frmStatus = New Form
-        frmStatus.Controls.Clear()
-        frmStatus.Cursor = Cursors.WaitCursor
-        Dim lbl As New Label
-        lbl.Name = "Status"
-        lbl.Text = Text
-        lbl.Dock = DockStyle.Fill
-        'lbl.Anchor = AnchorStyles.Top And AnchorStyles.Left And AnchorStyles.Left
-        lbl.Font = New Font("Arial", 14)
-        lbl.TextAlign = ContentAlignment.MiddleCenter
-        lbl.Parent = frmStatus
-        'Dim btn As New Button
-        'btn.Text = "Cancel"
-        'btn.Parent = frmStatus
-        'btn.Top = lbl.Bottom + 10
-        'btn.Width = lbl.Width
-        'AddHandler btn.Click, AddressOf Me.CancelScan_Click
-        frmStatus.Height = lbl.Font.Height * 5
-        frmStatus.Width = frmStatus.Height * 3
-        frmStatus.StartPosition = FormStartPosition.CenterScreen
-        frmStatus.Show()
-        frmStatus.BringToFront()
-        Application.DoEvents()
+    Private Sub ShowStatus(ByVal Text As String)
+        'Show a status form with progress bar during image acquisition.
+        If frmStatus Is Nothing OrElse frmStatus.IsDisposed Then
+            frmStatus = New Form
+            frmStatus.Height = 180
+            frmStatus.Width = 500
 
+            Dim lbl As New Label
+            lbl.Name = "Status"
+            lbl.Text = Text
+            lbl.Top = 10
+            lbl.Width = frmStatus.ClientSize.Width
+            lbl.Height = 40
+            lbl.Anchor = AnchorStyles.Top + AnchorStyles.Left + AnchorStyles.Right
+            lbl.Font = New Font("Arial", 14)
+            lbl.TextAlign = ContentAlignment.MiddleCenter
+            lbl.Parent = frmStatus
+
+            Dim pbar As New ProgressBar
+            pbar.Name = "Progress"
+            pbar.Top = lbl.Bottom + 10
+            pbar.Width = frmStatus.ClientSize.Width - 40
+            pbar.Left = (frmStatus.ClientSize.Width \ 2) - (pbar.Width \ 2)
+            pbar.Parent = frmStatus
+
+            Dim btn As New Button
+            btn.Name = "Cancel"
+            btn.Text = "Cancel"
+            btn.Parent = frmStatus
+            btn.Top = pbar.Bottom + 20
+            btn.Width = 60
+            btn.Left = (frmStatus.ClientSize.Width \ 2) - (btn.Width \ 2)
+            btn.Anchor = AnchorStyles.Top
+            AddHandler btn.Click, AddressOf Me.CancelScan_Click
+
+            frmStatus.Text = Me.Text
+            frmStatus.Icon = Me.Icon
+            frmStatus.FormBorderStyle = Windows.Forms.FormBorderStyle.FixedSingle
+            frmStatus.StartPosition = FormStartPosition.CenterScreen
+            frmStatus.Show()
+            frmStatus.BringToFront()
+        End If
     End Sub
 
     Private Sub CancelScan_Click(sender As Object, e As System.EventArgs)
@@ -252,7 +269,7 @@ Public Class FormStartup
                     Process.Start(fname)
                 End If
             Else
-                MsgBox("No pages were acquired.  The Automatic Document Feeder may be empty.")
+                MsgBox("No pages were acquired.  The Automatic Document Feeder may be empty or the job may have been cancelled.")
             End If
 
         Catch ex As Exception
@@ -704,5 +721,29 @@ Public Class FormStartup
             e.Cancel = True
             GUIForm.Hide()
         End If
+    End Sub
+
+    Private Sub GUIForm_ImageProgress(PercentComplete As Integer) Handles GUIForm.ImageProgress
+        If Me.InvokeRequired Then
+            Dim d As New dSetImageProgress(AddressOf SetImageProgress)
+            Me.Invoke(d, New Object() {PercentComplete})
+        Else
+            Me.SetImageProgress(PercentComplete)
+        End If
+    End Sub
+
+    Private Delegate Sub dSetImageProgress(ByVal Progress As Integer)
+    Private Sub SetImageProgress(ByVal Progress As Integer)
+        Try
+            Dim pbar As ProgressBar = frmStatus.Controls("Progress")
+            If Progress < 0 Then
+                pbar.Style = ProgressBarStyle.Marquee
+                pbar.MarqueeAnimationSpeed = 30
+             Else
+                pbar.Style = ProgressBarStyle.Continuous
+                pbar.Value = Progress
+            End If
+        Catch ex As Exception
+        End Try
     End Sub
 End Class

@@ -31,6 +31,19 @@ Public Class EmptyFrameException
     End Sub
 End Class
 
+Public Class ServerDisconnectedException
+    Inherits System.Exception
+    Public Sub New()
+        MyBase.New("The server has disconnected")
+    End Sub
+    Public Sub New(ByVal message As String)
+        MyBase.New(message)
+    End Sub
+    Public Sub New(ByVal message As String, ByVal innerException As System.Exception)
+        MyBase.New(message, innerException)
+    End Sub
+End Class
+
 Class SANE_API
 #Region "SANE.h"
     Friend Const SANE_FALSE = 0
@@ -201,6 +214,8 @@ Class SANE_API
 #End Region
 
     Private Shared Logger As NLog.Logger = NLog.LogManager.GetCurrentClassLogger()
+
+    Friend Event FrameProgress(PercentComplete As Integer)
 
     Friend Function UnitString(ByVal Unit As SANE_Unit) As String
         Select Case Unit
@@ -1080,17 +1095,26 @@ Class SANE_API
         End Try
     End Sub
 
-    Friend Function AcquireFrame(ByRef TCPClient As System.Net.Sockets.TcpClient, ByVal Port As Integer, ByVal ByteOrder As SANE_Net_Byte_Order, ByVal TCP_Timeout_ms As Integer) As SANEImageFrame
-        Dim EndPoint As System.Net.IPEndPoint = TCPClient.Client.RemoteEndPoint
+    Friend Function AcquireFrame(ByRef Control_TCPClient As System.Net.Sockets.TcpClient, ByVal Port As Integer, ByVal ByteOrder As SANE_Net_Byte_Order, ByVal TCP_Timeout_ms As Integer) As SANEImageFrame
+        Dim EndPoint As System.Net.IPEndPoint = Control_TCPClient.Client.RemoteEndPoint
         Dim HostIP As System.Net.IPAddress = EndPoint.Address
 
+        TCP_Timeout_ms = Math.Max(TCP_Timeout_ms, 5000) 'Make sure it's at least 5 seconds
+
+        Logger.Debug("Image data port = " & Port.ToString)
+        Logger.Debug("Byte order = " & ByteOrder.ToString)
+        Logger.Debug("Receive timeout = " & TCP_Timeout_ms & "ms")
+
+        Dim Data_TCPClient As System.Net.Sockets.TcpClient = New Net.Sockets.TcpClient
+        Data_TCPClient.ReceiveTimeout = TCP_Timeout_ms
+        Data_TCPClient.ReceiveBufferSize = 32768
+        Data_TCPClient.SendBufferSize = 32768
+        Data_TCPClient.Connect(HostIP, Port) 'must connect on the data port before calling Net_Get_Parameters on the control port!
+
+        Dim Frame As New SANEImageFrame
+        Dim Status As Int32 = Me.Net_Get_Parameters(Control_TCPClient, Me.CurrentDevice.Handle, Frame.Params)
+
         Logger.Debug("Beginning image transfer")
-
-        Dim ImageConn As New System.Net.Sockets.TcpClient
-        ImageConn.ReceiveTimeout = TCP_Timeout_ms
-
-        'ImageConn.ReceiveBufferSize = 65536
-        'ImageConn.SendBufferSize = 65536
 
         Dim stream As System.Net.Sockets.NetworkStream = Nothing
         Dim ImageStream As System.IO.MemoryStream = Nothing
@@ -1098,14 +1122,10 @@ Class SANE_API
             Dim StartTime As DateTime = Now
             Dim TransferredBytes As UInt32 = 0
 
-            Dim Frame As New SANEImageFrame
-
-            ImageConn.Connect(HostIP, Port)
-            Dim Status As Int32 = Me.Net_Get_Parameters(TCPClient, Me.CurrentDevice.Handle, Frame.Params)
-            stream = ImageConn.GetStream
+            stream = Data_TCPClient.GetStream
 
             ImageStream = New System.IO.MemoryStream
-            Dim ImageBuf(TCPClient.ReceiveBufferSize - 1) As Byte
+            Dim ImageBuf(Data_TCPClient.ReceiveBufferSize - 1) As Byte
 
             Dim Expected_Total_Bytes As UInt32 = 0
             If Frame.Params.lines > 0 Then
@@ -1115,12 +1135,25 @@ Class SANE_API
                 Logger.Debug("The backend doesn't know how many lines this frame will have")
             End If
 
+            Dim ReportProgressAt As Integer = 1 'The next percentage point at which to report progress
+
             Dim LastGoodRead As Date = Now
             Do
-                Dim buf(3) As Byte
-                Dim bytes As Integer = stream.Read(buf, 0, 4)
-                If bytes = 4 Then
-                    LastGoodRead = Now
+                If Client_Is_Connected(Data_TCPClient) Then
+
+                    Dim buf(3) As Byte
+                    Dim bytes_read As Integer = 0
+                    Do
+                        Dim n As Integer = stream.Read(buf, bytes_read, 1)
+                        bytes_read += n
+                        If n > 0 Then
+                            LastGoodRead = Now
+                        Else
+                            If Not Client_Is_Connected(Data_TCPClient) Then Throw New ServerDisconnectedException("Server disconnected during frame transmission")
+                        End If
+                        If Now > LastGoodRead.AddMilliseconds(TCP_Timeout_ms) Then Throw New Exception("Timeout waiting for image data")
+                    Loop While bytes_read < 4
+
                     Dim datalen As UInt32 = BitConverter.ToUInt32(buf, 0)
                     datalen = Me.SwapEndian(datalen)
                     If datalen = CUInt(&HFFFFFFFFUI) Then
@@ -1134,37 +1167,54 @@ Class SANE_API
                         Exit Do
                     ElseIf (Expected_Total_Bytes > 0) AndAlso (TransferredBytes >= Expected_Total_Bytes) Then
                         Logger.Debug("Server overran the expected byte count without sending EOF; aborting")
-                        'Me.Net_Cancel(TCPClient, Me.CurrentDevice.Handle)
                         Exit Do
                     Else
                         Logger.Debug("Server said to expect " & datalen.ToString & " bytes")
                     End If
 
                     'datalen is typically ReceiveBufferSize - 4 (the length of datalen itself).
-                    'The plustek backend at 16bit color and 400dpi (at least) sometimes sends garbage during the transfer.
-                    'Usually the garbage looks like a huge number in datalen, so look for it here.
-                    'This has also been observed with the hp3500 backend, where it appears to be an alignment error in the byte stream (datalen arrives 1 or 2 bytes too soon).
-                    If (datalen < TCPClient.ReceiveBufferSize) Then
+                    If (datalen < Data_TCPClient.ReceiveBufferSize) Then
                         Dim TotalBytes As UInt32 = 0
                         Do
                             Dim ImageBytes As UInt32 = stream.Read(ImageBuf, 0, datalen - TotalBytes)
                             Logger.Debug("Received " & ImageBytes.ToString & " bytes")
                             ImageStream.Write(ImageBuf, 0, ImageBytes)
                             TotalBytes += ImageBytes
+                            If ImageBytes > 0 Then
+                                LastGoodRead = Now
+                            Else
+                                If Not Client_Is_Connected(Data_TCPClient) Then Throw New ServerDisconnectedException("Server disconnected during frame transmission")
+                            End If
+                            If Now > LastGoodRead.AddMilliseconds(TCP_Timeout_ms) Then Throw New Exception("Timeout waiting for image data")
                         Loop While TotalBytes < datalen
                         TransferredBytes += TotalBytes
                         Logger.Debug("Received a total of " & TransferredBytes.ToString & " bytes so far")
                     Else
                         Logger.Warn("The value of the data length field looks bogus: &H" & Hex(datalen) & "; aborting transfer")
-                        Me.Net_Cancel(TCPClient, Me.CurrentDevice.Handle)
+                        'If this happens the remaining image data will be filled with zeros below.  
                         Exit Do
                     End If
                 Else
-                    If Now > LastGoodRead.AddMilliseconds(net.ReceiveTimeout) Then Throw New Exception("Timeout waiting for image data")
+                    Throw New ServerDisconnectedException("Server disconnected during frame transmission")
                 End If
-                'System.Windows.Forms.Application.DoEvents()
+
+                'Update progress for a GUI to consume
+                If Expected_Total_Bytes > 0 Then
+                    Dim Progress As Integer = (TransferredBytes / Expected_Total_Bytes) * 100
+                    If Progress > ReportProgressAt Then
+                        ReportProgressAt = Progress + 1
+                        RaiseEvent FrameProgress(Progress)
+                    End If
+                Else 'we don't know how many bytes to expect (hand scanner).  Report -1 progress only once.  GUI should use a marquee-style progress bar.
+                    If ReportProgressAt = 1 Then
+                        ReportProgressAt += 1
+                        RaiseEvent FrameProgress(-1)
+                    End If
+                End If
+                '
             Loop
 
+            'This was a workaround for a bug that has been fixed.  It might still be useful in some unforseen circumstance.
             If TransferredBytes < Expected_Total_Bytes Then
                 Dim Filler(Expected_Total_Bytes - TransferredBytes) As Byte
                 ImageStream.Write(Filler, 0, Filler.Length)
@@ -1183,27 +1233,35 @@ Class SANE_API
 
         Catch ex As EmptyFrameException
             Throw
+            'Catch ex As System.Net.Sockets.SocketException
+            '    Logger.ErrorException("Error acquiring image frame: " & ex.SocketErrorCode, ex)
+            '    Throw
+            'Catch ex As ServerDisconnectedException
+            '    Logger.ErrorException("Error acquiring image frame: " & ex.Message, ex)
+            '    Throw
         Catch ex As Exception
             Logger.ErrorException("Error acquiring image frame: " & ex.Message, ex)
             Throw
         Finally
             Try
                 If ImageStream IsNot Nothing Then ImageStream.Close()
-                If stream IsNot Nothing Then
-                    Dim buf(ImageConn.ReceiveBufferSize - 1) As Byte
-                    Do While stream.DataAvailable 'hopefully prevent the server from staying in SANE_STATUS_BUSY
-                        stream.Read(buf, 0, buf.Length)
-                    Loop
-                    stream.Close()
-                End If
-                If ImageConn.Connected Then ImageConn.Close()
+                'If stream IsNot Nothing Then
+                '    Dim buf(Data_TCPClient.ReceiveBufferSize - 1) As Byte
+                '    Do While stream.DataAvailable 'hopefully prevent the server from staying in SANE_STATUS_BUSY
+                '        stream.Read(buf, 0, buf.Length)
+                '    Loop
+                '    stream.Close()
+                'End If
+                If stream IsNot Nothing Then stream.Close()
+                If Data_TCPClient IsNot Nothing Then
+                    If Data_TCPClient.Connected Then Data_TCPClient.Close()
+                 End If
             Catch
             End Try
             ImageStream = Nothing
             stream = Nothing
-            ImageConn = Nothing
+            Data_TCPClient = Nothing
         End Try
-
 
     End Function
 

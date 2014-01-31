@@ -43,22 +43,22 @@ Public Class FormSANEHostWizard
                                 Close_SANE()
                                 Close_Net()
 
-                                If net Is Nothing Then net = New System.Net.Sockets.TcpClient
-                                If net IsNot Nothing Then
-                                    net.ReceiveTimeout = Host.TCP_Timeout_ms
-                                    net.SendTimeout = Host.TCP_Timeout_ms
-                                    Logger.Debug("TCPClient Send buffer length is {0}", net.SendBufferSize)
-                                    Logger.Debug("TCPClient Receive buffer length is {0}", net.ReceiveBufferSize)
+                                If ControlClient Is Nothing Then ControlClient = New System.Net.Sockets.TcpClient
+                                If ControlClient IsNot Nothing Then
+                                    ControlClient.ReceiveTimeout = Host.TCP_Timeout_ms
+                                    ControlClient.SendTimeout = Host.TCP_Timeout_ms
+                                    Logger.Debug("TCPClient Send buffer length is {0}", ControlClient.SendBufferSize)
+                                    Logger.Debug("TCPClient Receive buffer length is {0}", ControlClient.ReceiveBufferSize)
                                     Me.Cursor = Windows.Forms.Cursors.WaitCursor
-                                    net.Connect(Host.NameOrAddress, Host.Port)
+                                    ControlClient.Connect(Host.NameOrAddress, Host.Port)
                                     'Dim Status As SANE_API.SANE_Status = SANE.Net_Init(net, Host.Username)
-                                    Dim Status As SANE_API.SANE_Status = SANE.Net_Init(net, Environment.UserName)
+                                    Dim Status As SANE_API.SANE_Status = SANE.Net_Init(ControlClient, Environment.UserName)
                                     Logger.Debug("Net_Init returned status '{0}'", Status)
                                     If Status = SANE_API.SANE_Status.SANE_STATUS_GOOD Then
                                         Host.Open = True
                                         Dim Devices(-1) As SANE_API.SANE_Device
                                         Me.ComboBoxDevices.Items.Clear()
-                                        Status = SANE.Net_Get_Devices(net, Devices)
+                                        Status = SANE.Net_Get_Devices(ControlClient, Devices)
                                         If Status = SANE_API.SANE_Status.SANE_STATUS_GOOD Then
                                             For i As Integer = 0 To Devices.Length - 1
                                                 'XXX MsgBox("Name: " & Devices(i).name & vbCr & "Vendor: " & Devices(i).vendor & vbCr & "Model: " & Devices(i).model & vbCr & "Type: " & Devices(i).type)
@@ -77,9 +77,16 @@ Public Class FormSANEHostWizard
                                             Next
                                             If Host_Index > -1 Then
                                                 CurrentSettings.SANE.CurrentHostIndex = Host_Index
+                                                Host.Username = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Username 'preserve existing username
                                                 Host.Password = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Password 'preserve existing password
+                                                'XXX
+                                                Host.Image_Timeout_s = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Image_Timeout_s 'this should be added to the GUI
+                                                '
                                                 CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex) = Host
                                             Else
+                                                'XXX
+                                                Host.Image_Timeout_s = 1200 '20 minutes
+                                                '
                                                 ReDim Preserve CurrentSettings.SANE.Hosts(CurrentSettings.SANE.Hosts.Count)
                                                 CurrentSettings.SANE.Hosts(CurrentSettings.SANE.Hosts.Count - 1) = Host
                                                 CurrentSettings.SANE.CurrentHostIndex = CurrentSettings.SANE.Hosts.Count - 1

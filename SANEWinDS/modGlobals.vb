@@ -22,10 +22,21 @@ Module modGlobals
 
     Private Logger As NLog.Logger = NLog.LogManager.GetCurrentClassLogger()
 
-    Public CurrentSettings As SharedSettings
-    Public SANE As SANE_API
-    Public net As System.Net.Sockets.TcpClient
+    Private WithEvents ImageDataWorker As System.ComponentModel.BackgroundWorker
+    Private Structure ImageDataWorkerState
+        Dim ControlClient As System.Net.Sockets.TcpClient
+        Dim DeviceHandle As Integer
+        Dim UserName As String
+        Dim Password As String 'XXX use SecureString instead
+        Dim bmp As Bitmap
+        Dim Status As SANE_API.SANE_Status
+     End Structure
+    Dim ImageWorkerState As ImageDataWorkerState
 
+    Friend CurrentSettings As SharedSettings
+    Public WithEvents SANE As SANE_API
+    Friend WithEvents ControlClient As System.Net.Sockets.TcpClient
+ 
     Public Function InchesToMM(ByVal Inches As Double) As Double
         Return Inches * 25.4
     End Function
@@ -43,136 +54,37 @@ Module modGlobals
     End Function
 
     Public Function AcquireImage(ByRef bmp As Bitmap) As SANE_API.SANE_Status
-        Logger.Debug("")
-        Dim Status As SANE_API.SANE_Status = 0
-        Dim Port As Int32 = 0
-        Dim ByteOrder As SANE_API.SANE_Net_Byte_Order
-        Dim AuthResource As String = Nothing
+        ImageWorkerState = New ImageDataWorkerState
 
-        Dim SANEImage As New SANE_API.SANEImage
-        Dim CurrentFrame As Integer = 0
-        net.ReceiveTimeout = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Image_Timeout_s * 1000
-        Do
-            Status = SANE.Net_Start(net, SANE.CurrentDevice.Handle, Port, ByteOrder, _
-                                    CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Username, _
-                                    CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Password)
-            If Status = SANE_API.SANE_Status.SANE_STATUS_GOOD Then
-                ReDim Preserve SANEImage.Frames(CurrentFrame)
-                Try
-                    SANEImage.Frames(CurrentFrame) = SANE.AcquireFrame(net, Port, ByteOrder, net.ReceiveTimeout) 'CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).TCP_Timeout_ms)
-                Catch ex As EmptyFrameException
-                    Logger.Warn("SANE backend returned an empty frame; simulating SANE_STATUS_NO_DOCS")
-                    Status = SANE_API.SANE_Status.SANE_STATUS_NO_DOCS
-                    ReDim Preserve SANEImage.Frames(CurrentFrame - 1)
-                    Exit Do
-                Catch ex As Exception
-                    Logger.ErrorException("AcquireFrame returned exception: " & ex.Message, ex)
-                    Status = SANE_API.SANE_Status.SANE_STATUS_IO_ERROR
-                    Exit Do
-                End Try
-                If SANEImage.Frames(CurrentFrame).Params.last_frame Then
-                    Exit Do
-                Else
-                    CurrentFrame += 1
-                End If
-            ElseIf Status = SANE_API.SANE_Status.SANE_STATUS_ACCESS_DENIED Then
-                Dim PwdBox As New FormSANEAuth
-                PwdBox.UsernameTextBox.Text = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Username
-                If PwdBox.ShowDialog = Windows.Forms.DialogResult.Cancel Then Exit Do
-                CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Username = PwdBox.UsernameTextBox.Text
-                CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Password = PwdBox.PasswordTextBox.Text
+        ImageDataWorker = New System.ComponentModel.BackgroundWorker
+        With ImageDataWorker
+            '.WorkerReportsProgress = True
+            '.WorkerSupportsCancellation = True
+            If Not .IsBusy Then
+                ImageWorkerState.ControlClient = ControlClient
+                ImageWorkerState.bmp = bmp
+                ImageWorkerState.DeviceHandle = SANE.CurrentDevice.Handle
+                ImageWorkerState.UserName = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Username
+                ImageWorkerState.Password = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Password
+                ImageWorkerState.Status = SANE_API.SANE_Status.SANE_STATUS_GOOD
+                .RunWorkerAsync(ImageWorkerState)
             End If
-        Loop While (Status = SANE_API.SANE_Status.SANE_STATUS_GOOD) Or (Status = SANE_API.SANE_Status.SANE_STATUS_ACCESS_DENIED)
-        net.ReceiveTimeout = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).TCP_Timeout_ms
 
-        If Status = SANE_API.SANE_Status.SANE_STATUS_GOOD Then
+            Do While .IsBusy
+                Windows.Forms.Application.DoEvents()
+                Threading.Thread.Sleep(250) 'This keeps the CPU from spiking
+            Loop
 
-            'XXX need to switch away from GDI+ and use something else.  WPF?  FreeImage?  Qt?
+            'ImageWorkerState will have been updated by the ImageDataWorker thread
+            If ImageWorkerState.Status = SANE_API.SANE_Status.SANE_STATUS_GOOD Then
+                'The user may have provided new credentials during image acquisition
+                CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Username = ImageWorkerState.UserName
+                CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Password = ImageWorkerState.Password
+            End If
+            bmp = ImageWorkerState.bmp
+            Return ImageWorkerState.Status
 
-            'Dim bmp As Bitmap = Nothing
-            bmp = Nothing
-            Dim bmp_data As Imaging.BitmapData
-            Try
-                'create image from SANE frames
-                If SANEImage.Frames.Length > 1 Then SANEImage.Frames = CombineImageFrames(SANEImage.Frames) 'combine frames for 3-pass scanners
-
-                Dim h As Integer = SANEImage.Frames(0).Params.lines
-                Dim w As Integer = SANEImage.Frames(0).Params.pixels_per_line
-                Dim Stride As Integer = SANEImage.Frames(0).Params.bytes_per_line
-
-                If h < 0 Then '-1 if the number of lines is unknown, e.g. a hand scanner.
-                    h = SANEImage.Frames(0).Data.Length \ Stride
-                End If
-
-                Dim bounds As Rectangle = New Rectangle(0, 0, w, h)
-                Dim PixelFormat As Imaging.PixelFormat = Nothing
-                Dim Palette As Imaging.ColorPalette = Nothing
-
-                Select Case SANEImage.Frames(0).Params.format
-                    Case SANE_API.SANE_Frame.SANE_FRAME_GRAY
-                        Select Case SANEImage.Frames(0).Params.depth
-                            Case 1
-                                PixelFormat = Imaging.PixelFormat.Format1bppIndexed
-                                Palette = Get1bitGrayScalePalette()
-                            Case 8
-                                PixelFormat = Imaging.PixelFormat.Format8bppIndexed
-                                Palette = Get8bitGrayScalePalette()
-                            Case 16
-                                If ByteOrder = SANE_API.SANE_Net_Byte_Order.SANE_NET_BIG_ENDIAN Then SwapImageBytes(SANEImage.Frames(0).Data)
-                                PixelFormat = Imaging.PixelFormat.Format16bppGrayScale
-                        End Select
-                    Case SANE_API.SANE_Frame.SANE_FRAME_RGB
-                        RGBtoBGR(SANEImage.Frames(0).Data, SANEImage.Frames(0).Params.depth)
-                        Select Case SANEImage.Frames(0).Params.depth
-                            Case 1
-                                MsgBox("1bpp color images are not currently supported")
-                                'XXX
-                                'Exit Do
-                                Status = SANE_API.SANE_Status.SANE_STATUS_INVAL
-                            Case 8
-                                PixelFormat = Imaging.PixelFormat.Format24bppRgb
-                            Case 16
-                                If ByteOrder = SANE_API.SANE_Net_Byte_Order.SANE_NET_BIG_ENDIAN Then SwapImageBytes(SANEImage.Frames(0).Data)
-                                PixelFormat = Imaging.PixelFormat.Format48bppRgb
-                        End Select
-                End Select
-                If Status = SANE_API.SANE_Status.SANE_STATUS_GOOD Then
-                    Try
-                        bmp = New Bitmap(w, h, PixelFormat)
-                    Catch ex As ArgumentException
-                        MsgBox("GDI+ was unable to allocate enough memory to store the image", MsgBoxStyle.Critical, "Error")
-                        Throw
-                    End Try
-                    If Palette IsNot Nothing Then bmp.Palette = Palette
-                    bmp_data = bmp.LockBits(bounds, Imaging.ImageLockMode.ReadWrite, PixelFormat)
-                    If Stride < bmp_data.Stride Then
-                        For r = 0 To h - 1
-                            System.Runtime.InteropServices.Marshal.Copy(SANEImage.Frames(0).Data, Stride * r, bmp_data.Scan0 + (bmp_data.Stride * r), Stride)
-                        Next
-                    ElseIf Stride > bmp_data.Stride Then
-                        For r = 0 To h - 1
-                            System.Runtime.InteropServices.Marshal.Copy(SANEImage.Frames(0).Data, Stride * r, bmp_data.Scan0 + (bmp_data.Stride * r), bmp_data.Stride)
-                        Next
-                    Else
-                        System.Runtime.InteropServices.Marshal.Copy(SANEImage.Frames(0).Data, 0, bmp_data.Scan0, SANEImage.Frames(0).Data.Length)
-                    End If
-                    bmp.UnlockBits(bmp_data)
-                End If
-            Catch ex As Exception
-                Logger.ErrorException("Error creating image: " & ex.Message, ex)
-                Status = SANE_API.SANE_Status.SANE_STATUS_IO_ERROR
-            Finally
-                'ReDim SANEImage.Frames(0).Data(-1)
-                SANEImage = Nothing
-                bmp_data = Nothing
-                'bmp = Nothing
-            End Try
-        Else
-            Dim msg As String = "Got status '" & Status.ToString & "' while acquiring image frames"
-            Logger.Debug(msg)
-            If Status <> SANE_API.SANE_Status.SANE_STATUS_NO_DOCS Then MsgBox(msg)
-        End If
-        Return Status
+        End With
     End Function
 
     Private Function CombineImageFrames(Frames() As SANE_API.SANEImageFrame) As SANE_API.SANEImageFrame()
@@ -372,12 +284,12 @@ Module modGlobals
         Try
             If SANE.CurrentDevice.Open Then
                 SANE.CurrentDevice.Open = False
-                SANE.Net_Close(net, SANE.CurrentDevice.Handle)
+                SANE.Net_Close(ControlClient, SANE.CurrentDevice.Handle)
             End If
             If (CurrentSettings.SANE.CurrentHostIndex > -1) AndAlso (CurrentSettings.SANE.CurrentHostIndex < CurrentSettings.SANE.Hosts.Length) Then
                 If CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Open Then
                     CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Open = False
-                    SANE.Net_Exit(net)
+                    SANE.Net_Exit(ControlClient)
                 End If
             End If
         Catch exx As Exception
@@ -388,14 +300,14 @@ Module modGlobals
         Try
             If (CurrentSettings.SANE.CurrentHostIndex > -1) AndAlso (CurrentSettings.SANE.CurrentHostIndex < CurrentSettings.SANE.Hosts.Length) Then
                 If Not CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Open Then
-                    If net IsNot Nothing Then
-                        If net.Connected Then
-                            Dim stream As System.Net.Sockets.NetworkStream = net.GetStream
+                    If ControlClient IsNot Nothing Then
+                        If ControlClient.Connected Then
+                            Dim stream As System.Net.Sockets.NetworkStream = ControlClient.GetStream
                             stream.Close()
                             stream = Nothing
                         End If
-                        If net.Connected Then net.Close()
-                        net = Nothing
+                        If ControlClient.Connected Then ControlClient.Close()
+                        ControlClient = Nothing
                     End If
                 End If
             End If
@@ -403,4 +315,207 @@ Module modGlobals
             Logger.ErrorException(ex.Message, ex)
         End Try
     End Sub
+
+    Private Sub ImageDataWorker_DoWork(sender As Object, e As ComponentModel.DoWorkEventArgs) Handles ImageDataWorker.DoWork
+        Logger.Debug("")
+
+        Dim State As ImageDataWorkerState = e.Argument
+
+        Dim Status As SANE_API.SANE_Status = SANE_API.SANE_Status.SANE_STATUS_GOOD
+        Dim Port As Int32 = 0
+        Dim ByteOrder As SANE_API.SANE_Net_Byte_Order
+        Dim AuthResource As String = Nothing
+
+        Dim SANEImage As New SANE_API.SANEImage
+        Dim CurrentFrame As Integer = 0
+        Try
+            Do
+                Status = SANE.Net_Start(State.ControlClient, State.DeviceHandle, Port, ByteOrder, State.UserName, State.Password)
+                If Status = SANE_API.SANE_Status.SANE_STATUS_GOOD Then
+                    ReDim Preserve SANEImage.Frames(CurrentFrame)
+                    Try
+                        Dim ImageDataTimeout As Integer = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Image_Timeout_s * 1000
+                        SANEImage.Frames(CurrentFrame) = SANE.AcquireFrame(State.ControlClient, Port, ByteOrder, ImageDataTimeout)
+                    Catch ex As EmptyFrameException
+                        Logger.Warn("SANE backend returned an empty frame; simulating SANE_STATUS_NO_DOCS")
+                        Status = SANE_API.SANE_Status.SANE_STATUS_NO_DOCS
+                        ReDim Preserve SANEImage.Frames(CurrentFrame - 1)
+                        Exit Do
+                    Catch ex As ServerDisconnectedException
+                        Logger.Warn("Server disconnected during image transfer. This is normal following Net_Cancel().")
+                        Status = SANE_API.SANE_Status.SANE_STATUS_CANCELLED
+                        Exit Do
+                    Catch ex As Exception
+                        Logger.ErrorException("AcquireFrame returned exception: " & ex.Message, ex)
+                        Status = SANE_API.SANE_Status.SANE_STATUS_IO_ERROR
+                        Exit Do
+                    End Try
+                    If SANEImage.Frames(CurrentFrame).Params.last_frame Then
+                        Exit Do
+                    Else
+                        CurrentFrame += 1
+                    End If
+                ElseIf Status = SANE_API.SANE_Status.SANE_STATUS_ACCESS_DENIED Then
+                    Dim PwdBox As New FormSANEAuth
+                    PwdBox.UsernameTextBox.Text = State.UserName
+                    If PwdBox.ShowDialog = Windows.Forms.DialogResult.Cancel Then Exit Do
+                    State.UserName = PwdBox.UsernameTextBox.Text
+                    State.Password = PwdBox.PasswordTextBox.Text
+                End If
+                'End If
+            Loop While (Status = SANE_API.SANE_Status.SANE_STATUS_GOOD) Or (Status = SANE_API.SANE_Status.SANE_STATUS_ACCESS_DENIED)
+
+            If Status = SANE_API.SANE_Status.SANE_STATUS_GOOD Then
+
+                'XXX need to switch away from GDI+ and use something else.  WPF?  FreeImage?  Qt?
+
+                'Dim bmp As Bitmap = Nothing
+                State.bmp = Nothing
+                Dim bmp_data As Imaging.BitmapData
+                Try
+                    'create image from SANE frames
+                    If SANEImage.Frames.Length > 1 Then SANEImage.Frames = CombineImageFrames(SANEImage.Frames) 'combine frames for 3-pass scanners
+
+                    Dim h As Integer = SANEImage.Frames(0).Params.lines
+                    Dim w As Integer = SANEImage.Frames(0).Params.pixels_per_line
+                    Dim Stride As Integer = SANEImage.Frames(0).Params.bytes_per_line
+
+                    If h < 0 Then '-1 if the number of lines is unknown, e.g. a hand scanner.
+                        h = SANEImage.Frames(0).Data.Length \ Stride
+                    End If
+
+                    Dim bounds As Rectangle = New Rectangle(0, 0, w, h)
+                    Dim PixelFormat As Imaging.PixelFormat = Nothing
+                    Dim Palette As Imaging.ColorPalette = Nothing
+
+                    Select Case SANEImage.Frames(0).Params.format
+                        Case SANE_API.SANE_Frame.SANE_FRAME_GRAY
+                            Select Case SANEImage.Frames(0).Params.depth
+                                Case 1
+                                    PixelFormat = Imaging.PixelFormat.Format1bppIndexed
+                                    Palette = Get1bitGrayScalePalette()
+                                Case 8
+                                    PixelFormat = Imaging.PixelFormat.Format8bppIndexed
+                                    Palette = Get8bitGrayScalePalette()
+                                Case 16
+                                    If ByteOrder = SANE_API.SANE_Net_Byte_Order.SANE_NET_BIG_ENDIAN Then SwapImageBytes(SANEImage.Frames(0).Data)
+                                    PixelFormat = Imaging.PixelFormat.Format16bppGrayScale
+                            End Select
+                        Case SANE_API.SANE_Frame.SANE_FRAME_RGB
+                            RGBtoBGR(SANEImage.Frames(0).Data, SANEImage.Frames(0).Params.depth)
+                            Select Case SANEImage.Frames(0).Params.depth
+                                Case 1
+                                    MsgBox("1bpp color images are not currently supported")
+                                    'XXX
+                                    'Exit Do
+                                    Status = SANE_API.SANE_Status.SANE_STATUS_INVAL
+                                Case 8
+                                    PixelFormat = Imaging.PixelFormat.Format24bppRgb
+                                Case 16
+                                    If ByteOrder = SANE_API.SANE_Net_Byte_Order.SANE_NET_BIG_ENDIAN Then SwapImageBytes(SANEImage.Frames(0).Data)
+                                    PixelFormat = Imaging.PixelFormat.Format48bppRgb
+                            End Select
+                    End Select
+                    If Status = SANE_API.SANE_Status.SANE_STATUS_GOOD Then
+                        Try
+                            State.bmp = New Bitmap(w, h, PixelFormat)
+                        Catch ex As ArgumentException
+                            'MsgBox("GDI+ was unable to allocate enough memory to store the image", MsgBoxStyle.Critical, "Error")
+                            'Throw
+                            Throw New Exception("GDI+ was unable to allocate enough memory to store the image")
+                        End Try
+                        If Palette IsNot Nothing Then State.bmp.Palette = Palette
+                        bmp_data = State.bmp.LockBits(bounds, Imaging.ImageLockMode.ReadWrite, PixelFormat)
+                        If Stride < bmp_data.Stride Then
+                            For r = 0 To h - 1
+                                System.Runtime.InteropServices.Marshal.Copy(SANEImage.Frames(0).Data, Stride * r, bmp_data.Scan0 + (bmp_data.Stride * r), Stride)
+                            Next
+                        ElseIf Stride > bmp_data.Stride Then
+                            For r = 0 To h - 1
+                                System.Runtime.InteropServices.Marshal.Copy(SANEImage.Frames(0).Data, Stride * r, bmp_data.Scan0 + (bmp_data.Stride * r), bmp_data.Stride)
+                            Next
+                        Else
+                            System.Runtime.InteropServices.Marshal.Copy(SANEImage.Frames(0).Data, 0, bmp_data.Scan0, SANEImage.Frames(0).Data.Length)
+                        End If
+                        State.bmp.UnlockBits(bmp_data)
+                    End If
+                Catch ex As Exception
+                    Logger.ErrorException("Error creating image: " & ex.Message, ex)
+                    Status = SANE_API.SANE_Status.SANE_STATUS_IO_ERROR
+                Finally
+                    'ReDim SANEImage.Frames(0).Data(-1)
+                    SANEImage = Nothing
+                    bmp_data = Nothing
+                    'bmp = Nothing
+                End Try
+            Else
+                Dim msg As String = "Got status '" & Status.ToString & "' while acquiring image frames"
+                Logger.Debug(msg)
+                Select Case Status
+                    Case SANE_API.SANE_Status.SANE_STATUS_NO_DOCS
+                        'Do nothing
+                    Case SANE_API.SANE_Status.SANE_STATUS_CANCELLED
+                        'Do nothing
+                    Case Else
+                        Throw New Exception(msg)
+                End Select
+            End If
+        Catch ex As Exception
+            'Throw
+            Logger.ErrorException("", ex)
+        Finally
+            State.Status = Status
+            e.Result = State
+        End Try
+    End Sub
+
+    Private Sub ImageDataWorker_RunWorkerCompleted(sender As Object, e As ComponentModel.RunWorkerCompletedEventArgs) Handles ImageDataWorker.RunWorkerCompleted
+        Try
+            If e.Result.GetType Is GetType(ImageDataWorkerState) Then
+                Dim State As ImageDataWorkerState = CType(e.Result, ImageDataWorkerState)
+                ImageWorkerState = State
+            End If
+
+            If e.Error IsNot Nothing Then
+                Logger.ErrorException("Exception returned from image data transfer thread", e.Error)
+                MsgBox(e.Error.Message)
+                Exit Sub
+            End If
+        Catch ex As Exception
+            Logger.ErrorException("", ex)
+        End Try
+
+    End Sub
+
+    Public Function Client_Is_Connected(ByRef Client As System.Net.Sockets.TcpClient) As Boolean
+        If Client IsNot Nothing Then
+            Dim timeout As Integer = Client.ReceiveTimeout
+            Try
+                If (Client.Client.Connected) Then
+                    If ((Client.Client.Poll(0, System.Net.Sockets.SelectMode.SelectWrite)) And Not (Client.Client.Poll(0, System.Net.Sockets.SelectMode.SelectError))) Then
+                        Dim buffer(0) As Byte
+                        Client.ReceiveTimeout = 100 'a tenth of a second
+                        If (Client.Client.Receive(buffer, System.Net.Sockets.SocketFlags.Peek) = 0) Then
+                            Return False
+                        Else
+                            Return True
+                        End If
+                    Else
+                        Return False
+                    End If
+                Else
+                    Return False
+                End If
+            Catch ex As System.Net.Sockets.SocketException
+                Return (ex.SocketErrorCode = Net.Sockets.SocketError.TimedOut) 'Nothing went wrong but there were no bytes waiting during Receive()
+            Catch ex As Exception
+                Return False
+            Finally
+                Client.ReceiveTimeout = timeout
+            End Try
+        Else
+            Return False
+        End If
+    End Function
+
 End Module

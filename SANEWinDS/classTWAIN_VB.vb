@@ -2553,7 +2553,7 @@ Namespace TWAIN_VB
                         Try
                             'Some backends expect Net_Cancel() after every batch or they stay in SANE_STATUS_BUSY.
                             'genesys and gt68xx are examples.
-                            SANE.Net_Cancel(net, SANE.CurrentDevice.Handle)
+                            SANE.Net_Cancel(ControlClient, SANE.CurrentDevice.Handle)
                         Catch ex As Exception
                             Logger.ErrorException("", ex)
                         End Try
@@ -2570,7 +2570,7 @@ Namespace TWAIN_VB
                         Try
                             'Some backends expect Net_Cancel() after every batch or they stay in SANE_STATUS_BUSY.
                             'genesys and gt68xx are examples.
-                            SANE.Net_Cancel(net, SANE.CurrentDevice.Handle)
+                            SANE.Net_Cancel(ControlClient, SANE.CurrentDevice.Handle)
                         Catch ex As Exception
                             Logger.ErrorException("", ex)
                         End Try
@@ -2608,6 +2608,7 @@ Namespace TWAIN_VB
                             Try
                                 Dim Status As SANE_API.SANE_Status
                                 Dim bmp As System.Drawing.Bitmap = Nothing
+                                If MyForm IsNot Nothing Then MyForm.SetControlsEnabled(False)
                                 Status = AcquireImage(bmp)
                                 If Status = SANE_API.SANE_Status.SANE_STATUS_GOOD Then
                                     If Caps(CAP.CAP_FEEDERENABLED).CurrentValue <> 0 Then
@@ -2643,6 +2644,8 @@ Namespace TWAIN_VB
                                             SetCondition(TWCC.TWCC_PAPERJAM)
                                         Case SANE_API.SANE_Status.SANE_STATUS_NO_MEM
                                             SetCondition(TWCC.TWCC_LOWMEMORY)
+                                        Case SANE_API.SANE_Status.SANE_STATUS_CANCELLED
+                                            SetCondition(TWCC.TWCC_NOMEDIA) 'Not strictly true, but there's no condition code for Cancelled.
                                         Case Else
                                             SetCondition(TWCC.TWCC_BUMMER)
                                     End Select
@@ -2657,6 +2660,8 @@ Namespace TWAIN_VB
                                 SetCondition(TWCC.TWCC_OPERATIONERROR)
                                 SetResult(TWRC.TWRC_FAILURE)
                                 Return MyResult
+                            Finally
+                                If MyForm IsNot Nothing Then MyForm.SetControlsEnabled(True)
                             End Try
                         Case Else
                             SetCondition(TWCC.TWCC_SEQERROR)
@@ -2679,6 +2684,7 @@ Namespace TWAIN_VB
                             Try
                                 Dim Status As SANE_API.SANE_Status
                                 Dim bmp As System.Drawing.Bitmap = Nothing
+                                If MyForm IsNot Nothing Then MyForm.SetControlsEnabled(False)
                                 Status = AcquireImage(bmp)
                                 If Status = SANE_API.SANE_Status.SANE_STATUS_GOOD Then
 
@@ -2758,11 +2764,14 @@ Namespace TWAIN_VB
                                             SetCondition(TWCC.TWCC_PAPERJAM)
                                         Case SANE_API.SANE_Status.SANE_STATUS_NO_MEM
                                             SetCondition(TWCC.TWCC_LOWMEMORY)
+                                        Case SANE_API.SANE_Status.SANE_STATUS_CANCELLED
+                                            SetCondition(TWCC.TWCC_NOMEDIA) 'Not strictly true, but there's no condition code for Cancelled.
                                         Case Else
                                             SetCondition(TWCC.TWCC_BUMMER)
                                     End Select
                                     SetPendingXfers(0)
-                                    SetResult(TWRC.TWRC_FAILURE)
+                                    'SetResult(TWRC.TWRC_FAILURE)
+                                    If MyCondition = TWCC.TWCC_NOMEDIA Then SetResult(TWRC.TWRC_CANCEL) Else SetResult(TWRC.TWRC_FAILURE) 'TWCC_NOMEDIA was introduced in 2.0.  I guess prior to that TWRC_CANCEL meant out of paper.
                                     Return MyResult
                                 End If
                             Catch ex As Exception
@@ -2771,6 +2780,8 @@ Namespace TWAIN_VB
                                 SetCondition(TWCC.TWCC_OPERATIONERROR)
                                 SetResult(TWRC.TWRC_FAILURE)
                                 Return MyResult
+                            Finally
+                                If MyForm IsNot Nothing Then MyForm.SetControlsEnabled(True)
                             End Try
                         Case TwainState.DS_Xfer_Active
                             Dim bmiHeader As DIB.BITMAPINFOHEADER = CurrentJob.CurrentImage.DIB.DIBInfo.bmiHeader
@@ -2978,7 +2989,7 @@ Namespace TWAIN_VB
                             Return MyResult
                         Case TwainState.DS_Xfer_Ready
                             Dim SANEparams As SANE_API.SANE_Parameters
-                            Status = SANE.Net_Get_Parameters(net, SANE.CurrentDevice.Handle, SANEparams)
+                            Status = SANE.Net_Get_Parameters(ControlClient, SANE.CurrentDevice.Handle, SANEparams)
                             If Status = SANE_API.SANE_Status.SANE_STATUS_GOOD Then
 
                                 UpdateImageInfo(SANEparams)
@@ -3919,26 +3930,27 @@ Namespace TWAIN_VB
                         'SANE is configured now, so try to connect.  Launch the wizard on failure.
                         Do
                             Try
-                                If net Is Nothing Then net = New System.Net.Sockets.TcpClient
-                                If net IsNot Nothing Then
-                                    net.ReceiveTimeout = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).TCP_Timeout_ms
-                                    net.SendTimeout = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).TCP_Timeout_ms
+                                If ControlClient Is Nothing Then ControlClient = New System.Net.Sockets.TcpClient
+                                If ControlClient IsNot Nothing Then
+                                    ControlClient.ReceiveTimeout = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).TCP_Timeout_ms
+                                    ControlClient.SendTimeout = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).TCP_Timeout_ms
 
-                                    Logger.Debug("TCPClient Send buffer length is {0}", net.SendBufferSize)
-                                    Logger.Debug("TCPClient Receive buffer length is {0}", net.ReceiveBufferSize)
+                                    Logger.Debug("TCPClient Send buffer length is {0}", ControlClient.SendBufferSize)
+                                    Logger.Debug("TCPClient Receive buffer length is {0}", ControlClient.ReceiveBufferSize)
 
                                     Dim status As SANE_API.SANE_Status
                                     SANE.CurrentDevice = New SANE_API.CurrentDeviceInfo
-                                    net.Connect(CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).NameOrAddress, CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Port)
+                                    CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Open = False
+                                    ControlClient.Connect(CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).NameOrAddress, CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Port)
                                     'status = SANE.Net_Init(net, CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Username)
-                                    status = SANE.Net_Init(net, Environment.UserName)
+                                    status = SANE.Net_Init(ControlClient, Environment.UserName)
                                     Logger.Debug("Net_Init returned status '{0}'", status)
                                     If status = SANE_API.SANE_Status.SANE_STATUS_GOOD Then
                                         CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Open = True
                                         Dim DeviceHandle As Integer
 
                                         Do
-                                            status = SANE.Net_Open(net, CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Device, DeviceHandle, _
+                                            status = SANE.Net_Open(ControlClient, CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Device, DeviceHandle, _
                                                                   CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Username, _
                                                                   CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Password)
                                             Logger.Debug("Net_Open returned status '{0}'", status)
@@ -3946,7 +3958,7 @@ Namespace TWAIN_VB
                                                 If CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).AutoLocateDevice IsNot Nothing AndAlso CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).AutoLocateDevice.Length > 0 Then
                                                     Logger.Debug("Attempting to auto-locate devices matching '{0}'", CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).AutoLocateDevice)
                                                     Dim Devices(-1) As SANE_API.SANE_Device
-                                                    status = SANE.Net_Get_Devices(net, Devices)
+                                                    status = SANE.Net_Get_Devices(ControlClient, Devices)
                                                     If status = SANE_API.SANE_Status.SANE_STATUS_GOOD Then
                                                         Dim FoundDevice As Boolean = False
                                                         For i As Integer = 0 To Devices.Length - 1
@@ -3955,7 +3967,7 @@ Namespace TWAIN_VB
                                                                 If Devices(i).name.Trim.Substring(0, CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).AutoLocateDevice.Length) = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).AutoLocateDevice Then
                                                                     FoundDevice = True
                                                                     Logger.Debug("Auto-located device '{0}'; attempting to open...", Devices(i).name)
-                                                                    status = SANE.Net_Open(net, Devices(i).name, DeviceHandle, _
+                                                                    status = SANE.Net_Open(ControlClient, Devices(i).name, DeviceHandle, _
                                                                                            CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Username, _
                                                                                            CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Password)
                                                                     Logger.Debug("Net_Open returned status '{0}'", status)
@@ -4002,17 +4014,17 @@ Namespace TWAIN_VB
                                     If Not SANE.CurrentDevice.Open Then
 
                                         If CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Open Then
-                                            SANE.Net_Exit(net)
+                                            SANE.Net_Exit(ControlClient)
                                         End If
 
-                                        If net.Connected Then
-                                            Dim stream As System.Net.Sockets.NetworkStream = net.GetStream
+                                        If ControlClient.Connected Then
+                                            Dim stream As System.Net.Sockets.NetworkStream = ControlClient.GetStream
                                             stream.Close()
                                             stream = Nothing
                                         End If
 
-                                        If net.Connected Then net.Close()
-                                        net = Nothing
+                                        If ControlClient.Connected Then ControlClient.Close()
+                                        ControlClient = Nothing
 
                                         Dim f As New FormSANEHostWizard
                                         If f.ShowDialog <> Windows.Forms.DialogResult.OK Then
@@ -4026,11 +4038,11 @@ Namespace TWAIN_VB
                                 Logger.ErrorException(ex.Message, ex)
                                 Try
                                     If SANE.CurrentDevice.Open Then
-                                        SANE.Net_Close(net, SANE.CurrentDevice.Handle)
+                                        SANE.Net_Close(ControlClient, SANE.CurrentDevice.Handle)
                                         SANE.CurrentDevice.Open = False
                                     End If
                                     If CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Open Then
-                                        SANE.Net_Exit(net)
+                                        SANE.Net_Exit(ControlClient)
                                     End If
                                     SetCondition(TWCC.TWCC_BUMMER)
                                     SetResult(TWRC.TWRC_FAILURE)
@@ -4043,14 +4055,14 @@ Namespace TWAIN_VB
                             Finally
                                 Try
                                     If Not CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Open Then
-                                        If net IsNot Nothing Then
-                                            If net.Connected Then
-                                                Dim stream As System.Net.Sockets.NetworkStream = net.GetStream
+                                        If ControlClient IsNot Nothing Then
+                                            If ControlClient.Connected Then
+                                                Dim stream As System.Net.Sockets.NetworkStream = ControlClient.GetStream
                                                 stream.Close()
                                                 stream = Nothing
                                             End If
-                                            If net.Connected Then net.Close()
-                                            net = Nothing
+                                            If ControlClient.Connected Then ControlClient.Close()
+                                            ControlClient = Nothing
                                         End If
                                     End If
                                 Catch ex As Exception
@@ -4075,14 +4087,14 @@ Namespace TWAIN_VB
                                 MyForm = Nothing
                             End If
 
-                            If net IsNot Nothing Then
-                                If net.Connected Then net.Close()
+                            If ControlClient IsNot Nothing Then
+                                If ControlClient.Connected Then ControlClient.Close()
                             End If
                         Catch ex As Exception
                             Logger.ErrorException(ex.Message, ex)
                         Finally
-                            CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Open = False
-                            net = Nothing
+                            'CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Open = False
+                            ControlClient = Nothing
                         End Try
 
                         AppIdentity = Nothing

@@ -171,6 +171,7 @@
   <ItemGroup>
     <None Include="app.config" />
     <None Include="backend.ini\canon_dr.ini" />
+    <None Include="backend.ini\epkowa.ini" />
     <None Include="backend.ini\genesys.ini" />
     <None Include="backend.ini\hp3500.ini" />
     <None Include="backend.ini\hp5590.ini" />

@@ -12,7 +12,7 @@ Imports System.Runtime.InteropServices
 <Assembly: AssemblyDescription("TWAIN Data Source for SANE scanners")> 
 <Assembly: AssemblyCompany("Alec Skelly")> 
 <Assembly: AssemblyProduct("SANEWinDS")> 
-<Assembly: AssemblyCopyright("")> 
+<Assembly: AssemblyCopyright("Copyright © Alec Skelly 2012-2014")> 
 <Assembly: AssemblyTrademark("")> 
 
 <Assembly: ComVisible(False)> 
@@ -31,5 +31,5 @@ Imports System.Runtime.InteropServices
 ' by using the '*' as shown below:
 ' <Assembly: AssemblyVersion("1.0.*")> 
 
-<Assembly: AssemblyVersion("0.8.*")> 
-<Assembly: AssemblyFileVersion("0.8.5129")> 
+<Assembly: AssemblyVersion("0.9.*")> 
+<Assembly: AssemblyFileVersion("0.9.5143")> 

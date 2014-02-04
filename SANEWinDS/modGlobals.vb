@@ -461,7 +461,7 @@ Module modGlobals
                 End Select
             End If
         Catch ex As Exception
-            'Throw
+            Status = SANE_API.SANE_Status.SANE_STATUS_IO_ERROR
             Logger.ErrorException("", ex)
         Finally
             State.Status = Status

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<DOCUMENT Type="Advanced Installer" CreateVersion="9.8" version="10.9" Modules="simple" RootPath="." Language="en" Id="{737192D8-EF70-4043-A521-546E927B17BB}">
+<DOCUMENT Type="Advanced Installer" CreateVersion="9.8" version="10.9.1" Modules="simple" RootPath="." Language="en" Id="{737192D8-EF70-4043-A521-546E927B17BB}">
   <COMPONENT cid="caphyon.advinst.msicomp.MsiValidationComponent">
     <ROW Table="File" Column="Sequence" MinValue="1" MaxValue="32767" Description="Sequence with respect to the media images; order must track cabinet order." Options="0" ColumnType="2" ColumnIndex="7" ColumnSize="2" MsiKey="File#Sequence"/>
     <ROW Table="Media" Column="LastSequence" MinValue="0" MaxValue="32767" Description="File sequence number for the last file for this media." Options="0" ColumnType="2" ColumnIndex="1" ColumnSize="2" MsiKey="Media#LastSequence"/>
@@ -13,10 +13,10 @@
     <ROW Property="ARPURLINFOABOUT" Value="http://sourceforge.net/projects/sanewinds/"/>
     <ROW Property="ARPURLUPDATEINFO" Value="http://sourceforge.net/projects/sanewinds/files/"/>
     <ROW Property="Manufacturer" Value="Alec Skelly"/>
-    <ROW Property="ProductCode" Value="1033:{E6B3412E-A5F8-4EAD-993F-173323AB987C} " Type="16"/>
+    <ROW Property="ProductCode" Value="1033:{66BD9A64-7436-4560-B20C-EDB3B71FE55C} " Type="16"/>
     <ROW Property="ProductLanguage" Value="1033"/>
     <ROW Property="ProductName" Value="SANEWinDS"/>
-    <ROW Property="ProductVersion" Value="0.9.5144" Type="32"/>
+    <ROW Property="ProductVersion" Value="0.9.5171" Type="32"/>
     <ROW Property="SecureCustomProperties" Value="OLDPRODUCTS;AI_NEWERPRODUCTFOUND"/>
     <ROW Property="UpgradeCode" Value="{28BC51C6-EB6A-40B0-A11C-01E9313074C3}"/>
     <ROW Property="WindowsType9X" MultiBuildValue="DefaultBuild:Windows 9x/ME" ValueLocId="-"/>

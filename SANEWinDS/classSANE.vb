@@ -1214,6 +1214,8 @@ Class SANE_API
                 '
             Loop
 
+            If Expected_Total_Bytes > 0 Then RaiseEvent FrameProgress(100)
+
             'This was a workaround for a bug that has been fixed.  It might still be useful in some unforseen circumstance.
             If TransferredBytes < Expected_Total_Bytes Then
                 Dim Filler(Expected_Total_Bytes - TransferredBytes) As Byte

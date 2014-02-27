@@ -129,6 +129,12 @@
     <Compile Include="FormSANEAuth.vb">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="FormScanProgress.Designer.vb">
+      <DependentUpon>FormScanProgress.vb</DependentUpon>
+    </Compile>
+    <Compile Include="FormScanProgress.vb">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="ImageCurve Control\classImageCurve.vb">
       <SubType>UserControl</SubType>
     </Compile>
@@ -160,6 +166,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="FormSANEAuth.resx">
       <DependentUpon>FormSANEAuth.vb</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="FormScanProgress.resx">
+      <DependentUpon>FormScanProgress.vb</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="My Project\Resources.resx">
       <Generator>VbMyResourcesResXFileCodeGenerator</Generator>

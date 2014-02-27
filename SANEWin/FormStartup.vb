@@ -72,8 +72,6 @@ Public Class FormStartup
     'Private CurrentTIFF As TIFFInfo
     Private CurrentImage As ImageInfo
 
-    Private frmStatus As Form
-
     Private GUIForm_Shown As Boolean = False
 
     Private Sub FormStartup_FormClosed(sender As Object, e As FormClosedEventArgs) Handles Me.FormClosed
@@ -192,66 +190,7 @@ Public Class FormStartup
         End If
     End Sub
 
-    Private Sub ShowStatus(ByVal Text As String)
-        'Show a status form with progress bar during image acquisition.
-        Try
-            If frmStatus Is Nothing OrElse frmStatus.IsDisposed Then
-                frmStatus = New Form
-                frmStatus.Height = 180
-                frmStatus.Width = 500
-
-                Dim lbl As New Label
-                lbl.Name = "Status"
-                lbl.Text = Text
-                lbl.Top = 10
-                lbl.Width = frmStatus.ClientSize.Width
-                lbl.Height = 40
-                lbl.Anchor = AnchorStyles.Top + AnchorStyles.Left + AnchorStyles.Right
-                lbl.Font = New Font("Arial", 14)
-                lbl.TextAlign = ContentAlignment.MiddleCenter
-                lbl.Parent = frmStatus
-
-                Dim pbar As New ProgressBar
-                pbar.Name = "Progress"
-                pbar.Top = lbl.Bottom + 10
-                pbar.Width = frmStatus.ClientSize.Width - 40
-                pbar.Left = (frmStatus.ClientSize.Width \ 2) - (pbar.Width \ 2)
-                pbar.Parent = frmStatus
-
-                Dim btn As New Button
-                btn.Name = "Cancel"
-                btn.Text = "Cancel"
-                btn.Parent = frmStatus
-                btn.Top = pbar.Bottom + 20
-                btn.Width = 60
-                btn.Left = (frmStatus.ClientSize.Width \ 2) - (btn.Width \ 2)
-                btn.Anchor = AnchorStyles.Top
-                AddHandler btn.Click, AddressOf Me.CancelScan_Click
-
-                frmStatus.Text = Me.Text
-                frmStatus.Icon = Me.Icon
-                frmStatus.FormBorderStyle = Windows.Forms.FormBorderStyle.FixedSingle
-                frmStatus.StartPosition = FormStartPosition.CenterScreen
-                frmStatus.Show()
-                frmStatus.BringToFront()
-            Else
-                frmStatus.Controls("Status").Text = Text
-            End If
-        Catch ex As Exception
-            Debug.Print(ex.Message)
-        End Try
-    End Sub
-
-    Private Sub CancelScan_Click(sender As Object, e As System.EventArgs)
-        If GUIForm IsNot Nothing Then
-            GUIForm.CancelScan()
-        End If
-    End Sub
-
     Private Sub OnBatchStarted() Handles GUIForm.BatchStarted
-        'GUIForm.Visible = False
-
-        ShowStatus("Acquiring page 1...")
 
     End Sub
 
@@ -268,10 +207,8 @@ Public Class FormStartup
                 Case Else
                     'MsgBox("Successfully acquired " & Pages.ToString & " pages")
             End Select
-            frmStatus.Close()
             If Pages > 0 Then
                 If fname IsNot Nothing Then
-                    'ShowStatus("Opening PDF document in default viewer...")
                     Process.Start(fname)
                 End If
             Else
@@ -281,7 +218,6 @@ Public Class FormStartup
         Catch ex As Exception
             MsgBox(ex.Message)
         Finally
-            If frmStatus IsNot Nothing AndAlso (Not frmStatus.IsDisposed) Then frmStatus.Close()
             Me.CurrentImage.FileName = Nothing
             Me.CurrentImage.FileNamePage1 = Nothing
             GUIForm.Hide()
@@ -297,7 +233,6 @@ Public Class FormStartup
             Case ImageType.TIFF
                 Me.CloseTIFF(PageNumber)
         End Select
-        frmStatus.Close()
 
         MsgBox("Error acquiring page " & PageNumber.ToString & ": " & Message)
     End Sub
@@ -393,7 +328,6 @@ Public Class FormStartup
                         End If
 
                         If CurrentImage.FileName IsNot Nothing Then
-                            'ShowStatus("Adding page " & PageNumber.ToString & " to PDF document...")
                             Me.AddPDFPage(bmp)
                         End If
 
@@ -436,15 +370,12 @@ Public Class FormStartup
                     End If
 
                     If PageNumber = 1 Then
-                        'ShowStatus("Creating TIFF image...")
-
                         Me.CurrentImage.FileName = FileNameBase & ".tif"
 
                         Me.CurrentImage.TIFF.EncoderParameters.Param(0) = New System.Drawing.Imaging.EncoderParameter(Me.CurrentImage.TIFF.SaveEncoder, System.Drawing.Imaging.EncoderValue.MultiFrame)
                         Me.CurrentImage.TIFF.FirstPage = bmp
                         Me.CurrentImage.TIFF.FirstPage.Save(Me.CurrentImage.FileName, Me.CurrentImage.TIFF.ImageCodecInfo, Me.CurrentImage.TIFF.EncoderParameters)
                     Else
-                        'ShowStatus("Adding page " & PageNumber.ToString & " to TIFF image...")
                         Try
                             If Me.CurrentImage.TIFF.FirstPage IsNot Nothing Then
                                 Me.CurrentImage.TIFF.EncoderParameters.Param(0) = New System.Drawing.Imaging.EncoderParameter(Me.CurrentImage.TIFF.SaveEncoder, System.Drawing.Imaging.EncoderValue.FrameDimensionPage)
@@ -529,7 +460,6 @@ Public Class FormStartup
         End If
 
         If PageNumber = 1 Then Me.CurrentImage.FileNamePage1 = Me.CurrentImage.FileName
-        ShowStatus("Acquiring page " & (PageNumber + 1).ToString & "...")
 
     End Sub
 
@@ -547,16 +477,13 @@ Public Class FormStartup
         With Me.CurrentImage.PDF
             .iTextDocument.NewPage()
 
-            'ShowStatus("Creating iText image...")
             'Dim img As iTextSharp.text.Image = iTextSharp.text.Image.GetInstance(bmp, iTextSharp.text.BaseColor.WHITE) 'Unbearably slow!
             Dim ms As New System.IO.MemoryStream
             bmp.Save(ms, System.Drawing.Imaging.ImageFormat.Png)
             Dim img As iTextSharp.text.Image = iTextSharp.text.Image.GetInstance(ms.ToArray)
 
-            'ShowStatus("Scaling image...")
             img.ScaleToFit(.iTextDocument.PageSize.Width, .iTextDocument.PageSize.Height)
 
-            'ShowStatus("Adding image to document...")
             .iTextDocument.Add(img)
         End With
     End Sub
@@ -729,27 +656,4 @@ Public Class FormStartup
         End If
     End Sub
 
-    Private Sub GUIForm_ImageProgress(PercentComplete As Integer) Handles GUIForm.ImageProgress
-        If Me.InvokeRequired Then
-            Dim d As New dSetImageProgress(AddressOf SetImageProgress)
-            Me.Invoke(d, New Object() {PercentComplete})
-        Else
-            Me.SetImageProgress(PercentComplete)
-        End If
-    End Sub
-
-    Private Delegate Sub dSetImageProgress(ByVal Progress As Integer)
-    Private Sub SetImageProgress(ByVal Progress As Integer)
-        Try
-            Dim pbar As ProgressBar = frmStatus.Controls("Progress")
-            If Progress < 0 Then
-                pbar.Style = ProgressBarStyle.Marquee
-                pbar.MarqueeAnimationSpeed = 30
-             Else
-                pbar.Style = ProgressBarStyle.Continuous
-                pbar.Value = Progress
-            End If
-        Catch ex As Exception
-        End Try
-    End Sub
 End Class

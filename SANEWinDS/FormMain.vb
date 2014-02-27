@@ -27,10 +27,7 @@ Public Class FormMain
     Public Event ImageAcquired(ByVal PageNumber As Integer, ByVal Bmp As Bitmap)
     Public Event ImageError(ByVal PageNumber As Integer, ByVal Message As String)
     Public Event BatchCompleted(ByVal Pages As Integer)
-    'Public Event BatchCancelled()
     Public Event ImageProgress(ByVal PercentComplete As Integer) '0-100, -1 if unknown
-
-    'Dim Host As SharedSettings.HostInfo
 
     Dim OptionValueControls(-1) As Control
     Public Got_MSG_CLOSEDS As Boolean = False
@@ -41,6 +38,8 @@ Public Class FormMain
     Public TWAIN_Is_Active As Boolean = False
     Public TWAINInstance As TWAIN_VB.DS_Entry_Pump
     Public Mode As UIMode = UIMode.Scan
+    Public ShowScanProgress As Boolean = True
+    Private frmProgress As FormScanProgress
     Private PanelOptIsDirty As Boolean
     Private Initialized As Boolean 'Has the Load() event already been executed? Workaround for Load() always firing when using ShowDialog().
     Dim ImageCurve_KeyPoints As New System.Collections.Generic.Dictionary(Of String, System.Collections.Generic.List(Of System.Drawing.Point)) 'key is SANE option name
@@ -111,6 +110,15 @@ Public Class FormMain
             Dim PageNo As Integer = 0
             If SANE.CurrentDevice.Name IsNot Nothing Then
                 If SANE.CurrentDevice.Open Then
+                    If frmProgress Is Nothing OrElse frmProgress.IsDisposed Then
+                        frmProgress = New FormScanProgress
+                        frmProgress.Text = Me.Text
+                        frmProgress.Icon = Me.Icon
+                        AddHandler frmProgress.ScanCancelled, AddressOf Me.CancelScan
+                    Else
+                        frmProgress.Reset()
+                    End If
+                    If Me.ShowScanProgress Then frmProgress.ShowProgress("Acquiring page 1...")
                     RaiseEvent BatchStarted()
                     Dim Status As SANE_API.SANE_Status = 0
                     Do
@@ -122,23 +130,31 @@ Public Class FormMain
                             Select Case Status
                                 Case SANE_API.SANE_Status.SANE_STATUS_GOOD
                                     If bmp IsNot Nothing Then
+                                        If Me.ShowScanProgress Then
+                                            frmProgress.ShowProgress("Acquiring page " & (PageNo + 1).ToString & "...")
+                                        End If
                                         RaiseEvent ImageAcquired(PageNo, bmp)
                                         'bmp.Dispose() 'let the event consumer decide whether to dispose or not.
                                         bmp = Nothing
                                         If Not CurrentSettings.ScanContinuously Then
+                                            frmProgress.Visible = False
                                             RaiseEvent BatchCompleted(PageNo)
                                             Exit Do
                                         End If
                                     End If
                                 Case SANE_API.SANE_Status.SANE_STATUS_NO_DOCS, SANE_API.SANE_Status.SANE_STATUS_CANCELLED
+                                    frmProgress.Visible = False
                                     RaiseEvent BatchCompleted(PageNo - 1)
                                 Case Else
+                                    frmProgress.Visible = False
                                     RaiseEvent ImageError(PageNo, Status.ToString)
                             End Select
                         Catch ex As Exception
+                            frmProgress.Visible = False
                             RaiseEvent ImageError(PageNo, ex.Message)
                             Exit Do
                         Finally
+                            'If frmProgress IsNot Nothing AndAlso (Not frmProgress.IsDisposed) Then frmProgress.Close()
                             Me.Cursor = Cursors.Default
                         End Try
                     Loop While Status = SANE_API.SANE_Status.SANE_STATUS_GOOD And CurrentSettings.ScanContinuously = True
@@ -161,9 +177,11 @@ Public Class FormMain
                         End If
                     End If
                 Else
+                    If frmProgress IsNot Nothing AndAlso (Not frmProgress.IsDisposed) Then frmProgress.Visible = False
                     RaiseEvent ImageError(PageNo, "The SANE device '" & SANE.CurrentDevice.Name & "' has not been opened")
                 End If
             Else
+                If frmProgress IsNot Nothing AndAlso (Not frmProgress.IsDisposed) Then frmProgress.Visible = False
                 RaiseEvent ImageError(PageNo, "The SANE device name is not defined")
             End If
             WinAPI.SetProcessWorkingSetSize(Process.GetCurrentProcess().Handle, -1, -1) 'reclaim memory
@@ -352,6 +370,7 @@ Public Class FormMain
             Me.ButtonHost.Enabled = Not TWAIN_Is_Active 'XXX is it ok to reconfigure with TWAIN active?
 
             If SANE Is Nothing Then SANE = New SANE_API
+ 
             AddHandler SANE.FrameProgress, AddressOf ImageFrameProgress
 
             If Not TWAIN_Is_Active Then
@@ -1636,6 +1655,9 @@ Public Class FormMain
     End Function
 
     Private Sub ImageFrameProgress(PercentComplete As Integer)
+        If Me.ShowScanProgress And (Not TWAIN_Is_Active) Then
+            If frmProgress IsNot Nothing Then frmProgress.ShowFrameProgress(PercentComplete)
+        End If
         RaiseEvent ImageProgress(PercentComplete)
     End Sub
 

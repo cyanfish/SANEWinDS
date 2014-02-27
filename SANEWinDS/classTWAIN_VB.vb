@@ -2120,6 +2120,7 @@ Namespace TWAIN_VB
         Private MyCondition As TWCC
         Private MyResult As TWRC
         Private MyForm As FormMain
+        Private MyProgressForm As FormScanProgress
         Private Caps As New Dictionary(Of CAP, TwainCapability)
         Private PageSizes As System.Collections.Generic.SortedDictionary(Of TWSS, PageSize)
         Private SupportedSizes As New ArrayList
@@ -2608,7 +2609,15 @@ Namespace TWAIN_VB
                             Try
                                 Dim Status As SANE_API.SANE_Status
                                 Dim bmp As System.Drawing.Bitmap = Nothing
-                                If MyForm IsNot Nothing Then MyForm.SetControlsEnabled(False)
+                                If MyForm IsNot Nothing Then
+                                    MyForm.SetControlsEnabled(False)
+                                    If MyForm.ShowScanProgress Then
+                                        If MyProgressForm IsNot Nothing Then
+                                            MyProgressForm.Reset()
+                                            MyProgressForm.ShowProgress("Acquiring page " & (CurrentJob.ImagesXferred + 1).ToString & "...")
+                                        End If
+                                    End If
+                                End If
                                 Status = AcquireImage(bmp)
                                 If Status = SANE_API.SANE_Status.SANE_STATUS_GOOD Then
                                     If Caps(CAP.CAP_FEEDERENABLED).CurrentValue <> 0 Then
@@ -2661,6 +2670,7 @@ Namespace TWAIN_VB
                                 SetResult(TWRC.TWRC_FAILURE)
                                 Return MyResult
                             Finally
+                                If MyProgressForm IsNot Nothing Then MyProgressForm.Visible = False
                                 If MyForm IsNot Nothing Then MyForm.SetControlsEnabled(True)
                             End Try
                         Case Else
@@ -2684,7 +2694,15 @@ Namespace TWAIN_VB
                             Try
                                 Dim Status As SANE_API.SANE_Status
                                 Dim bmp As System.Drawing.Bitmap = Nothing
-                                If MyForm IsNot Nothing Then MyForm.SetControlsEnabled(False)
+                                If MyForm IsNot Nothing Then
+                                    MyForm.SetControlsEnabled(False)
+                                    If MyForm.ShowScanProgress Then
+                                        If MyProgressForm IsNot Nothing Then
+                                            MyProgressForm.Reset()
+                                            MyProgressForm.ShowProgress("Acquiring page " & (CurrentJob.ImagesXferred + 1).ToString & "...")
+                                        End If
+                                    End If
+                                End If
                                 Status = AcquireImage(bmp)
                                 If Status = SANE_API.SANE_Status.SANE_STATUS_GOOD Then
 
@@ -2781,6 +2799,7 @@ Namespace TWAIN_VB
                                 SetResult(TWRC.TWRC_FAILURE)
                                 Return MyResult
                             Finally
+                                If MyProgressForm IsNot Nothing Then MyProgressForm.Visible = False
                                 If MyForm IsNot Nothing Then MyForm.SetControlsEnabled(True)
                             End Try
                         Case TwainState.DS_Xfer_Active
@@ -3804,9 +3823,13 @@ Namespace TWAIN_VB
                         MyForm.Mode = FormMain.UIMode.Scan
                         Me.SetState(TwainState.DS_Enabled)
                         If CBool(UserInterface.ShowUI) Then
+                            MyForm.ShowScanProgress = True
                             MyForm.Show()
+                            MyProgressForm.Text = MyForm.Text
+                            MyProgressForm.Icon = MyForm.Icon
                             MyForm.ButtonOK.Enabled = True
                         Else
+                            MyForm.ShowScanProgress = False
                             'MyForm.ButtonOK.PerformClick() 'this doesn't work for some reason
                             Me.GUI_ButtonOK_Click(MyForm.ButtonOK, New System.Windows.Forms.MouseEventArgs(Windows.Forms.MouseButtons.Left, 1, 1, 1, 0))
                         End If
@@ -3901,6 +3924,14 @@ Namespace TWAIN_VB
                             'MyForm.CheckBoxBatchMode.Checked = CBool(Me.Caps(CAP.CAP_FEEDERENABLED).CurrentValue)
                             MyForm.CheckBoxBatchMode.Checked = CurrentSettings.ScanContinuously
                             AddHandler MyForm.CheckBoxBatchMode.CheckedChanged, AddressOf Me.GUI_CheckBoxBatchMode_CheckedChanged
+                            AddHandler MyForm.ImageProgress, AddressOf Me.ImageFrameProgress
+                        End If
+
+                        If MyProgressForm Is Nothing OrElse MyProgressForm.IsDisposed Then
+                            MyProgressForm = New FormScanProgress
+                            AddHandler MyProgressForm.ScanCancelled, AddressOf MyForm.CancelScan
+                        Else
+                            MyProgressForm.Reset()
                         End If
 
                         'Start talking SANE
@@ -4079,6 +4110,12 @@ Namespace TWAIN_VB
                         'XXX check for multiple connected applications
 
                         Try
+
+                            If MyProgressForm IsNot Nothing Then
+                                '.Close() has code to hide instead of closing, so .Dispose() instead.
+                                MyProgressForm.Dispose()
+                                MyProgressForm = Nothing
+                            End If
 
                             If MyForm IsNot Nothing Then
                                 MyForm.Got_MSG_CLOSEDS = True
@@ -4945,6 +4982,12 @@ Namespace TWAIN_VB
             tc.SupportedOperations = TWQC.TWQC_ALL
             Caps.Add(tc.Capability, tc)
 
+        End Sub
+
+        Private Sub ImageFrameProgress(PercentComplete As Integer)
+            If MyForm.ShowScanProgress Then
+                If MyProgressForm IsNot Nothing Then MyProgressForm.ShowFrameProgress(PercentComplete)
+            End If
         End Sub
     End Class
 End Namespace

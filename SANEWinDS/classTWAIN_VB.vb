@@ -3972,9 +3972,17 @@ Namespace TWAIN_VB
                                     Dim status As SANE_API.SANE_Status
                                     SANE.CurrentDevice = New SANE_API.CurrentDeviceInfo
                                     CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Open = False
-                                    ControlClient.Connect(CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).NameOrAddress, CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Port)
-                                    'status = SANE.Net_Init(net, CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Username)
-                                    status = SANE.Net_Init(ControlClient, Environment.UserName)
+                                    Try
+                                        ControlClient.Connect(CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).NameOrAddress, CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Port)
+                                        'status = SANE.Net_Init(net, CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Username)
+                                        status = SANE.Net_Init(ControlClient, Environment.UserName)
+                                    Catch ex As Exception
+                                        status = SANE_API.SANE_Status.SANE_STATUS_IO_ERROR
+                                        Dim s As String = "Failed to connect to host '" & CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).NameOrAddress & "': " _
+                                                          & ex.Message '& vbCrLf & vbCrLf & "If you need to reconfigure the host parameters, please use the SANEWin application."
+                                        MsgBox(s, MsgBoxStyle.Critical, "Connection Error")
+                                        'Throw
+                                    End Try
                                     Logger.Debug("Net_Init returned status '{0}'", status)
                                     If status = SANE_API.SANE_Status.SANE_STATUS_GOOD Then
                                         CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Open = True

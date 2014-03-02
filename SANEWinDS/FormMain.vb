@@ -367,7 +367,7 @@ Public Class FormMain
             Logger.Debug("")
 
             Me.ButtonOK.Enabled = False
-            Me.ButtonHost.Enabled = Not TWAIN_Is_Active 'XXX is it ok to reconfigure with TWAIN active?
+            'Me.ButtonHost.Enabled = Not TWAIN_Is_Active 'XXX is it ok to reconfigure with TWAIN active?
 
             If SANE Is Nothing Then SANE = New SANE_API
  
@@ -1476,6 +1476,15 @@ Public Class FormMain
     End Sub
 
     Private Sub ButtonHost_Click(sender As Object, e As EventArgs) Handles ButtonHost.Click
+
+        If TWAIN_Is_Active Then
+            Dim result As MsgBoxResult = MsgBox("The TWAIN data source has already been initialized using information from the current scanner." _
+                                              & "  If you change to a different scanner, you should close and reopen your TWAIN application to avoid" _
+                                              & " mismatched parameters and unexpected behavior.  Are you sure you want to continue?" _
+                                              , MsgBoxStyle.Critical + MsgBoxStyle.YesNo, "Dangerous Device Change")
+            If result <> MsgBoxResult.Yes Then Exit Sub
+        End If
+
         Close_SANE()
         Close_Net()
         If SANE Is Nothing Then SANE = New SANE_API

@@ -49,14 +49,13 @@ Public Class FormMain
         Try
             Me.CloseCurrentDevice()
             If ControlClient IsNot Nothing Then
-                If ControlClient.Connected Then
+                If TCPClient_Connected(ControlClient) Then
                     SANE.Net_Exit(ControlClient)
                     Dim stream As System.Net.Sockets.NetworkStream = ControlClient.GetStream
                     stream.Close()
                     stream = Nothing
                     ControlClient.Close()
                 End If
-                'If net.Connected Then net.Close()
                 ControlClient = Nothing
             End If
         Catch ex As Exception
@@ -342,7 +341,7 @@ Public Class FormMain
     Private Sub FormMain_FormClosed(sender As Object, e As FormClosedEventArgs) Handles Me.FormClosed
         Me.CloseCurrentHost()
         If ControlClient IsNot Nothing Then
-            If ControlClient.Connected Then ControlClient.Close()
+            If TCPClient_Connected(ControlClient) Then ControlClient.Close()
             ControlClient = Nothing
         End If
         If CurrentSettings IsNot Nothing Then CurrentSettings.Save()

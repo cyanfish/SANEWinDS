@@ -301,12 +301,12 @@ Module modGlobals
             If (CurrentSettings.SANE.CurrentHostIndex > -1) AndAlso (CurrentSettings.SANE.CurrentHostIndex < CurrentSettings.SANE.Hosts.Length) Then
                 If Not CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Open Then
                     If ControlClient IsNot Nothing Then
-                        If ControlClient.Connected Then
+                        If TCPClient_Connected(ControlClient) Then
                             Dim stream As System.Net.Sockets.NetworkStream = ControlClient.GetStream
                             stream.Close()
                             stream = Nothing
                         End If
-                        If ControlClient.Connected Then ControlClient.Close()
+                        If TCPClient_Connected(ControlClient) Then ControlClient.Close()
                         ControlClient = Nothing
                     End If
                 End If
@@ -518,4 +518,13 @@ Module modGlobals
         End If
     End Function
 
+    Public Function TCPClient_Connected(Client As System.Net.Sockets.TcpClient) As Boolean
+        'The TCPClient class has a bug that causes it to throw an exception when reading .Connected on some systems
+        If Client Is Nothing Then Return False
+        Try
+            Return Client.Connected
+        Catch ex As Exception
+            Return False
+        End Try
+    End Function
 End Module

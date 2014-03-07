@@ -1256,7 +1256,7 @@ Class SANE_API
                 'End If
                 If stream IsNot Nothing Then stream.Close()
                 If Data_TCPClient IsNot Nothing Then
-                    If Data_TCPClient.Connected Then Data_TCPClient.Close()
+                    If TCPClient_Connected(Data_TCPClient) Then Data_TCPClient.Close()
                  End If
             Catch
             End Try

@@ -4056,13 +4056,13 @@ Namespace TWAIN_VB
                                             SANE.Net_Exit(ControlClient)
                                         End If
 
-                                        If ControlClient.Connected Then
+                                        If TCPClient_Connected(ControlClient) Then
                                             Dim stream As System.Net.Sockets.NetworkStream = ControlClient.GetStream
                                             stream.Close()
                                             stream = Nothing
                                         End If
 
-                                        If ControlClient.Connected Then ControlClient.Close()
+                                        If TCPClient_Connected(ControlClient) Then ControlClient.Close()
                                         ControlClient = Nothing
 
                                         Dim f As New FormSANEHostWizard
@@ -4095,12 +4095,12 @@ Namespace TWAIN_VB
                                 Try
                                     If Not CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Open Then
                                         If ControlClient IsNot Nothing Then
-                                            If ControlClient.Connected Then
+                                            If TCPClient_Connected(ControlClient) Then
                                                 Dim stream As System.Net.Sockets.NetworkStream = ControlClient.GetStream
                                                 stream.Close()
                                                 stream = Nothing
                                             End If
-                                            If ControlClient.Connected Then ControlClient.Close()
+                                            If TCPClient_Connected(ControlClient) Then ControlClient.Close()
                                             ControlClient = Nothing
                                         End If
                                     End If
@@ -4133,7 +4133,7 @@ Namespace TWAIN_VB
                             End If
 
                             If ControlClient IsNot Nothing Then
-                                If ControlClient.Connected Then ControlClient.Close()
+                                If TCPClient_Connected(ControlClient) Then ControlClient.Close()
                             End If
                         Catch ex As Exception
                             Logger.ErrorException(ex.Message, ex)

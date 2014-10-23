@@ -1429,14 +1429,18 @@ Public Class FormMain
     End Sub
 
     Private Sub TreeViewOptions_AfterSelect(ByVal sender As Object, ByVal e As System.Windows.Forms.TreeViewEventArgs) Handles TreeViewOptions.AfterSelect
-        'PanelOpt.Controls.Clear()
-        Me.ClearPanelControls()
-        For Index As Integer = 0 To SANE.CurrentDevice.OptionDescriptors.Length - 1
-            If Index = e.Node.Tag Then
-                Me.DisplayOption(Me.PanelOpt, Index)
-                Exit For
-            End If
-        Next
+        Try
+            'PanelOpt.Controls.Clear()
+            Me.ClearPanelControls()
+            For Index As Integer = 0 To SANE.CurrentDevice.OptionDescriptors.Length - 1
+                If Index = e.Node.Tag Then
+                    Me.DisplayOption(Me.PanelOpt, Index)
+                    Exit For
+                End If
+            Next
+        Catch ex As Exception
+            Debug.Print(ex.Message)
+        End Try
     End Sub
 
     Private Sub FormMain_Shown(ByVal sender As Object, ByVal e As System.EventArgs) Handles Me.Shown

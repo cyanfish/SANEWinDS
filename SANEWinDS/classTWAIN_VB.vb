@@ -3999,23 +3999,46 @@ Namespace TWAIN_VB
                                                     Dim Devices(-1) As SANE_API.SANE_Device
                                                     status = SANE.Net_Get_Devices(ControlClient, Devices)
                                                     If status = SANE_API.SANE_Status.SANE_STATUS_GOOD Then
+                                                        Dim AutoLocateDeviceStrings() As String = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).AutoLocateDevice.Split(New Char() {",", ";"})
                                                         Dim FoundDevice As Boolean = False
+                                                        Dim FoundDeviceName As String = Nothing
                                                         For i As Integer = 0 To Devices.Length - 1
                                                             status = SANE_API.SANE_Status.SANE_STATUS_INVAL
-                                                            If Devices(i).name.Trim.Length >= CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).AutoLocateDevice.Length Then
-                                                                If Devices(i).name.Trim.Substring(0, CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).AutoLocateDevice.Length) = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).AutoLocateDevice Then
-                                                                    FoundDevice = True
-                                                                    Logger.Debug("Auto-located device '{0}'; attempting to open...", Devices(i).name)
-                                                                    status = SANE.Net_Open(ControlClient, Devices(i).name, DeviceHandle, _
-                                                                                           CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Username, _
-                                                                                           CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Password)
-                                                                    Logger.Debug("Net_Open returned status '{0}'", status)
-                                                                    If status = SANE_API.SANE_Status.SANE_STATUS_GOOD Then CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Device = Devices(i).name
-                                                                    Exit For
+                                                            For Each DevName As String In AutoLocateDeviceStrings
+                                                                If DevName IsNot Nothing Then DevName = DevName.Trim
+                                                                If Not String.IsNullOrWhiteSpace(DevName) Then
+                                                                    If DevName = "*" Then
+                                                                        FoundDevice = True
+                                                                        FoundDeviceName = Devices(i).name
+                                                                        Exit For
+                                                                    Else
+                                                                        If Devices(i).name.Trim.Length >= DevName.Length Then
+                                                                            If Devices(i).name.Trim.Substring(0, DevName.Length) = DevName Then
+                                                                                FoundDevice = True
+                                                                                FoundDeviceName = Devices(i).name
+                                                                                Exit For
+                                                                            End If
+                                                                        End If
+                                                                    End If
                                                                 End If
-                                                            End If
+                                                            Next
                                                         Next
-                                                        If Not FoundDevice Then MsgBox("No device using the '" & CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).AutoLocateDevice & "' backend was found on '" & CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).NameOrAddress & "'", MsgBoxStyle.Exclamation, "Device not found")
+                                                        If FoundDevice Then
+                                                            Logger.Debug("Auto-located device '{0}'; attempting to open...", FoundDeviceName)
+                                                            status = SANE.Net_Open(ControlClient, FoundDeviceName, DeviceHandle, _
+                                                                                   CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Username, _
+                                                                                   CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Password)
+                                                            Logger.Debug("Net_Open returned status '{0}'", status)
+                                                            If status = SANE_API.SANE_Status.SANE_STATUS_GOOD Then CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Device = FoundDeviceName
+                                                        Else
+                                                            Dim s As String = Nothing
+                                                            For Each DevName As String In AutoLocateDeviceStrings
+                                                                If Not String.IsNullOrWhiteSpace(DevName) Then
+                                                                    s += DevName.Trim & vbCr
+                                                                End If
+                                                            Next
+                                                            MsgBox("No device using any of the following Autolocate backends was found on host '" & CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).NameOrAddress & "': " & vbCr & s & vbCr & "Please check your connections or select a different scanner.", MsgBoxStyle.Exclamation, "Device not found")
+                                                        End If
                                                     End If
                                                 End If
                                             End If

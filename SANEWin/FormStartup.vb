@@ -132,7 +132,7 @@ Public Class FormStartup
             Me.INI.Load(INIFileName)
             If Me.INI.GetSection("Output") Is Nothing Then Me.INI.AddSection("Output")
             Dim OutputFolder As String = INI.GetKeyValue("Output", "DefaultOutputFolder")
-            If String.IsNullOrEmpty(OutputFolder) Then
+            If String.IsNullOrWhiteSpace(OutputFolder) Then
                 Me.OutputDirectory = My.Computer.FileSystem.SpecialDirectories.Temp & "\" & Me.ProductName
                 Me.INI.SetKeyValue("Output", "DefaultOutputFolder", "")
             Else

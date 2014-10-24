@@ -4027,9 +4027,13 @@ Namespace TWAIN_VB
 
                                                 MyForm.GetOpts(True) 'must occur prior to reading GetDeviceConfigFileName()!
 
-                                                CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI = New IniFile.IniFile
-                                                Dim s As String = CurrentSettings.GetDeviceConfigFileName()
-                                                If s IsNot Nothing AndAlso s.Length > 0 Then CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.Load(s)
+                                                CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.Shared = New IniFile.IniFile
+                                                Dim s As String = CurrentSettings.GetDeviceConfigFileName(SharedSettings.ConfigFileScope.Shared)
+                                                If s IsNot Nothing AndAlso s.Length > 0 Then CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.Shared.Load(s)
+
+                                                CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.User = New IniFile.IniFile
+                                                s = CurrentSettings.GetDeviceConfigFileName(SharedSettings.ConfigFileScope.User)
+                                                If s IsNot Nothing AndAlso s.Length > 0 Then CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.User.Load(s)
 
                                                 Import_SANE_Options()
                                                 MyForm.SetUserDefaults()
@@ -4572,10 +4576,12 @@ Namespace TWAIN_VB
             'Return true if the cap was mapped, otherwise false
             SetSANECaps = False
             If NewValue.GetType Is GetType(TW_FIX32) Then NewValue = FIX32ToFloat(NewValue)
-            If CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI IsNot Nothing Then
-                Dim s As String = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.GetKeyValue("TWAIN." & Capability.ToString, "SANE." & NewValue.ToString.Replace(" ", ""))
+            If (CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.User IsNot Nothing) Or (CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.Shared IsNot Nothing) Then
+                'Dim s As String = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.GetKeyValue("TWAIN." & Capability.ToString, "SANE." & NewValue.ToString.Replace(" ", ""))
+                Dim s As String = CurrentSettings.GetINIKeyValue("TWAIN." & Capability.ToString, "SANE." & NewValue.ToString.Replace(" ", ""), CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.User, CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.Shared)
                 'If there wasn't a TWAIN mapping for the specific value that was set, look for a general mapping.
-                If (s Is Nothing) OrElse (s.Length = 0) Then s = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.GetKeyValue("TWAIN." & Capability.ToString, "SANE")
+                'If (s Is Nothing) OrElse (s.Length = 0) Then s = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.GetKeyValue("TWAIN." & Capability.ToString, "SANE")
+                If (s Is Nothing) OrElse (s.Length = 0) Then s = CurrentSettings.GetINIKeyValue("TWAIN." & Capability.ToString, "SANE", CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.User, CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.Shared)
                 If s IsNot Nothing AndAlso s.Length Then
                     Dim caps() As String = s.Split(";")
                     Dim capName(caps.Length - 1) As String

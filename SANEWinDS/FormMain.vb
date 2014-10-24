@@ -233,7 +233,7 @@ Public Class FormMain
             SANE.CurrentDevice.OptionDescriptors = Descriptors
             ReDim SANE.CurrentDevice.OptionValues(Descriptors.Length - 1)
 
-            Dim BackEndConfigFile As String = CurrentSettings.GetDeviceConfigFileName() 'this will create the config file if it doesn't already exist
+            Dim BackEndConfigFile As String = CurrentSettings.GetDeviceConfigFileName(SharedSettings.ConfigFileScope.User) 'this will create the config file if it doesn't already exist
 
             Dim GroupNode As TreeNode = Nothing
             Dim AdvancedNode As TreeNode = Nothing
@@ -469,9 +469,13 @@ Public Class FormMain
 
                         Me.GetOpts(True)  'must occur prior to reading GetDeviceConfigFileName()!
 
-                        CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI = New IniFile.IniFile
-                        Dim s As String = CurrentSettings.GetDeviceConfigFileName()
-                        If s IsNot Nothing AndAlso s.Length > 0 Then CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.Load(s)
+                        CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.Shared = New IniFile.IniFile
+                        Dim s As String = CurrentSettings.GetDeviceConfigFileName(SharedSettings.ConfigFileScope.Shared)
+                        If s IsNot Nothing AndAlso s.Length > 0 Then CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.Shared.Load(s)
+
+                        CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.User = New IniFile.IniFile
+                        s = CurrentSettings.GetDeviceConfigFileName(SharedSettings.ConfigFileScope.User)
+                        If s IsNot Nothing AndAlso s.Length > 0 Then CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.User.Load(s)
 
                         Me.SetUserDefaults()
 
@@ -970,9 +974,10 @@ Public Class FormMain
         SANE.CurrentDevice.SupportedPageSizes = New ArrayList
         Me.ComboBoxPageSize.Items.Clear()
 
-        If CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI IsNot Nothing Then
+        If (CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.User IsNot Nothing) Or (CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.Shared IsNot Nothing) Then
             Try
-                Dim opt As String = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.GetKeyValue("General", "ScanContinuously")
+                'Dim opt As String = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.GetKeyValue("General", "ScanContinuously")
+                Dim opt As String = CurrentSettings.GetINIKeyValue("General", "ScanContinuously", CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.User, CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.Shared)
                 If opt IsNot Nothing Then
                     If opt.Length Then
                         CurrentSettings.ScanContinuously = Convert.ToBoolean(opt)
@@ -991,7 +996,8 @@ Public Class FormMain
                     Case SANE_API.SANE_Value_Type.SANE_TYPE_GROUP, SANE_API.SANE_Value_Type.SANE_TYPE_BUTTON
                         'no need to map these options
                     Case Else
-                        Dim optval As String = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.GetKeyValue("Option." & SANE.CurrentDevice.OptionDescriptors(i).name, "DefaultValue")
+                        'Dim optval As String = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.GetKeyValue("Option." & SANE.CurrentDevice.OptionDescriptors(i).name, "DefaultValue")
+                        Dim optval As String = CurrentSettings.GetINIKeyValue("Option." & SANE.CurrentDevice.OptionDescriptors(i).name, "DefaultValue", CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.User, CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.Shared)
                         If optval IsNot Nothing Then
                             If optval.Length Then
                                 If SANE.SANE_OPTION_IS_ACTIVE(SANE.CurrentDevice.OptionDescriptors(i).cap) And SANE.SANE_OPTION_IS_SETTABLE(SANE.CurrentDevice.OptionDescriptors(i).cap) Then
@@ -1013,7 +1019,8 @@ Public Class FormMain
             Dim MaxWidth As Double = 0
             Dim MaxHeight As Double = 0
             Try
-                Dim opt As String = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.GetKeyValue("General", "MaxPaperWidth")
+                'Dim opt As String = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.GetKeyValue("General", "MaxPaperWidth")
+                Dim opt As String = CurrentSettings.GetINIKeyValue("General", "MaxPaperWidth", CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.User, CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.Shared)
                 If opt IsNot Nothing Then
                     If opt.Length Then
                         If Not Double.TryParse(opt, MaxWidth) Then
@@ -1025,7 +1032,8 @@ Public Class FormMain
                 Logger.ErrorException("Exception reading MaxPaperWidth setting from backend.ini: " & ex.Message, ex)
             End Try
             Try
-                Dim opt As String = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.GetKeyValue("General", "MaxPaperHeight")
+                'Dim opt As String = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.GetKeyValue("General", "MaxPaperHeight")
+                Dim opt As String = CurrentSettings.GetINIKeyValue("General", "MaxPaperHeight", CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.User, CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.Shared)
                 If opt IsNot Nothing Then
                     If opt.Length Then
                         If Not Double.TryParse(opt, MaxHeight) Then
@@ -1070,7 +1078,8 @@ Public Class FormMain
             End If
 
             Try
-                Dim opt As String = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.GetKeyValue("General", "DefaultPaperSize")
+                'Dim opt As String = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.GetKeyValue("General", "DefaultPaperSize")
+                Dim opt As String = CurrentSettings.GetINIKeyValue("General", "DefaultPaperSize", CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.User, CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.Shared)
                 If opt IsNot Nothing Then
                     If opt.Length Then
                         Dim Found_Default As Boolean = False
@@ -1195,12 +1204,14 @@ Public Class FormMain
 
     Friend Sub SetTWAINCaps(ByVal OptionDescriptor As SANE_API.SANE_Option_Descriptor, ByVal OptionValues() As Object, ByVal SetDefaultValue As Boolean)
         If OptionValues.Length > 1 Then Logger.Warn("Only the first value in the array will be evaluated for option '{0}'", OptionDescriptor.title)
-        If (CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI IsNot Nothing) Then
+        If (CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.User IsNot Nothing) Or (CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.Shared IsNot Nothing) Then
             If OptionValues.Length > 0 Then
                 If OptionValues(0) IsNot Nothing Then
-                    Dim s As String = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.GetKeyValue("Option." & OptionDescriptor.name, "TWAIN." & OptionValues(0).ToString.Replace(" ", ""))
+                    'Dim s As String = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.GetKeyValue("Option." & OptionDescriptor.name, "TWAIN." & OptionValues(0).ToString.Replace(" ", ""))
+                    Dim s As String = CurrentSettings.GetINIKeyValue("Option." & OptionDescriptor.name, "TWAIN." & OptionValues(0).ToString.Replace(" ", ""), CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.User, CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.Shared)
                     'If there wasn't a TWAIN mapping for the specific value that was set, look for a general mapping.
-                    If (s Is Nothing) OrElse (s.Length = 0) Then s = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.GetKeyValue("Option." & OptionDescriptor.name, "TWAIN")
+                    'If (s Is Nothing) OrElse (s.Length = 0) Then s = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.GetKeyValue("Option." & OptionDescriptor.name, "TWAIN")
+                    If (s Is Nothing) OrElse (s.Length = 0) Then s = CurrentSettings.GetINIKeyValue("Option." & OptionDescriptor.name, "TWAIN", CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.User, CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.Shared)
                     If s IsNot Nothing AndAlso s.Length Then
                         Dim caps() As String = s.Split(";")
                         Dim capName(caps.Length - 1) As String

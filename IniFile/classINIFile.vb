@@ -142,7 +142,8 @@ Public Class IniFile
                 Return k.Value
             End If
         End If
-        Return String.Empty
+        'Return String.Empty
+        Return Nothing
     End Function
 
     ' Sets a KeyValuePair in a certain section

@@ -23,6 +23,14 @@ Public Class SharedSettings
     '    LocalAppData = 0
     '    RoamingAppData = 1
     'End Enum
+    Public Enum ConfigFileScope As Integer
+        [Shared] = 0
+        User = 1
+    End Enum
+    Public Structure ConfigFile
+        Dim [Shared] As IniFile.IniFile
+        Dim User As IniFile.IniFile
+    End Structure
     Public Structure HostInfo
         Dim NameOrAddress As String
         Dim UseTSClientIP As Boolean 'Are we currently using the TS client ip as the NameOrAddress?
@@ -33,7 +41,8 @@ Public Class SharedSettings
         Dim Image_Timeout_s As Integer
         Dim Open As Boolean
         Dim Device As String
-        Dim DeviceINI As IniFile.IniFile
+        'Dim DeviceINI As IniFile.IniFile
+        Dim DeviceINI As ConfigFile
         Dim AutoLocateDevice As String 'SANE backend name of device to auto-choose from list of devices on CurrentHost (example: "canon_dr")
     End Structure
     Public Structure SANESettings
@@ -336,7 +345,7 @@ Public Class SharedSettings
                             Logger.ErrorException("Error getting terminal server client IP address: " & ex.Message, ex)
                         End Try
                     End If
-                    If Not String.IsNullOrEmpty(NameOrAddress) Then
+                    If Not String.IsNullOrWhiteSpace(NameOrAddress) Then
                         Dim Port As Integer = 0
                         Integer.TryParse(INI.GetKeyValue(SectionName, "Port"), Port)
                         If Port = 0 Then Port = 6566
@@ -381,36 +390,44 @@ Public Class SharedSettings
         Return Me.UserConfigDirectory & "\" & Me.ProductName.Name & ".ini"
     End Function
 
-    Public Function GetDeviceConfigFileName() As String
+    Public Function GetDeviceConfigFileName(Scope As ConfigFileScope) As String
         Dim BackEnd As String = modGlobals.SANE.CurrentDevice.Name
         Dim p As Integer = BackEnd.IndexOf(":")
         If p Then BackEnd = BackEnd.Substring(0, p)
         Dim f As String = CurrentSettings.UserConfigDirectory & "\" & BackEnd & ".ini"
-        If My.Computer.FileSystem.FileExists(f) Then
-            Return f
+        Dim ff As String = CurrentSettings.SharedConfigDirectory & "\" & BackEnd & ".ini"
+        If Scope = ConfigFileScope.User Then
+            If My.Computer.FileSystem.FileExists(f) Then
+                Return f
+            Else
+                If My.Computer.FileSystem.FileExists(ff) Then
+                    Return Nothing 'We have a shared backend.ini we can use.  No need to auto-create a user backend.ini.
+                Else
+                    CreateDeviceConfigFile(f)
+                    Dim r As MsgBoxResult = MsgBox("The configuration file '" & BackEnd & ".ini' for the '" & BackEnd & "' backend was not found." _
+                        & "  A file containing reasonable defaults has been created in the folder '" & CurrentSettings.UserConfigDirectory & "'." _
+                        & "  You will most likely need to modify this new file to take full advantage of your backend, particularly if" _
+                        & " you intend to use it through TWAIN.  Once you have tested your configuration, please help other users" _
+                        & " by submitting '" & BackEnd & ".ini' back to the project at https://sourceforge.net/p/sanewinds/discussion/backend-ini/." _
+                        & "  Would you like to open the backend forum now?" _
+                        , MsgBoxStyle.Exclamation + MsgBoxStyle.YesNo)
+                    If r = MsgBoxResult.Yes Then
+                        Try
+                            Process.Start("https://sourceforge.net/p/sanewinds/discussion/backend-ini/")
+                        Catch ex As Exception
+                            Dim msg As String = "Unable to open web page: " & ex.Message
+                            Logger.ErrorException(msg, ex)
+                            MsgBox(msg, MsgBoxStyle.Critical)
+                        End Try
+                    End If
+                    Return f
+                End If
+            End If
         Else
-            Dim ff As String = CurrentSettings.SharedConfigDirectory & "\" & BackEnd & ".ini"
             If My.Computer.FileSystem.FileExists(ff) Then
                 Return ff
             Else
-                CreateDeviceConfigFile(f)
-                Dim r As MsgBoxResult = MsgBox("The configuration file '" & BackEnd & ".ini' for the '" & BackEnd & "' backend was not found." _
-                    & "  A file containing reasonable defaults has been created in the folder '" & CurrentSettings.UserConfigDirectory & "'." _
-                    & "  You will most likely need to modify this new file to take full advantage of your backend, particularly if" _
-                    & " you intend to use it through TWAIN.  Once you have tested your configuration, please help other users" _
-                    & " by submitting '" & BackEnd & ".ini' back to the project at https://sourceforge.net/p/sanewinds/discussion/backend-ini/." _
-                    & "  Would you like to open the backend forum now?" _
-                    , MsgBoxStyle.Exclamation + MsgBoxStyle.YesNo)
-                If r = MsgBoxResult.Yes Then
-                    Try
-                        Process.Start("https://sourceforge.net/p/sanewinds/discussion/backend-ini/")
-                    Catch ex As Exception
-                        Dim msg As String = "Unable to open web page: " & ex.Message
-                        Logger.ErrorException(msg, ex)
-                        MsgBox(msg, MsgBoxStyle.Critical)
-                    End Try
-                End If
-                Return f
+                Return Nothing
             End If
         End If
     End Function
@@ -591,6 +608,22 @@ Public Class SharedSettings
         End Try
         '
     End Sub
+
+    Public Function GetINIKeyValue(Section As String, Key As String, Preferred_INIFile As IniFile.IniFile, Alternate_INIFile As IniFile.IniFile) As String
+        Dim Result As String = Nothing
+        If Preferred_INIFile IsNot Nothing Then
+            Result = Preferred_INIFile.GetKeyValue(Section, Key)
+        End If
+        If Result IsNot Nothing Then 'The user may have intentionally specified an empty string as a value, so look elsewhere only if it's Nothing.
+            Return Result
+        Else
+            If Alternate_INIFile IsNot Nothing Then
+                Result = Alternate_INIFile.GetKeyValue(Section, Key)
+                If Result IsNot Nothing Then Return Result
+            End If
+        End If
+        Return Nothing
+    End Function
 
     Private Sub InitPageSizes()
         Me.PageSizes.Clear()

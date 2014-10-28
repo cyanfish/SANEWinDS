@@ -310,13 +310,15 @@ Public Class SharedSettings
 
     End Sub
 
-    Public Function ResolveHost(ByVal Host As HostInfo) As Boolean
+    Public Function ResolveHost(ByRef Host As HostInfo) As Boolean
         With Host
+            Logger.Debug("UseTSClientIP is " & .UseTSClientIP.ToString)
             If .UseTSClientIP Then
                 Try
                     Dim ts As New TSAPI
                     .NameOrAddress = ts.GetCurrentSessionIP
                     ts = Nothing
+                    Logger.Debug("TS Client IP is '" & .NameOrAddress & "'")
                 Catch ex As Exception
                     Logger.ErrorException("Error getting terminal server client IP address: " & ex.Message, ex)
                     Return False
@@ -324,6 +326,7 @@ Public Class SharedSettings
             End If
             Try
                 Dim IPs() As System.Net.IPAddress = System.Net.Dns.GetHostAddresses(.NameOrAddress)
+                Logger.Debug("Returning " & (IPs.Length > 0).ToString)
                 Return (IPs.Length > 0)
             Catch ex As Exception
                 Logger.ErrorException("Error resolving host '" & .NameOrAddress & "': " & ex.Message, ex)

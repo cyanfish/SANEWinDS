@@ -310,6 +310,28 @@ Public Class SharedSettings
 
     End Sub
 
+    Public Function ResolveHost(ByVal Host As HostInfo) As Boolean
+        With Host
+            If .UseTSClientIP Then
+                Try
+                    Dim ts As New TSAPI
+                    .NameOrAddress = ts.GetCurrentSessionIP
+                    ts = Nothing
+                Catch ex As Exception
+                    Logger.ErrorException("Error getting terminal server client IP address: " & ex.Message, ex)
+                    Return False
+                End Try
+            End If
+            Try
+                Dim IPs() As System.Net.IPAddress = System.Net.Dns.GetHostAddresses(.NameOrAddress)
+                Return (IPs.Length > 0)
+            Catch ex As Exception
+                Logger.ErrorException("Error resolving host '" & .NameOrAddress & "': " & ex.Message, ex)
+                Return False
+            End Try
+        End With
+    End Function
+
     Public Function HostIsValid(ByVal Host As HostInfo) As Boolean
         With Host
             If .NameOrAddress IsNot Nothing AndAlso .NameOrAddress.Length Then
@@ -327,6 +349,14 @@ Public Class SharedSettings
         Return False
     End Function
 
+    Public Function DeviceIsValid(ByVal Host As HostInfo) As Boolean
+        With Host
+            Dim Result As Boolean = (Not String.IsNullOrWhiteSpace(Host.Device)) Or (Not String.IsNullOrWhiteSpace(Host.AutoLocateDevice))
+            Logger.Debug("Returning " & Result.ToString)
+            Return Result
+        End With
+    End Function
+
     Private Function GetSANEHostsFromINI(INI As IniFile.IniFile) As HostInfo()
         Dim hi(-1) As HostInfo
         If INI IsNot Nothing Then
@@ -336,48 +366,48 @@ Public Class SharedSettings
                     Dim NameOrAddress As String = INI.GetKeyValue(SectionName, "NameOrAddress")
                     Dim UseTSClientIP As Boolean
                     Boolean.TryParse(INI.GetKeyValue(SectionName, "UseTSClientIP"), UseTSClientIP)
-                    If UseTSClientIP Then
-                        Try
-                            Dim ts As New TSAPI
-                            NameOrAddress = ts.GetCurrentSessionIP
-                            ts = Nothing
-                        Catch ex As Exception
-                            Logger.ErrorException("Error getting terminal server client IP address: " & ex.Message, ex)
-                        End Try
-                    End If
-                    If Not String.IsNullOrWhiteSpace(NameOrAddress) Then
-                        Dim Port As Integer = 0
-                        Integer.TryParse(INI.GetKeyValue(SectionName, "Port"), Port)
-                        If Port = 0 Then Port = 6566
-                        If Port > 0 Then
-                            ReDim Preserve hi(hi.Count)
-                            With hi(hi.Count - 1)
-                                .NameOrAddress = NameOrAddress.Trim
-                                .UseTSClientIP = UseTSClientIP
-                                .Port = Port
-                                Integer.TryParse(INI.GetKeyValue(SectionName, "TCP_Timeout_ms"), .TCP_Timeout_ms)
-                                If .TCP_Timeout_ms = 0 Then .TCP_Timeout_ms = 5000
-                                If .TCP_Timeout_ms < 1000 Then .TCP_Timeout_ms = 1000
+                    'If UseTSClientIP Then
+                    '    Try
+                    '        Dim ts As New TSAPI
+                    '        NameOrAddress = ts.GetCurrentSessionIP
+                    '        ts = Nothing
+                    '    Catch ex As Exception
+                    '        Logger.ErrorException("Error getting terminal server client IP address: " & ex.Message, ex)
+                    '    End Try
+                    'End If
+                    'If Not String.IsNullOrWhiteSpace(NameOrAddress) Then
+                    Dim Port As Integer = 0
+                    Integer.TryParse(INI.GetKeyValue(SectionName, "Port"), Port)
+                    If Port = 0 Then Port = 6566
+                    If Port > 0 Then
+                        ReDim Preserve hi(hi.Count)
+                        With hi(hi.Count - 1)
+                            If NameOrAddress IsNot Nothing Then .NameOrAddress = NameOrAddress.Trim
+                            .UseTSClientIP = UseTSClientIP
+                            .Port = Port
+                            Integer.TryParse(INI.GetKeyValue(SectionName, "TCP_Timeout_ms"), .TCP_Timeout_ms)
+                            If .TCP_Timeout_ms = 0 Then .TCP_Timeout_ms = 5000
+                            If .TCP_Timeout_ms < 1000 Then .TCP_Timeout_ms = 1000
 
-                                Integer.TryParse(INI.GetKeyValue(SectionName, "Image_Timeout_s"), .Image_Timeout_s)
-                                If .Image_Timeout_s = 0 Then .Image_Timeout_s = 1200 '20 minutes
-                                If .Image_Timeout_s < 5 Then .Image_Timeout_s = 5 '5 seconds
+                            Integer.TryParse(INI.GetKeyValue(SectionName, "Image_Timeout_s"), .Image_Timeout_s)
+                            If .Image_Timeout_s = 0 Then .Image_Timeout_s = 1200 '20 minutes
+                            If .Image_Timeout_s < 5 Then .Image_Timeout_s = 5 '5 seconds
 
-                                .Username = INI.GetKeyValue(SectionName, "Username")
-                                .Password = INI.GetKeyValue(SectionName, "Password")
-                                Try
-                                    Dim crypto As New SimpleCrypto
-                                    If crypto.IsEncrypted(.Password) Then .Password = crypto.Decrypt(.Password)
-                                Catch ex As SimpleCryptoExceptions.SuppliedStringNotEncryptedException
-                                    Logger.WarnException(ex.Message, ex)
-                                Catch ex As Exception
-                                    Logger.ErrorException(ex.Message, ex)
-                                End Try
-                                .Device = INI.GetKeyValue(SectionName, "Device")
-                                .AutoLocateDevice = INI.GetKeyValue(SectionName, "AutoLocateDevice")
-                            End With
-                        End If
+                            .Username = INI.GetKeyValue(SectionName, "Username")
+                            .Password = INI.GetKeyValue(SectionName, "Password")
+                            Try
+                                Dim crypto As New SimpleCrypto
+                                If crypto.IsEncrypted(.Password) Then .Password = crypto.Decrypt(.Password)
+                            Catch ex As SimpleCryptoExceptions.SuppliedStringNotEncryptedException
+                                Logger.WarnException(ex.Message, ex)
+                            Catch ex As Exception
+                                Logger.ErrorException(ex.Message, ex)
+                            End Try
+                            .Device = INI.GetKeyValue(SectionName, "Device")
+                            .AutoLocateDevice = INI.GetKeyValue(SectionName, "AutoLocateDevice")
+                        End With
                     End If
+                    'End If
                 Else
                     'Exit For
                 End If

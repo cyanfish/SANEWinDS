@@ -38,84 +38,91 @@ Public Class FormSANEHostWizard
                                 .TCP_Timeout_ms = tmout
                                 '.Username = Me.TextBoxUserName.Text
                             End With
-                            Try
+                            If CurrentSettings.ResolveHost(Host) Then
+                                Try
 
-                                Close_SANE()
-                                Close_Net()
+                                    Close_SANE()
+                                    Close_Net()
 
-                                If ControlClient Is Nothing Then ControlClient = New System.Net.Sockets.TcpClient
-                                If ControlClient IsNot Nothing Then
-                                    ControlClient.ReceiveTimeout = Host.TCP_Timeout_ms
-                                    ControlClient.SendTimeout = Host.TCP_Timeout_ms
-                                    Logger.Debug("TCPClient Send buffer length is {0}", ControlClient.SendBufferSize)
-                                    Logger.Debug("TCPClient Receive buffer length is {0}", ControlClient.ReceiveBufferSize)
-                                    Me.Cursor = Windows.Forms.Cursors.WaitCursor
-                                    ControlClient.Connect(Host.NameOrAddress, Host.Port)
-                                    'Dim Status As SANE_API.SANE_Status = SANE.Net_Init(net, Host.Username)
-                                    Dim Status As SANE_API.SANE_Status = SANE.Net_Init(ControlClient, Environment.UserName)
-                                    Logger.Debug("Net_Init returned status '{0}'", Status)
-                                    If Status = SANE_API.SANE_Status.SANE_STATUS_GOOD Then
-                                        Host.Open = True
-                                        Dim Devices(-1) As SANE_API.SANE_Device
-                                        Me.ComboBoxDevices.Items.Clear()
-                                        Status = SANE.Net_Get_Devices(ControlClient, Devices)
+                                    If ControlClient Is Nothing Then ControlClient = New System.Net.Sockets.TcpClient
+                                    If ControlClient IsNot Nothing Then
+                                        ControlClient.ReceiveTimeout = Host.TCP_Timeout_ms
+                                        ControlClient.SendTimeout = Host.TCP_Timeout_ms
+                                        Logger.Debug("TCPClient Send buffer length is {0}", ControlClient.SendBufferSize)
+                                        Logger.Debug("TCPClient Receive buffer length is {0}", ControlClient.ReceiveBufferSize)
+                                        Me.Cursor = Windows.Forms.Cursors.WaitCursor
+                                        ControlClient.Connect(Host.NameOrAddress, Host.Port)
+                                        'Dim Status As SANE_API.SANE_Status = SANE.Net_Init(net, Host.Username)
+                                        Dim Status As SANE_API.SANE_Status = SANE.Net_Init(ControlClient, Environment.UserName)
+                                        Logger.Debug("Net_Init returned status '{0}'", Status)
                                         If Status = SANE_API.SANE_Status.SANE_STATUS_GOOD Then
-                                            For i As Integer = 0 To Devices.Length - 1
-                                                'XXX MsgBox("Name: " & Devices(i).name & vbCr & "Vendor: " & Devices(i).vendor & vbCr & "Model: " & Devices(i).model & vbCr & "Type: " & Devices(i).type)
-                                                Me.ComboBoxDevices.Items.Add(Devices(i).name)
-                                            Next
-                                            If Me.ComboBoxDevices.Items.Count > 0 Then Me.ComboBoxDevices.SelectedIndex = 0
-                                            Dim Host_Index As Integer = -1
-                                            For idx = 0 To CurrentSettings.SANE.Hosts.Count - 1
-                                                Dim hi As SharedSettings.HostInfo = CurrentSettings.SANE.Hosts(idx)
-                                                If hi.NameOrAddress.Trim = Host.NameOrAddress.Trim Then
-                                                    If hi.Port = Host.Port Then
-                                                        Host_Index = idx
-                                                        Exit For
+                                            Host.Open = True
+                                            Dim Devices(-1) As SANE_API.SANE_Device
+                                            Me.ComboBoxDevices.Items.Clear()
+                                            Status = SANE.Net_Get_Devices(ControlClient, Devices)
+                                            If Status = SANE_API.SANE_Status.SANE_STATUS_GOOD Then
+                                                For i As Integer = 0 To Devices.Length - 1
+                                                    'XXX MsgBox("Name: " & Devices(i).name & vbCr & "Vendor: " & Devices(i).vendor & vbCr & "Model: " & Devices(i).model & vbCr & "Type: " & Devices(i).type)
+                                                    Me.ComboBoxDevices.Items.Add(Devices(i).name)
+                                                Next
+                                                If Me.ComboBoxDevices.Items.Count > 0 Then Me.ComboBoxDevices.SelectedIndex = 0
+                                                Dim Host_Index As Integer = -1
+                                                For idx = 0 To CurrentSettings.SANE.Hosts.Count - 1
+                                                    Dim hi As SharedSettings.HostInfo = CurrentSettings.SANE.Hosts(idx)
+                                                    If hi.NameOrAddress.Trim = Host.NameOrAddress.Trim Then
+                                                        If hi.Port = Host.Port Then
+                                                            Host_Index = idx
+                                                            Exit For
+                                                        End If
                                                     End If
+                                                Next
+                                                If Host_Index > -1 Then
+                                                    CurrentSettings.SANE.CurrentHostIndex = Host_Index
+                                                    Host.Username = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Username 'preserve existing username
+                                                    Host.Password = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Password 'preserve existing password
+                                                    'XXX
+                                                    Host.Image_Timeout_s = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Image_Timeout_s 'this should be added to the GUI
+                                                    '
+                                                    CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex) = Host
+                                                Else
+                                                    'XXX
+                                                    Host.Image_Timeout_s = 1200 '20 minutes
+                                                    '
+                                                    ReDim Preserve CurrentSettings.SANE.Hosts(CurrentSettings.SANE.Hosts.Count)
+                                                    CurrentSettings.SANE.Hosts(CurrentSettings.SANE.Hosts.Count - 1) = Host
+                                                    CurrentSettings.SANE.CurrentHostIndex = CurrentSettings.SANE.Hosts.Count - 1
+                                                    Me.ComboBoxHost.Items.Add(Host.NameOrAddress)
                                                 End If
-                                            Next
-                                            If Host_Index > -1 Then
-                                                CurrentSettings.SANE.CurrentHostIndex = Host_Index
-                                                Host.Username = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Username 'preserve existing username
-                                                Host.Password = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Password 'preserve existing password
-                                                'XXX
-                                                Host.Image_Timeout_s = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Image_Timeout_s 'this should be added to the GUI
-                                                '
-                                                CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex) = Host
                                             Else
-                                                'XXX
-                                                Host.Image_Timeout_s = 1200 '20 minutes
-                                                '
-                                                ReDim Preserve CurrentSettings.SANE.Hosts(CurrentSettings.SANE.Hosts.Count)
-                                                CurrentSettings.SANE.Hosts(CurrentSettings.SANE.Hosts.Count - 1) = Host
-                                                CurrentSettings.SANE.CurrentHostIndex = CurrentSettings.SANE.Hosts.Count - 1
-                                                Me.ComboBoxHost.Items.Add(Host.NameOrAddress)
+                                                Throw New ApplicationException("SANE server returned status '" & Status.ToString & "'")
                                             End If
                                         Else
                                             Throw New ApplicationException("SANE server returned status '" & Status.ToString & "'")
                                         End If
-                                    Else
-                                        Throw New ApplicationException("SANE server returned status '" & Status.ToString & "'")
                                     End If
-                                End If
 
-                                Me.PanelDevice.Top = Me.PanelHost.Top
-                                Me.PanelDevice.Left = Me.PanelHost.Left
-                                Me.PanelDevice.Height = Me.PanelHost.Height
-                                Me.PanelDevice.Width = Me.PanelHost.Width
-                                Me.PanelDevice.Anchor = Me.PanelHost.Anchor
+                                    Me.PanelDevice.Top = Me.PanelHost.Top
+                                    Me.PanelDevice.Left = Me.PanelHost.Left
+                                    Me.PanelDevice.Height = Me.PanelHost.Height
+                                    Me.PanelDevice.Width = Me.PanelHost.Width
+                                    Me.PanelDevice.Anchor = Me.PanelHost.Anchor
 
-                                Me.PanelHost.Visible = False
-                                Me.PanelDevice.Visible = True
-                                Me.ButtonNext.Text = "OK"
-                            Catch ex As Exception
-                                MsgBox(ex.Message)
-                            Finally
-                                Close_SANE()
-                                Close_Net()
-                                Me.Cursor = Windows.Forms.Cursors.Default
-                            End Try
+                                    Me.PanelHost.Visible = False
+                                    Me.PanelDevice.Visible = True
+                                    Me.ButtonNext.Text = "OK"
+                                Catch ex As Exception
+                                    MsgBox(ex.Message)
+                                Finally
+                                    Close_SANE()
+                                    Close_Net()
+                                    Me.Cursor = Windows.Forms.Cursors.Default
+                                End Try
+                            Else
+                                MsgBox("Unable to resolve host '" & Host.NameOrAddress & "'", MsgBoxStyle.Exclamation)
+                            End If
+                            Else
+                                MsgBox("Please specify a valid port number", MsgBoxStyle.Exclamation)
+                            End If
                         Else
                             MsgBox("Please specify a valid port number", MsgBoxStyle.Exclamation)
                         End If
@@ -123,29 +130,26 @@ Public Class FormSANEHostWizard
                         MsgBox("Please specify a valid port number", MsgBoxStyle.Exclamation)
                     End If
                 Else
-                    MsgBox("Please specify a valid port number", MsgBoxStyle.Exclamation)
+                    MsgBox("Please specify a hostname or IP address", MsgBoxStyle.Exclamation)
                 End If
-            Else
-                MsgBox("Please specify a hostname or IP address", MsgBoxStyle.Exclamation)
-            End If
 
-        ElseIf Me.PanelDevice.Visible Then
-            If Me.ComboBoxDevices.Text IsNot Nothing Then
-                If Me.ComboBoxDevices.Text.Trim.Length > 0 Then
-                    With CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex)
-                        .NameOrAddress = Me.ComboBoxHost.Text
-                        .Port = CInt(Me.TextBoxPort.Text)
-                        .TCP_Timeout_ms = CInt(Me.TextBoxTimeout.Text)
-                        '.Username = Me.TextBoxUserName.Text
-                    End With
-                    CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Device = Me.ComboBoxDevices.Text.Trim
-                    Me.DialogResult = Windows.Forms.DialogResult.OK
-                    Me.Close()
+            ElseIf Me.PanelDevice.Visible Then
+                If Me.ComboBoxDevices.Text IsNot Nothing Then
+                    If Me.ComboBoxDevices.Text.Trim.Length > 0 Then
+                        With CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex)
+                            .NameOrAddress = Me.ComboBoxHost.Text
+                            .Port = CInt(Me.TextBoxPort.Text)
+                            .TCP_Timeout_ms = CInt(Me.TextBoxTimeout.Text)
+                            '.Username = Me.TextBoxUserName.Text
+                        End With
+                        CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Device = Me.ComboBoxDevices.Text.Trim
+                        Me.DialogResult = Windows.Forms.DialogResult.OK
+                        Me.Close()
+                    End If
                 End If
             End If
-        End If
 
-        Me.SetControlStatus()
+            Me.SetControlStatus()
 
     End Sub
 

@@ -3940,9 +3940,9 @@ Namespace TWAIN_VB
                         'If SANE isn't configured, launch the wizard.
                         If Not ((CurrentSettings.SANE.CurrentHostIndex > -1) AndAlso _
                                (CurrentSettings.SANE.CurrentHostIndex < CurrentSettings.SANE.Hosts.Length) AndAlso _
+                               CurrentSettings.ResolveHost(CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex)) AndAlso _
                                CurrentSettings.HostIsValid(CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex)) AndAlso _
-                               (CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Device IsNot Nothing) AndAlso _
-                               CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Device.Length) Then
+                               CurrentSettings.DeviceIsValid(CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex))) Then
                             Dim f As New FormSANEHostWizard
                             If f.ShowDialog <> Windows.Forms.DialogResult.OK Then
                                 Logger.Debug("User cancelled SANE host wizard")

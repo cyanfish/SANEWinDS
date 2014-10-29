@@ -373,7 +373,7 @@ Public Class FormStartup
                         Me.CurrentImage.FileName = FileNameBase & ".tif"
 
                         Me.CurrentImage.TIFF.EncoderParameters.Param(0) = New System.Drawing.Imaging.EncoderParameter(Me.CurrentImage.TIFF.SaveEncoder, System.Drawing.Imaging.EncoderValue.MultiFrame)
-                        Me.CurrentImage.TIFF.FirstPage = bmp
+                        Me.CurrentImage.TIFF.FirstPage = bmp.Clone
                         Me.CurrentImage.TIFF.FirstPage.Save(Me.CurrentImage.FileName, Me.CurrentImage.TIFF.ImageCodecInfo, Me.CurrentImage.TIFF.EncoderParameters)
                     Else
                         Try

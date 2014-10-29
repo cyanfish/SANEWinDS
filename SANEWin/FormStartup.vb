@@ -656,4 +656,13 @@ Public Class FormStartup
         End If
     End Sub
 
+    Private Sub ButtonBrowseOutputFolder_Click(sender As Object, e As EventArgs) Handles ButtonBrowseOutputFolder.Click
+        Dim fb As New FolderBrowserDialog
+        fb.ShowNewFolderButton = True
+        fb.Description = "Select a folder in which to place the scanned items."
+        If fb.ShowDialog = Windows.Forms.DialogResult.OK Then
+            If Not Me.ComboBoxOutputFolderName.Items.Contains(fb.SelectedPath) Then Me.ComboBoxOutputFolderName.Items.Add(fb.SelectedPath)
+            Me.ComboBoxOutputFolderName.SelectedItem = fb.SelectedPath
+        End If
+    End Sub
 End Class

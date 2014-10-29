@@ -30,12 +30,13 @@ Partial Class FormStartup
         Me.Label2 = New System.Windows.Forms.Label()
         Me.ComboBoxOutputFolderName = New System.Windows.Forms.ComboBox()
         Me.Label3 = New System.Windows.Forms.Label()
+        Me.ButtonBrowseOutputFolder = New System.Windows.Forms.Button()
         Me.SuspendLayout()
         '
         'ButtonAcquire
         '
         Me.ButtonAcquire.Anchor = CType((System.Windows.Forms.AnchorStyles.Bottom Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
-        Me.ButtonAcquire.Location = New System.Drawing.Point(316, 102)
+        Me.ButtonAcquire.Location = New System.Drawing.Point(342, 102)
         Me.ButtonAcquire.Name = "ButtonAcquire"
         Me.ButtonAcquire.Size = New System.Drawing.Size(75, 23)
         Me.ButtonAcquire.TabIndex = 0
@@ -85,7 +86,7 @@ Partial Class FormStartup
         Me.ComboBoxOutputFolderName.FormattingEnabled = True
         Me.ComboBoxOutputFolderName.Location = New System.Drawing.Point(99, 66)
         Me.ComboBoxOutputFolderName.Name = "ComboBoxOutputFolderName"
-        Me.ComboBoxOutputFolderName.Size = New System.Drawing.Size(292, 21)
+        Me.ComboBoxOutputFolderName.Size = New System.Drawing.Size(284, 21)
         Me.ComboBoxOutputFolderName.TabIndex = 5
         '
         'Label3
@@ -97,11 +98,22 @@ Partial Class FormStartup
         Me.Label3.TabIndex = 6
         Me.Label3.Text = "Output Folder"
         '
+        'ButtonBrowseOutputFolder
+        '
+        Me.ButtonBrowseOutputFolder.Anchor = CType((System.Windows.Forms.AnchorStyles.Top Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
+        Me.ButtonBrowseOutputFolder.Location = New System.Drawing.Point(389, 64)
+        Me.ButtonBrowseOutputFolder.Name = "ButtonBrowseOutputFolder"
+        Me.ButtonBrowseOutputFolder.Size = New System.Drawing.Size(28, 23)
+        Me.ButtonBrowseOutputFolder.TabIndex = 7
+        Me.ButtonBrowseOutputFolder.Text = "..."
+        Me.ButtonBrowseOutputFolder.UseVisualStyleBackColor = True
+        '
         'FormStartup
         '
         Me.AutoScaleDimensions = New System.Drawing.SizeF(6.0!, 13.0!)
         Me.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font
-        Me.ClientSize = New System.Drawing.Size(406, 137)
+        Me.ClientSize = New System.Drawing.Size(432, 137)
+        Me.Controls.Add(Me.ButtonBrowseOutputFolder)
         Me.Controls.Add(Me.Label3)
         Me.Controls.Add(Me.ComboBoxOutputFolderName)
         Me.Controls.Add(Me.Label2)
@@ -123,4 +135,5 @@ Partial Class FormStartup
     Friend WithEvents Label2 As System.Windows.Forms.Label
     Friend WithEvents ComboBoxOutputFolderName As System.Windows.Forms.ComboBox
     Friend WithEvents Label3 As System.Windows.Forms.Label
+    Friend WithEvents ButtonBrowseOutputFolder As System.Windows.Forms.Button
 End Class

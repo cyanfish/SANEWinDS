@@ -35,13 +35,16 @@ Partial Class FormSANEHostWizard
         Me.ComboBoxDevices = New System.Windows.Forms.ComboBox()
         Me.ButtonPrevious = New System.Windows.Forms.Button()
         Me.ButtonCancel = New System.Windows.Forms.Button()
+        Me.CheckBoxUseTSClientIP = New System.Windows.Forms.CheckBox()
+        Me.ButtonDefaultPort = New System.Windows.Forms.Button()
+        Me.ButtonDefaultTimeout = New System.Windows.Forms.Button()
         Me.PanelHost.SuspendLayout()
         Me.PanelDevice.SuspendLayout()
         Me.SuspendLayout()
         '
         'ButtonNext
         '
-        Me.ButtonNext.Location = New System.Drawing.Point(268, 102)
+        Me.ButtonNext.Location = New System.Drawing.Point(267, 144)
         Me.ButtonNext.Name = "ButtonNext"
         Me.ButtonNext.Size = New System.Drawing.Size(75, 23)
         Me.ButtonNext.TabIndex = 0
@@ -52,6 +55,9 @@ Partial Class FormSANEHostWizard
         '
         Me.PanelHost.Anchor = CType(((System.Windows.Forms.AnchorStyles.Top Or System.Windows.Forms.AnchorStyles.Left) _
             Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
+        Me.PanelHost.Controls.Add(Me.ButtonDefaultTimeout)
+        Me.PanelHost.Controls.Add(Me.ButtonDefaultPort)
+        Me.PanelHost.Controls.Add(Me.CheckBoxUseTSClientIP)
         Me.PanelHost.Controls.Add(Me.Label3)
         Me.PanelHost.Controls.Add(Me.TextBoxTimeout)
         Me.PanelHost.Controls.Add(Me.Label2)
@@ -60,13 +66,13 @@ Partial Class FormSANEHostWizard
         Me.PanelHost.Controls.Add(Me.ComboBoxHost)
         Me.PanelHost.Location = New System.Drawing.Point(1, 0)
         Me.PanelHost.Name = "PanelHost"
-        Me.PanelHost.Size = New System.Drawing.Size(356, 96)
+        Me.PanelHost.Size = New System.Drawing.Size(356, 138)
         Me.PanelHost.TabIndex = 1
         '
         'Label3
         '
         Me.Label3.AutoSize = True
-        Me.Label3.Location = New System.Drawing.Point(8, 68)
+        Me.Label3.Location = New System.Drawing.Point(7, 94)
         Me.Label3.Name = "Label3"
         Me.Label3.Size = New System.Drawing.Size(115, 13)
         Me.Label3.TabIndex = 5
@@ -74,7 +80,7 @@ Partial Class FormSANEHostWizard
         '
         'TextBoxTimeout
         '
-        Me.TextBoxTimeout.Location = New System.Drawing.Point(140, 65)
+        Me.TextBoxTimeout.Location = New System.Drawing.Point(148, 91)
         Me.TextBoxTimeout.Name = "TextBoxTimeout"
         Me.TextBoxTimeout.Size = New System.Drawing.Size(100, 20)
         Me.TextBoxTimeout.TabIndex = 4
@@ -82,7 +88,7 @@ Partial Class FormSANEHostWizard
         'Label2
         '
         Me.Label2.AutoSize = True
-        Me.Label2.Location = New System.Drawing.Point(8, 43)
+        Me.Label2.Location = New System.Drawing.Point(7, 69)
         Me.Label2.Name = "Label2"
         Me.Label2.Size = New System.Drawing.Size(26, 13)
         Me.Label2.TabIndex = 3
@@ -90,7 +96,7 @@ Partial Class FormSANEHostWizard
         '
         'TextBoxPort
         '
-        Me.TextBoxPort.Location = New System.Drawing.Point(140, 40)
+        Me.TextBoxPort.Location = New System.Drawing.Point(148, 66)
         Me.TextBoxPort.Name = "TextBoxPort"
         Me.TextBoxPort.Size = New System.Drawing.Size(100, 20)
         Me.TextBoxPort.TabIndex = 2
@@ -107,9 +113,9 @@ Partial Class FormSANEHostWizard
         'ComboBoxHost
         '
         Me.ComboBoxHost.FormattingEnabled = True
-        Me.ComboBoxHost.Location = New System.Drawing.Point(140, 12)
+        Me.ComboBoxHost.Location = New System.Drawing.Point(148, 38)
         Me.ComboBoxHost.Name = "ComboBoxHost"
-        Me.ComboBoxHost.Size = New System.Drawing.Size(202, 21)
+        Me.ComboBoxHost.Size = New System.Drawing.Size(193, 21)
         Me.ComboBoxHost.TabIndex = 0
         '
         'PanelDevice
@@ -140,7 +146,7 @@ Partial Class FormSANEHostWizard
         '
         'ButtonPrevious
         '
-        Me.ButtonPrevious.Location = New System.Drawing.Point(187, 102)
+        Me.ButtonPrevious.Location = New System.Drawing.Point(186, 144)
         Me.ButtonPrevious.Name = "ButtonPrevious"
         Me.ButtonPrevious.Size = New System.Drawing.Size(75, 23)
         Me.ButtonPrevious.TabIndex = 3
@@ -149,24 +155,52 @@ Partial Class FormSANEHostWizard
         '
         'ButtonCancel
         '
-        Me.ButtonCancel.Location = New System.Drawing.Point(12, 102)
+        Me.ButtonCancel.Location = New System.Drawing.Point(11, 144)
         Me.ButtonCancel.Name = "ButtonCancel"
         Me.ButtonCancel.Size = New System.Drawing.Size(75, 23)
         Me.ButtonCancel.TabIndex = 4
         Me.ButtonCancel.Text = "Cancel"
         Me.ButtonCancel.UseVisualStyleBackColor = True
         '
+        'CheckBoxUseTSClientIP
+        '
+        Me.CheckBoxUseTSClientIP.AutoSize = True
+        Me.CheckBoxUseTSClientIP.Location = New System.Drawing.Point(148, 15)
+        Me.CheckBoxUseTSClientIP.Name = "CheckBoxUseTSClientIP"
+        Me.CheckBoxUseTSClientIP.Size = New System.Drawing.Size(174, 17)
+        Me.CheckBoxUseTSClientIP.TabIndex = 6
+        Me.CheckBoxUseTSClientIP.Text = "Use Terminal Services Client IP"
+        Me.CheckBoxUseTSClientIP.UseVisualStyleBackColor = True
+        '
+        'ButtonDefaultPort
+        '
+        Me.ButtonDefaultPort.Location = New System.Drawing.Point(254, 65)
+        Me.ButtonDefaultPort.Name = "ButtonDefaultPort"
+        Me.ButtonDefaultPort.Size = New System.Drawing.Size(87, 23)
+        Me.ButtonDefaultPort.TabIndex = 7
+        Me.ButtonDefaultPort.Text = "Default"
+        Me.ButtonDefaultPort.UseVisualStyleBackColor = True
+        '
+        'ButtonDefaultTimeout
+        '
+        Me.ButtonDefaultTimeout.Location = New System.Drawing.Point(254, 89)
+        Me.ButtonDefaultTimeout.Name = "ButtonDefaultTimeout"
+        Me.ButtonDefaultTimeout.Size = New System.Drawing.Size(87, 23)
+        Me.ButtonDefaultTimeout.TabIndex = 8
+        Me.ButtonDefaultTimeout.Text = "Default"
+        Me.ButtonDefaultTimeout.UseVisualStyleBackColor = True
+        '
         'FormSANEHostWizard
         '
         Me.AutoScaleDimensions = New System.Drawing.SizeF(6.0!, 13.0!)
         Me.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font
-        Me.ClientSize = New System.Drawing.Size(357, 133)
+        Me.ClientSize = New System.Drawing.Size(357, 179)
         Me.ControlBox = False
         Me.Controls.Add(Me.ButtonCancel)
         Me.Controls.Add(Me.ButtonPrevious)
         Me.Controls.Add(Me.PanelDevice)
-        Me.Controls.Add(Me.PanelHost)
         Me.Controls.Add(Me.ButtonNext)
+        Me.Controls.Add(Me.PanelHost)
         Me.Name = "FormSANEHostWizard"
         Me.Text = "Configure SANE Host"
         Me.PanelHost.ResumeLayout(False)
@@ -189,4 +223,7 @@ Partial Class FormSANEHostWizard
     Friend WithEvents ComboBoxDevices As System.Windows.Forms.ComboBox
     Friend WithEvents ButtonPrevious As System.Windows.Forms.Button
     Friend WithEvents ButtonCancel As System.Windows.Forms.Button
+    Friend WithEvents CheckBoxUseTSClientIP As System.Windows.Forms.CheckBox
+    Friend WithEvents ButtonDefaultTimeout As System.Windows.Forms.Button
+    Friend WithEvents ButtonDefaultPort As System.Windows.Forms.Button
 End Class

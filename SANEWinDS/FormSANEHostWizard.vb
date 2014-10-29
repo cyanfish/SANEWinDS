@@ -19,6 +19,10 @@
 Public Class FormSANEHostWizard
 
     Private Shared Logger As NLog.Logger = NLog.LogManager.GetCurrentClassLogger()
+    Private TSClientIP As String
+    Private Const DefaultPortString As String = "6566"
+    Private Const DefaultTimeoutString As String = "5000"
+    Private OriginalHostIndex As Integer
 
     Private Sub ButtonNext_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles ButtonNext.Click
         If Me.PanelHost.Visible Then
@@ -33,6 +37,7 @@ Public Class FormSANEHostWizard
                             Integer.TryParse(Me.TextBoxTimeout.Text, tmout)
                             If tmout < 1000 Then tmout = 1000
                             With Host
+                                .UseTSClientIP = Me.CheckBoxUseTSClientIP.Checked
                                 .NameOrAddress = Me.ComboBoxHost.Text
                                 .Port = n
                                 .TCP_Timeout_ms = tmout
@@ -157,14 +162,29 @@ Public Class FormSANEHostWizard
         Me.PanelHost.Visible = True
         Me.PanelDevice.Visible = False
 
+        Me.OriginalHostIndex = CurrentSettings.SANE.CurrentHostIndex
+
+        Try
+            Dim ts As New TSAPI
+            Me.TSClientIP = ts.GetCurrentSessionIP
+        Catch ex As Exception
+            Logger.DebugException(ex.Message, ex)
+        End Try
+        Me.CheckBoxUseTSClientIP.Enabled = Not String.IsNullOrWhiteSpace(Me.TSClientIP)
+
         For Each host As SharedSettings.HostInfo In CurrentSettings.SANE.Hosts
             Me.ComboBoxHost.Items.Add(host.NameOrAddress)
         Next
         If (CurrentSettings.SANE.CurrentHostIndex > -1) AndAlso (CurrentSettings.SANE.CurrentHostIndex < CurrentSettings.SANE.Hosts.Length) Then
-            Me.ComboBoxHost.SelectedItem = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).NameOrAddress
-        Else
-            Me.TextBoxPort.Text = "6566"
-            Me.TextBoxTimeout.Text = "5000"
+            With CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex)
+                Me.ComboBoxHost.SelectedItem = .NameOrAddress
+                Me.CheckBoxUseTSClientIP.Checked = (.UseTSClientIP) And (Not String.IsNullOrWhiteSpace(Me.TSClientIP))
+                If .Port > 0 Then Me.TextBoxPort.Text = .Port.ToString Else Me.TextBoxPort.Text = DefaultPortString
+                If .TCP_Timeout_ms > 1000 Then Me.TextBoxTimeout.Text = .TCP_Timeout_ms.ToString Else Me.TextBoxTimeout.Text = DefaultTimeoutString
+            End With
+         Else
+            Me.TextBoxPort.Text = DefaultPortString
+            Me.TextBoxTimeout.Text = DefaultTimeoutString
             'Me.TextBoxUserName.Text = CurrentSettings.ProductName.Name
             'Me.TextBoxUserName.Text = Environment.UserName
         End If
@@ -197,6 +217,7 @@ Public Class FormSANEHostWizard
     End Sub
 
     Private Sub ButtonCancel_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles ButtonCancel.Click
+        CurrentSettings.SANE.CurrentHostIndex = Me.OriginalHostIndex
         Me.DialogResult = Windows.Forms.DialogResult.Cancel
         Me.Close()
     End Sub
@@ -209,13 +230,31 @@ Public Class FormSANEHostWizard
 
 
     Private Sub ComboBoxHost_SelectedIndexChanged(sender As Object, e As EventArgs) Handles ComboBoxHost.SelectedIndexChanged
+
+        If (ComboBoxHost.SelectedIndex > -1) AndAlso (ComboBoxHost.SelectedIndex < CurrentSettings.SANE.Hosts.Count) Then
+            CurrentSettings.SANE.CurrentHostIndex = ComboBoxHost.SelectedIndex
+        End If
+
         If (CurrentSettings.SANE.CurrentHostIndex > -1) AndAlso (CurrentSettings.SANE.CurrentHostIndex < CurrentSettings.SANE.Hosts.Count) Then
             With CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex)
                 'If .NameOrAddress IsNot Nothing Then Me.ComboBoxHost.Text = .NameOrAddress
-                If .Port > 0 Then Me.TextBoxPort.Text = .Port.ToString Else Me.TextBoxPort.Text = "6566"
-                If .TCP_Timeout_ms > 1000 Then Me.TextBoxTimeout.Text = .TCP_Timeout_ms.ToString Else Me.TextBoxTimeout.Text = "5000"
+                If .Port > 0 Then Me.TextBoxPort.Text = .Port.ToString Else Me.TextBoxPort.Text = DefaultPortString
+                If .TCP_Timeout_ms > 1000 Then Me.TextBoxTimeout.Text = .TCP_Timeout_ms.ToString Else Me.TextBoxTimeout.Text = DefaultTimeoutString
                 'If .Username IsNot Nothing AndAlso .Username.Trim.Length Then Me.TextBoxUserName.Text = .Username.Trim Else Me.TextBoxUserName.Text = CurrentSettings.ProductName.Name
             End With
         End If
+    End Sub
+
+    Private Sub CheckBoxUseTSClientIP_CheckedChanged(sender As Object, e As EventArgs) Handles CheckBoxUseTSClientIP.CheckedChanged
+        If Me.CheckBoxUseTSClientIP.Checked Then Me.ComboBoxHost.Text = Me.TSClientIP
+        Me.ComboBoxHost.Enabled = Not Me.CheckBoxUseTSClientIP.Checked
+    End Sub
+
+    Private Sub ButtonDefaultPort_Click(sender As Object, e As EventArgs) Handles ButtonDefaultPort.Click
+        Me.TextBoxPort.Text = DefaultPortString
+    End Sub
+
+    Private Sub ButtonDefaultTimeout_Click(sender As Object, e As EventArgs) Handles ButtonDefaultTimeout.Click
+        Me.TextBoxTimeout.Text = DefaultTimeoutString
     End Sub
 End Class

@@ -68,6 +68,7 @@ Public Class FormStartup
     Private SharedConfigDirectory As String
     Private LogDirectory As String
     Private OutputDirectory As String
+    Private OutputFileNameBase As String
     'Private CurrentPDF As PDFInfo
     'Private CurrentTIFF As TIFFInfo
     Private CurrentImage As ImageInfo
@@ -76,6 +77,12 @@ Public Class FormStartup
 
     Private Sub FormStartup_FormClosed(sender As Object, e As FormClosedEventArgs) Handles Me.FormClosed
         If Me.INI IsNot Nothing Then
+
+            If Not String.IsNullOrWhiteSpace(Me.ComboBoxOutputFolderName.Text) Then
+                Me.INI.SetKeyValue("Output", "DefaultOutputFolder", Me.ComboBoxOutputFolderName.Text)
+            End If
+            Me.INI.SetKeyValue("Output", "OverwriteExistingFile", Me.CheckBoxOverwriteOutputFile.Checked.ToString)
+
             If Me.INIFileName IsNot Nothing AndAlso Me.INIFileName.Trim.Length > 0 Then
                 Me.INI.Save(Me.INIFileName)
             End If
@@ -138,6 +145,15 @@ Public Class FormStartup
             Else
                 Me.OutputDirectory = OutputFolder.Trim
             End If
+            Dim OutputFileName As String = INI.GetKeyValue("Output", "DefaultOutputFileNameBase")
+            If String.IsNullOrWhiteSpace(OutputFileName) Then
+                Me.OutputFileNameBase = Me.ProductName & Now.ToString("_MMddyyyy_HHmmss_fff")
+                Me.INI.SetKeyValue("Output", "DefaultOutputFileNameBase", "")
+            Else
+                Me.OutputFileNameBase = OutputFileName.Trim
+            End If
+            Dim Overwrite As String = INI.GetKeyValue("Output", "OverwriteExistingFile")
+            Boolean.TryParse(Overwrite, Me.CheckBoxOverwriteOutputFile.Checked)
         Catch ex As Exception
             MsgBox("Error loading '" & INIFileName & "': " & ex.Message)
         End Try
@@ -160,6 +176,8 @@ Public Class FormStartup
 
         Me.ComboBoxOutputFolderName.Items.Add(Me.OutputDirectory)
         Me.ComboBoxOutputFolderName.SelectedItem = Me.OutputDirectory
+
+        Me.TextBoxOutputFileNameBase.Text = Me.OutputFileNameBase
 
         AddHandler GUIForm.FormClosing, AddressOf Me.GUIForm_FormClosing
 
@@ -245,8 +263,9 @@ Public Class FormStartup
             MsgBox("Error creating directory '" & Me.ComboBoxOutputFolderName.Text & "': " & ex.Message)
         End Try
 
-        Dim FileNameBase As String = My.Computer.FileSystem.CombinePath(Me.ComboBoxOutputFolderName.Text, Me.ProductName & Now.ToString("_MMddyyyy_HHmmss_fff"))
         Dim OutputFormat As ImageType = [Enum].Parse(GetType(ImageType), Me.ComboBoxOutputFormat.Text)
+        Me.CurrentImage.FileName = BuildFileName(OutputFormat, PageNumber)
+
         Select Case OutputFormat
             'Case "SCREEN"
             '    If bmp IsNot Nothing Then
@@ -323,7 +342,6 @@ Public Class FormStartup
                                     PageSize = iTextSharp.text.PageSize.LEGAL_LANDSCAPE
                             End Select
 
-                            Me.CurrentImage.FileName = FileNameBase & ".pdf"
                             Me.OpenPDF(PageSize)
                         End If
 
@@ -333,9 +351,10 @@ Public Class FormStartup
 
                     End If
                 Catch ex As Exception
+                    Me.GUIForm.CancelScan()
                     MsgBox(ex.Message)
                     Me.ClosePDF()
-                 End Try
+                End Try
             Case ImageType.TIFF
                 Try
                     If bmp IsNot Nothing Then
@@ -370,8 +389,6 @@ Public Class FormStartup
                     End If
 
                     If PageNumber = 1 Then
-                        Me.CurrentImage.FileName = FileNameBase & ".tif"
-
                         Me.CurrentImage.TIFF.EncoderParameters.Param(0) = New System.Drawing.Imaging.EncoderParameter(Me.CurrentImage.TIFF.SaveEncoder, System.Drawing.Imaging.EncoderValue.MultiFrame)
                         Me.CurrentImage.TIFF.FirstPage = bmp.Clone
                         Me.CurrentImage.TIFF.FirstPage.Save(Me.CurrentImage.FileName, Me.CurrentImage.TIFF.ImageCodecInfo, Me.CurrentImage.TIFF.EncoderParameters)
@@ -389,65 +406,42 @@ Public Class FormStartup
                     End If
 
                 Catch ex As Exception
+                    GUIForm.CancelScan()
                     MsgBox(ex.Message)
                 End Try
             Case ImageType.PNG
                 Try
-                    Dim fname As String = FileNameBase & "_Page"
-                    fname += PageNumber.ToString
-                    fname += ".png"
-                    Me.CurrentImage.FileName = fname
-                    bmp.Save(fname, Imaging.ImageFormat.Png)
+                    bmp.Save(CurrentImage.FileName, Imaging.ImageFormat.Png)
                 Catch ex As Exception
                     MsgBox("Error saving file: " & ex.Message)
-                 End Try
+                End Try
             Case ImageType.JPEG
                 Try
-                    Dim fname As String = FileNameBase & "_Page"
-                    fname += PageNumber.ToString
-                    fname += ".jpg"
-                    Me.CurrentImage.FileName = fname
-                    bmp.Save(fname, Imaging.ImageFormat.Jpeg)
+                    bmp.Save(CurrentImage.FileName, Imaging.ImageFormat.Jpeg)
                 Catch ex As Exception
                     MsgBox("Error saving file: " & ex.Message)
-                 End Try
+                End Try
             Case ImageType.GIF
                 Try
-                    Dim fname As String = FileNameBase & "_Page"
-                    fname += PageNumber.ToString
-                    fname += ".gif"
-                    Me.CurrentImage.FileName = fname
-                    bmp.Save(fname, Imaging.ImageFormat.Gif)
+                    bmp.Save(CurrentImage.FileName, Imaging.ImageFormat.Gif)
                 Catch ex As Exception
                     MsgBox("Error saving file: " & ex.Message)
                 End Try
             Case ImageType.WMF
                 Try
-                    Dim fname As String = FileNameBase & "_Page"
-                    fname += PageNumber.ToString
-                    fname += ".wmf"
-                    Me.CurrentImage.FileName = fname
-                    bmp.Save(fname, Imaging.ImageFormat.Wmf)
+                    bmp.Save(CurrentImage.FileName, Imaging.ImageFormat.Wmf)
                 Catch ex As Exception
                     MsgBox("Error saving file: " & ex.Message)
                 End Try
             Case ImageType.EMF
                 Try
-                    Dim fname As String = FileNameBase & "_Page"
-                    fname += PageNumber.ToString
-                    fname += ".emf"
-                    Me.CurrentImage.FileName = fname
-                    bmp.Save(fname, Imaging.ImageFormat.Emf)
+                    bmp.Save(CurrentImage.FileName, Imaging.ImageFormat.Emf)
                 Catch ex As Exception
                     MsgBox("Error saving file: " & ex.Message)
                 End Try
             Case ImageType.BMP
                 Try
-                    Dim fname As String = FileNameBase & "_Page"
-                    fname += PageNumber.ToString
-                    fname += ".bmp"
-                    Me.CurrentImage.FileName = fname
-                    bmp.Save(fname, Imaging.ImageFormat.Bmp)
+                    bmp.Save(CurrentImage.FileName, Imaging.ImageFormat.Bmp)
                 Catch ex As Exception
                     MsgBox("Error saving file: " & ex.Message)
                 End Try
@@ -461,6 +455,48 @@ Public Class FormStartup
 
         If PageNumber = 1 Then Me.CurrentImage.FileNamePage1 = Me.CurrentImage.FileName
 
+    End Sub
+
+    Private Function BuildFileName(ImageFormat As ImageType, PageNumber As Integer)
+        Dim FileNameBase As String = My.Computer.FileSystem.CombinePath(Me.ComboBoxOutputFolderName.Text, Me.TextBoxOutputFileNameBase.Text)
+        Select Case ImageFormat
+            Case ImageType.JPEG
+                Dim Ext As String = ".JPG"
+                If FileNameBase.ToUpper.EndsWith(Ext) Then FileNameBase = FileNameBase.Substring(0, FileNameBase.ToUpper.LastIndexOf(Ext))
+                Dim fname As String = FileNameBase & "_Page"
+                fname += PageNumber.ToString
+                fname += Ext
+                Return fname
+            Case ImageType.TIFF
+                Dim Ext As String = ".TIFF"
+                If FileNameBase.ToUpper.EndsWith(Ext) Then FileNameBase = FileNameBase.Substring(0, FileNameBase.ToUpper.LastIndexOf(Ext))
+                Ext = ".TIF"
+                If FileNameBase.ToUpper.EndsWith(Ext) Then FileNameBase = FileNameBase.Substring(0, FileNameBase.ToUpper.LastIndexOf(Ext))
+                Dim fname As String = FileNameBase
+                fname += Ext
+                Return fname
+            Case ImageType.PDF
+                Dim Ext As String = ".PDF"
+                If FileNameBase.ToUpper.EndsWith(Ext) Then FileNameBase = FileNameBase.Substring(0, FileNameBase.ToUpper.LastIndexOf(Ext))
+                Dim fname As String = FileNameBase
+                fname += Ext
+                Return fname
+            Case Else
+                Dim Ext As String = "." & ImageFormat.ToString
+                If FileNameBase.ToUpper.EndsWith(Ext) Then FileNameBase = FileNameBase.Substring(0, FileNameBase.ToUpper.LastIndexOf(Ext))
+                Dim fname As String = FileNameBase & "_Page"
+                fname += PageNumber.ToString
+                fname += Ext
+                Return fname
+        End Select
+    End Function
+
+    Private Sub CheckOverwrite(FileName As String)
+        If Not Me.CheckBoxOverwriteOutputFile.Checked Then
+            If My.Computer.FileSystem.FileExists(FileName) Then
+                Throw New Exception("Output file '" & FileName & "' already exists")
+            End If
+        End If
     End Sub
 
     Private Sub OpenPDF(ByVal PageSize As iTextSharp.text.Rectangle)
@@ -636,16 +672,25 @@ Public Class FormStartup
     'End Sub
 
     Private Sub ButtonAcquire_Click(sender As Object, e As EventArgs) Handles ButtonAcquire.Click
+        Dim OutputFormat As ImageType = [Enum].Parse(GetType(ImageType), Me.ComboBoxOutputFormat.Text)
         Try
-            Me.GUIForm_Shown = True
-            Me.Cursor = Cursors.WaitCursor
-            Dim DialogResult As DialogResult = GUIForm.ShowDialog
+            Dim fname As String = BuildFileName(OutputFormat, 1)
+            CheckOverwrite(fname)
+
+            Try
+                Me.GUIForm_Shown = True
+                Me.Cursor = Cursors.WaitCursor
+                Dim DialogResult As DialogResult = GUIForm.ShowDialog
+            Catch ex As Exception
+                MsgBox(ex.Message & vbCrLf & ex.StackTrace)
+                Me.ClosePDF()
+                Me.CloseTIFF(0)
+            Finally
+                Me.Cursor = Cursors.Default
+            End Try
+
         Catch ex As Exception
-            MsgBox(ex.Message & vbCrLf & ex.StackTrace)
-            Me.ClosePDF()
-            Me.CloseTIFF(0)
-        Finally
-            Me.Cursor = Cursors.Default
+            MsgBox(ex.Message, MsgBoxStyle.Exclamation, "Error")
         End Try
     End Sub
 
@@ -665,4 +710,5 @@ Public Class FormStartup
             Me.ComboBoxOutputFolderName.SelectedItem = fb.SelectedPath
         End If
     End Sub
+
 End Class

@@ -31,12 +31,16 @@ Partial Class FormStartup
         Me.ComboBoxOutputFolderName = New System.Windows.Forms.ComboBox()
         Me.Label3 = New System.Windows.Forms.Label()
         Me.ButtonBrowseOutputFolder = New System.Windows.Forms.Button()
+        Me.TextBoxOutputFileNameBase = New System.Windows.Forms.TextBox()
+        Me.Label4 = New System.Windows.Forms.Label()
+        Me.CheckBoxOverwriteOutputFile = New System.Windows.Forms.CheckBox()
+        Me.Label5 = New System.Windows.Forms.Label()
         Me.SuspendLayout()
         '
         'ButtonAcquire
         '
         Me.ButtonAcquire.Anchor = CType((System.Windows.Forms.AnchorStyles.Bottom Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
-        Me.ButtonAcquire.Location = New System.Drawing.Point(342, 102)
+        Me.ButtonAcquire.Location = New System.Drawing.Point(421, 141)
         Me.ButtonAcquire.Name = "ButtonAcquire"
         Me.ButtonAcquire.Size = New System.Drawing.Size(75, 23)
         Me.ButtonAcquire.TabIndex = 0
@@ -47,18 +51,18 @@ Partial Class FormStartup
         '
         Me.ComboBoxOutputFormat.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList
         Me.ComboBoxOutputFormat.FormattingEnabled = True
-        Me.ComboBoxOutputFormat.Location = New System.Drawing.Point(99, 12)
+        Me.ComboBoxOutputFormat.Location = New System.Drawing.Point(134, 12)
         Me.ComboBoxOutputFormat.Name = "ComboBoxOutputFormat"
-        Me.ComboBoxOutputFormat.Size = New System.Drawing.Size(121, 21)
+        Me.ComboBoxOutputFormat.Size = New System.Drawing.Size(70, 21)
         Me.ComboBoxOutputFormat.TabIndex = 1
         '
         'ComboBoxCompression
         '
         Me.ComboBoxCompression.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList
         Me.ComboBoxCompression.FormattingEnabled = True
-        Me.ComboBoxCompression.Location = New System.Drawing.Point(99, 39)
+        Me.ComboBoxCompression.Location = New System.Drawing.Point(134, 39)
         Me.ComboBoxCompression.Name = "ComboBoxCompression"
-        Me.ComboBoxCompression.Size = New System.Drawing.Size(121, 21)
+        Me.ComboBoxCompression.Size = New System.Drawing.Size(70, 21)
         Me.ComboBoxCompression.TabIndex = 2
         '
         'Label1
@@ -84,9 +88,9 @@ Partial Class FormStartup
         Me.ComboBoxOutputFolderName.Anchor = CType(((System.Windows.Forms.AnchorStyles.Top Or System.Windows.Forms.AnchorStyles.Left) _
             Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
         Me.ComboBoxOutputFolderName.FormattingEnabled = True
-        Me.ComboBoxOutputFolderName.Location = New System.Drawing.Point(99, 66)
+        Me.ComboBoxOutputFolderName.Location = New System.Drawing.Point(134, 66)
         Me.ComboBoxOutputFolderName.Name = "ComboBoxOutputFolderName"
-        Me.ComboBoxOutputFolderName.Size = New System.Drawing.Size(284, 21)
+        Me.ComboBoxOutputFolderName.Size = New System.Drawing.Size(328, 21)
         Me.ComboBoxOutputFolderName.TabIndex = 5
         '
         'Label3
@@ -101,18 +105,59 @@ Partial Class FormStartup
         'ButtonBrowseOutputFolder
         '
         Me.ButtonBrowseOutputFolder.Anchor = CType((System.Windows.Forms.AnchorStyles.Top Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
-        Me.ButtonBrowseOutputFolder.Location = New System.Drawing.Point(389, 64)
+        Me.ButtonBrowseOutputFolder.Location = New System.Drawing.Point(468, 64)
         Me.ButtonBrowseOutputFolder.Name = "ButtonBrowseOutputFolder"
         Me.ButtonBrowseOutputFolder.Size = New System.Drawing.Size(28, 23)
         Me.ButtonBrowseOutputFolder.TabIndex = 7
         Me.ButtonBrowseOutputFolder.Text = "..."
         Me.ButtonBrowseOutputFolder.UseVisualStyleBackColor = True
         '
+        'TextBoxOutputFileNameBase
+        '
+        Me.TextBoxOutputFileNameBase.Anchor = CType(((System.Windows.Forms.AnchorStyles.Top Or System.Windows.Forms.AnchorStyles.Left) _
+            Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
+        Me.TextBoxOutputFileNameBase.Location = New System.Drawing.Point(134, 94)
+        Me.TextBoxOutputFileNameBase.Name = "TextBoxOutputFileNameBase"
+        Me.TextBoxOutputFileNameBase.Size = New System.Drawing.Size(328, 20)
+        Me.TextBoxOutputFileNameBase.TabIndex = 8
+        '
+        'Label4
+        '
+        Me.Label4.AutoSize = True
+        Me.Label4.Location = New System.Drawing.Point(12, 97)
+        Me.Label4.Name = "Label4"
+        Me.Label4.RightToLeft = System.Windows.Forms.RightToLeft.Yes
+        Me.Label4.Size = New System.Drawing.Size(116, 13)
+        Me.Label4.TabIndex = 9
+        Me.Label4.Text = "Output File Name Base"
+        '
+        'CheckBoxOverwriteOutputFile
+        '
+        Me.CheckBoxOverwriteOutputFile.AutoSize = True
+        Me.CheckBoxOverwriteOutputFile.Location = New System.Drawing.Point(134, 121)
+        Me.CheckBoxOverwriteOutputFile.Name = "CheckBoxOverwriteOutputFile"
+        Me.CheckBoxOverwriteOutputFile.Size = New System.Drawing.Size(15, 14)
+        Me.CheckBoxOverwriteOutputFile.TabIndex = 10
+        Me.CheckBoxOverwriteOutputFile.UseVisualStyleBackColor = True
+        '
+        'Label5
+        '
+        Me.Label5.AutoSize = True
+        Me.Label5.Location = New System.Drawing.Point(12, 121)
+        Me.Label5.Name = "Label5"
+        Me.Label5.Size = New System.Drawing.Size(110, 13)
+        Me.Label5.TabIndex = 11
+        Me.Label5.Text = "Overwrite Existing File"
+        '
         'FormStartup
         '
         Me.AutoScaleDimensions = New System.Drawing.SizeF(6.0!, 13.0!)
         Me.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font
-        Me.ClientSize = New System.Drawing.Size(432, 137)
+        Me.ClientSize = New System.Drawing.Size(507, 176)
+        Me.Controls.Add(Me.Label5)
+        Me.Controls.Add(Me.CheckBoxOverwriteOutputFile)
+        Me.Controls.Add(Me.Label4)
+        Me.Controls.Add(Me.TextBoxOutputFileNameBase)
         Me.Controls.Add(Me.ButtonBrowseOutputFolder)
         Me.Controls.Add(Me.Label3)
         Me.Controls.Add(Me.ComboBoxOutputFolderName)
@@ -136,4 +181,8 @@ Partial Class FormStartup
     Friend WithEvents ComboBoxOutputFolderName As System.Windows.Forms.ComboBox
     Friend WithEvents Label3 As System.Windows.Forms.Label
     Friend WithEvents ButtonBrowseOutputFolder As System.Windows.Forms.Button
+    Friend WithEvents TextBoxOutputFileNameBase As System.Windows.Forms.TextBox
+    Friend WithEvents Label4 As System.Windows.Forms.Label
+    Friend WithEvents CheckBoxOverwriteOutputFile As System.Windows.Forms.CheckBox
+    Friend WithEvents Label5 As System.Windows.Forms.Label
 End Class

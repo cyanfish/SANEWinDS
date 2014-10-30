@@ -35,6 +35,8 @@ Partial Class FormStartup
         Me.Label4 = New System.Windows.Forms.Label()
         Me.CheckBoxOverwriteOutputFile = New System.Windows.Forms.CheckBox()
         Me.Label5 = New System.Windows.Forms.Label()
+        Me.CheckBoxViewAfterAcquire = New System.Windows.Forms.CheckBox()
+        Me.Label6 = New System.Windows.Forms.Label()
         Me.SuspendLayout()
         '
         'ButtonAcquire
@@ -149,11 +151,31 @@ Partial Class FormStartup
         Me.Label5.TabIndex = 11
         Me.Label5.Text = "Overwrite Existing File"
         '
+        'CheckBoxViewAfterAcquire
+        '
+        Me.CheckBoxViewAfterAcquire.AutoSize = True
+        Me.CheckBoxViewAfterAcquire.Location = New System.Drawing.Point(134, 142)
+        Me.CheckBoxViewAfterAcquire.Name = "CheckBoxViewAfterAcquire"
+        Me.CheckBoxViewAfterAcquire.Size = New System.Drawing.Size(15, 14)
+        Me.CheckBoxViewAfterAcquire.TabIndex = 12
+        Me.CheckBoxViewAfterAcquire.UseVisualStyleBackColor = True
+        '
+        'Label6
+        '
+        Me.Label6.AutoSize = True
+        Me.Label6.Location = New System.Drawing.Point(12, 143)
+        Me.Label6.Name = "Label6"
+        Me.Label6.Size = New System.Drawing.Size(94, 13)
+        Me.Label6.TabIndex = 13
+        Me.Label6.Text = "View After Acquire"
+        '
         'FormStartup
         '
         Me.AutoScaleDimensions = New System.Drawing.SizeF(6.0!, 13.0!)
         Me.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font
         Me.ClientSize = New System.Drawing.Size(507, 176)
+        Me.Controls.Add(Me.Label6)
+        Me.Controls.Add(Me.CheckBoxViewAfterAcquire)
         Me.Controls.Add(Me.Label5)
         Me.Controls.Add(Me.CheckBoxOverwriteOutputFile)
         Me.Controls.Add(Me.Label4)
@@ -185,4 +207,6 @@ Partial Class FormStartup
     Friend WithEvents Label4 As System.Windows.Forms.Label
     Friend WithEvents CheckBoxOverwriteOutputFile As System.Windows.Forms.CheckBox
     Friend WithEvents Label5 As System.Windows.Forms.Label
+    Friend WithEvents CheckBoxViewAfterAcquire As System.Windows.Forms.CheckBox
+    Friend WithEvents Label6 As System.Windows.Forms.Label
 End Class

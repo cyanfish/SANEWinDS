@@ -82,6 +82,14 @@ Public Class FormStartup
                 Me.INI.SetKeyValue("Output", "DefaultOutputFolder", Me.ComboBoxOutputFolderName.Text)
             End If
             Me.INI.SetKeyValue("Output", "OverwriteExistingFile", Me.CheckBoxOverwriteOutputFile.Checked.ToString)
+            Me.INI.SetKeyValue("Output", "Format", Me.ComboBoxOutputFormat.Text)
+            Me.INI.SetKeyValue("Output", "Compression", Me.ComboBoxCompression.Text)
+            Me.INI.SetKeyValue("Output", "ViewAfterAcquire", Me.CheckBoxViewAfterAcquire.Checked.ToString)
+
+            Me.INI.SetKeyValue("Window", "Top", Me.Top)
+            Me.INI.SetKeyValue("Window", "Left", Me.Left)
+            Me.INI.SetKeyValue("Window", "Height", Me.Height)
+            Me.INI.SetKeyValue("Window", "Width", Me.Width)
 
             If Me.INIFileName IsNot Nothing AndAlso Me.INIFileName.Trim.Length > 0 Then
                 Me.INI.Save(Me.INIFileName)
@@ -106,14 +114,12 @@ Public Class FormStartup
 
     Private Sub FormStartup_Load(ByVal sender As Object, ByVal e As System.EventArgs) Handles Me.Load
 
-        'Me.Visible = False
-        'Me.Text = Application.ProductName & " " & Application.ProductVersion 'Assembly File Version
         Me.Text = My.Application.Info.ProductName & " " & My.Application.Info.Version.ToString & " Alpha" 'Assembly Version
 
         Me.MinimumSize = Me.Size
 
         Dim UseRoamingAppData As Boolean = True
-        Dim UserSettingsFolder As String
+        Dim UserSettingsFolder As String = Nothing
 
         If UseRoamingAppData Then
             UserSettingsFolder = System.Environment.GetFolderPath(System.Environment.SpecialFolder.ApplicationData) & "\" & Me.ProductName
@@ -133,6 +139,13 @@ Public Class FormStartup
         End Try
 
         Me.INIFileName = Me.UserConfigDirectory & "\" & Me.ProductName & ".ini"
+
+        With Me.ComboBoxOutputFormat.Items
+            .Clear()
+            For Each f In [Enum].GetNames(GetType(ImageType))
+                .Add(f)
+            Next
+        End With
 
         Try
             If Not My.Computer.FileSystem.FileExists(INIFileName) Then Me.INI.Save(INIFileName) 'create new file
@@ -154,8 +167,54 @@ Public Class FormStartup
             End If
             Dim Overwrite As String = INI.GetKeyValue("Output", "OverwriteExistingFile")
             Boolean.TryParse(Overwrite, Me.CheckBoxOverwriteOutputFile.Checked)
+
+            Dim s As String = INI.GetKeyValue("Output", "Format")
+            Dim ImageFormat As ImageType
+            If [Enum].TryParse(Of ImageType)(s, ImageFormat) Then
+                Me.ComboBoxOutputFormat.SelectedItem = s
+            Else
+                Me.ComboBoxOutputFormat.SelectedItem = ImageType.PDF.ToString
+            End If
+
+            If ImageFormat = ImageType.TIFF Then
+                s = INI.GetKeyValue("Output", "Compression")
+                Dim ImageCompression As TIFFCompressionMethod
+                If [Enum].TryParse(Of TIFFCompressionMethod)(s, ImageCompression) Then
+                    Me.ComboBoxCompression.SelectedItem = s
+                End If
+            End If
+
+            s = INI.GetKeyValue("Output", "ViewAfterAcquire")
+            Boolean.TryParse(s, Me.CheckBoxViewAfterAcquire.Checked)
+
+            s = INI.GetKeyValue("Window", "Top")
+            Dim Top As Integer = 0
+            Integer.TryParse(s, Top)
+
+            s = INI.GetKeyValue("Window", "Left")
+            Dim Left As Integer = 0
+            Integer.TryParse(s, Left)
+
+            s = INI.GetKeyValue("Window", "Height")
+            Dim Height As Integer = 0
+            Integer.TryParse(s, Height)
+
+            s = INI.GetKeyValue("Window", "Width")
+            Dim Width As Integer = 0
+            Integer.TryParse(s, Width)
+
+            For Each Monitor As Screen In Screen.AllScreens
+                If Monitor.WorkingArea.Contains(New Point(Left, Top)) Then
+                    Me.Top = Top
+                    Me.Left = Left
+                    Exit For
+                End If
+            Next
+            Me.Height = Math.Max(Height, Me.Height)
+            Me.Width = Math.Max(Width, Me.Width)
+
         Catch ex As Exception
-            MsgBox("Error loading '" & INIFileName & "': " & ex.Message)
+            MsgBox("Error setting preferences from '" & INIFileName & "': " & ex.Message)
         End Try
 
         Try
@@ -163,16 +222,6 @@ Public Class FormStartup
         Catch ex As Exception
             MsgBox("Error creating output folder: " & ex.Message)
         End Try
-
-        With Me.ComboBoxOutputFormat.Items
-            .Clear()
-            For Each f In [Enum].GetNames(GetType(ImageType))
-                .Add(f)
-            Next
-        End With
-        'MsgBox("[" & ImageType.PDF.ToString & "]")
-        Dim s As String = ImageType.PDF.ToString
-        Me.ComboBoxOutputFormat.SelectedItem = ImageType.PDF.ToString
 
         Me.ComboBoxOutputFolderName.Items.Add(Me.OutputDirectory)
         Me.ComboBoxOutputFolderName.SelectedItem = Me.OutputDirectory
@@ -227,7 +276,9 @@ Public Class FormStartup
             End Select
             If Pages > 0 Then
                 If fname IsNot Nothing Then
-                    Process.Start(fname)
+                    If Me.CheckBoxViewAfterAcquire.Checked Then
+                        Process.Start(fname)
+                    End If
                 End If
             Else
                 MsgBox("No pages were acquired.  The Automatic Document Feeder may be empty or the job may have been cancelled.")

@@ -37,6 +37,7 @@ Partial Class FormStartup
         Me.Label5 = New System.Windows.Forms.Label()
         Me.CheckBoxViewAfterAcquire = New System.Windows.Forms.CheckBox()
         Me.Label6 = New System.Windows.Forms.Label()
+        Me.ButtonOutputFileNameBaseFormatHelp = New System.Windows.Forms.Button()
         Me.SuspendLayout()
         '
         'ButtonAcquire
@@ -169,11 +170,22 @@ Partial Class FormStartup
         Me.Label6.TabIndex = 13
         Me.Label6.Text = "View After Acquire"
         '
+        'ButtonOutputFileNameBaseFormatHelp
+        '
+        Me.ButtonOutputFileNameBaseFormatHelp.Anchor = CType((System.Windows.Forms.AnchorStyles.Top Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
+        Me.ButtonOutputFileNameBaseFormatHelp.Location = New System.Drawing.Point(468, 91)
+        Me.ButtonOutputFileNameBaseFormatHelp.Name = "ButtonOutputFileNameBaseFormatHelp"
+        Me.ButtonOutputFileNameBaseFormatHelp.Size = New System.Drawing.Size(28, 23)
+        Me.ButtonOutputFileNameBaseFormatHelp.TabIndex = 14
+        Me.ButtonOutputFileNameBaseFormatHelp.Text = "?"
+        Me.ButtonOutputFileNameBaseFormatHelp.UseVisualStyleBackColor = True
+        '
         'FormStartup
         '
         Me.AutoScaleDimensions = New System.Drawing.SizeF(6.0!, 13.0!)
         Me.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font
         Me.ClientSize = New System.Drawing.Size(507, 176)
+        Me.Controls.Add(Me.ButtonOutputFileNameBaseFormatHelp)
         Me.Controls.Add(Me.Label6)
         Me.Controls.Add(Me.CheckBoxViewAfterAcquire)
         Me.Controls.Add(Me.Label5)
@@ -209,4 +221,5 @@ Partial Class FormStartup
     Friend WithEvents Label5 As System.Windows.Forms.Label
     Friend WithEvents CheckBoxViewAfterAcquire As System.Windows.Forms.CheckBox
     Friend WithEvents Label6 As System.Windows.Forms.Label
+    Friend WithEvents ButtonOutputFileNameBaseFormatHelp As System.Windows.Forms.Button
 End Class

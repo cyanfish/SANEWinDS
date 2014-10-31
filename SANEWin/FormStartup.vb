@@ -67,10 +67,6 @@ Public Class FormStartup
     Private UserConfigDirectory As String
     Private SharedConfigDirectory As String
     Private LogDirectory As String
-    Private OutputDirectory As String
-    Private OutputFileNameBase As String
-    'Private CurrentPDF As PDFInfo
-    'Private CurrentTIFF As TIFFInfo
     Private CurrentImage As ImageInfo
 
     Private GUIForm_Shown As Boolean = False
@@ -80,6 +76,9 @@ Public Class FormStartup
 
             If Not String.IsNullOrWhiteSpace(Me.ComboBoxOutputFolderName.Text) Then
                 Me.INI.SetKeyValue("Output", "DefaultOutputFolder", Me.ComboBoxOutputFolderName.Text)
+            End If
+            If Not String.IsNullOrWhiteSpace(Me.TextBoxOutputFileNameBase.Text) Then
+                Me.INI.SetKeyValue("Output", "DefaultOutputFileNameBase", Me.TextBoxOutputFileNameBase.Text)
             End If
             Me.INI.SetKeyValue("Output", "OverwriteExistingFile", Me.CheckBoxOverwriteOutputFile.Checked.ToString)
             Me.INI.SetKeyValue("Output", "Format", Me.ComboBoxOutputFormat.Text)
@@ -153,18 +152,28 @@ Public Class FormStartup
             If Me.INI.GetSection("Output") Is Nothing Then Me.INI.AddSection("Output")
             Dim OutputFolder As String = INI.GetKeyValue("Output", "DefaultOutputFolder")
             If String.IsNullOrWhiteSpace(OutputFolder) Then
-                Me.OutputDirectory = My.Computer.FileSystem.SpecialDirectories.Temp & "\" & Me.ProductName
+                OutputFolder = My.Computer.FileSystem.SpecialDirectories.Temp & "\" & Me.ProductName
                 Me.INI.SetKeyValue("Output", "DefaultOutputFolder", "")
             Else
-                Me.OutputDirectory = OutputFolder.Trim
+                OutputFolder = String.Join("-", OutputFolder.Split(IO.Path.GetInvalidPathChars)).Trim
             End If
-            Dim OutputFileName As String = INI.GetKeyValue("Output", "DefaultOutputFileNameBase")
-            If String.IsNullOrWhiteSpace(OutputFileName) Then
-                Me.OutputFileNameBase = Me.ProductName & Now.ToString("_MMddyyyy_HHmmss_fff")
+            Try
+                If Not My.Computer.FileSystem.DirectoryExists(OutputFolder) Then My.Computer.FileSystem.CreateDirectory(OutputFolder)
+            Catch ex As Exception
+                MsgBox("Error creating output folder: " & ex.Message)
+            End Try
+            Me.ComboBoxOutputFolderName.Items.Add(OutputFolder)
+            Me.ComboBoxOutputFolderName.SelectedItem = OutputFolder
+
+            Dim OutputFileNameBase As String = INI.GetKeyValue("Output", "DefaultOutputFileNameBase")
+            If String.IsNullOrWhiteSpace(OutputFileNameBase) Then
+                OutputFileNameBase = Me.ProductName & "_%MMddyyyy_HHmmss_fff%"
                 Me.INI.SetKeyValue("Output", "DefaultOutputFileNameBase", "")
             Else
-                Me.OutputFileNameBase = OutputFileName.Trim
+                OutputFileNameBase = OutputFileNameBase.Trim
             End If
+            Me.TextBoxOutputFileNameBase.Text = OutputFileNameBase
+
             Dim Overwrite As String = INI.GetKeyValue("Output", "OverwriteExistingFile")
             Boolean.TryParse(Overwrite, Me.CheckBoxOverwriteOutputFile.Checked)
 
@@ -217,20 +226,32 @@ Public Class FormStartup
             MsgBox("Error setting preferences from '" & INIFileName & "': " & ex.Message)
         End Try
 
-        Try
-            If Not My.Computer.FileSystem.DirectoryExists(Me.OutputDirectory) Then My.Computer.FileSystem.CreateDirectory(Me.OutputDirectory)
-        Catch ex As Exception
-            MsgBox("Error creating output folder: " & ex.Message)
-        End Try
-
-        Me.ComboBoxOutputFolderName.Items.Add(Me.OutputDirectory)
-        Me.ComboBoxOutputFolderName.SelectedItem = Me.OutputDirectory
-
-        Me.TextBoxOutputFileNameBase.Text = Me.OutputFileNameBase
-
         AddHandler GUIForm.FormClosing, AddressOf Me.GUIForm_FormClosing
 
     End Sub
+
+    Private Function ExpandDateTimeVariables(ByVal StringContainingVariables As String) As String
+        Dim OutputString As String = Nothing
+        Dim s As String = StringContainingVariables
+        Dim p As Integer = s.IndexOf("%")
+        Dim CurrentTime As DateTime = Now
+        Do While s.Length
+            If p >= 0 Then
+                OutputString += s.Substring(0, p)
+                If p + 1 < s.Length Then
+                    Dim pp As Integer = s.IndexOf("%", p + 1)
+                    If pp >= 0 Then
+                        If (pp - p) > 1 Then OutputString += CurrentTime.ToString(s.Substring(p + 1, (pp - p - 1)))
+                        s = s.Substring(pp + 1)
+                        p = s.IndexOf("%")
+                    Else
+                        OutputString += s.Substring(p)
+                    End If
+                End If
+            End If
+        Loop
+        Return OutputString
+    End Function
 
     Private Sub OnCompressionMethodChanged(sender As Object, e As EventArgs) Handles ComboBoxCompression.TextChanged
         If Not String.IsNullOrEmpty(Me.ComboBoxCompression.Text) Then
@@ -509,7 +530,8 @@ Public Class FormStartup
     End Sub
 
     Private Function BuildFileName(ImageFormat As ImageType, PageNumber As Integer)
-        Dim FileNameBase As String = My.Computer.FileSystem.CombinePath(Me.ComboBoxOutputFolderName.Text, Me.TextBoxOutputFileNameBase.Text)
+        Dim FileNameBase As String = String.Join("-", ExpandDateTimeVariables(Me.TextBoxOutputFileNameBase.Text).Split(IO.Path.GetInvalidFileNameChars))
+        FileNameBase = My.Computer.FileSystem.CombinePath(Me.ComboBoxOutputFolderName.Text, FileNameBase)
         Select Case ImageFormat
             Case ImageType.JPEG
                 Dim Ext As String = ".JPG"
@@ -762,4 +784,19 @@ Public Class FormStartup
         End If
     End Sub
 
+    Private Sub ButtonOutputFileNameBaseFormatHelp_Click(sender As System.Object, e As System.EventArgs) Handles ButtonOutputFileNameBaseFormatHelp.Click
+        Dim s As String = "The 'Output File Name Base' field can contain literal characters and date/time formatting variables surrounded by percent (%) characters."
+        s += "  Variables can be any of the Standard or Custom variables described in the following Microsoft web pages:" & vbCr
+        s += "http://msdn.microsoft.com/en-us/library/az4se3k1(v=vs.100).aspx" & vbCr
+        s += "http://msdn.microsoft.com/en-us/library/8kb3ddd4(v=vs.100).aspx" & vbCr
+        s += "Any character not allowed in a filename will be replaced by a dash (-) character and the appropriate file name extension will be added." & vbCr
+        s += vbCr & "Example: 'MyFileName_%g%' with an output format of 'TIFF' will result in a file name similar to 'MyFileName_10-31-2014 11-46 AM.TIF'."
+        s += "  The format may vary depending on your locale." & vbCr
+        s += vbCr & "For historical compatibility the default 'Output File Name Base' is '" & Application.ProductName & "_%MMddyyyy_HHmmss_fff%'." & vbCr
+        s += vbCr & "Would you like to open the format help pages now?"
+        If MsgBox(s, MsgBoxStyle.YesNo + MsgBoxStyle.Information, "File Name Format Help") = MsgBoxResult.Yes Then
+            Process.Start("http://msdn.microsoft.com/en-us/library/az4se3k1(v=vs.100).aspx")
+            Process.Start("http://msdn.microsoft.com/en-us/library/8kb3ddd4(v=vs.100).aspx")
+        End If
+    End Sub
 End Class

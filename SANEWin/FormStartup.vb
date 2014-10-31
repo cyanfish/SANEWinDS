@@ -68,8 +68,8 @@ Public Class FormStartup
     Private SharedConfigDirectory As String
     Private LogDirectory As String
     Private CurrentImage As ImageInfo
-
     Private GUIForm_Shown As Boolean = False
+    Private OutputFolderMRU As New SortedList(Of DateTime, String)
 
     Private Sub FormStartup_FormClosed(sender As Object, e As FormClosedEventArgs) Handles Me.FormClosed
         If Me.INI IsNot Nothing Then
@@ -84,6 +84,15 @@ Public Class FormStartup
             Me.INI.SetKeyValue("Output", "Format", Me.ComboBoxOutputFormat.Text)
             Me.INI.SetKeyValue("Output", "Compression", Me.ComboBoxCompression.Text)
             Me.INI.SetKeyValue("Output", "ViewAfterAcquire", Me.CheckBoxViewAfterAcquire.Checked.ToString)
+
+            Dim OutputMRU As String = ""
+            Dim i As Integer = 0
+            For Each kvp As KeyValuePair(Of DateTime, String) In Me.OutputFolderMRU.Reverse
+                OutputMRU += kvp.Key.ToString & "," & kvp.Value & ";"
+                i += 1
+                If i > 9 Then Exit For 'only save the most recent 10 folders
+            Next
+            Me.INI.SetKeyValue("Output", "FolderMRU", OutputMRU)
 
             Me.INI.SetKeyValue("Window", "Top", Me.Top)
             Me.INI.SetKeyValue("Window", "Left", Me.Left)
@@ -162,7 +171,35 @@ Public Class FormStartup
             Catch ex As Exception
                 MsgBox("Error creating output folder: " & ex.Message)
             End Try
-            Me.ComboBoxOutputFolderName.Items.Add(OutputFolder)
+
+            'FolderMRU format is "Folder1,Timestamp1;Folder2,Timestamp2;Folder3,Timestamp3"...
+            Me.OutputFolderMRU.Reverse()
+            Dim FolderMRU() As String = Nothing
+            Dim s As String = INI.GetKeyValue("Output", "FolderMRU")
+            If Not String.IsNullOrWhiteSpace(s) Then
+                FolderMRU = s.Split(";")
+                For Each Folder As String In FolderMRU
+                    Dim Values() As String = Folder.Split(",")
+                    If Values.Length = 2 Then
+                        If Not String.IsNullOrWhiteSpace(Values(1)) Then
+                            Dim FolderName As String = Values(1).Trim
+                            If Not String.IsNullOrWhiteSpace(Values(0)) Then
+                                Dim Timestamp As DateTime
+                                If DateTime.TryParse(Values(0), Timestamp) Then
+                                    Me.OutputFolderMRU.Add(Timestamp, FolderName)
+                                End If
+                            End If
+                        End If
+                    End If
+                Next
+            End If
+            Dim idx As Integer = Me.OutputFolderMRU.IndexOfValue(OutputFolder)
+            If idx > -1 Then
+                Me.OutputFolderMRU.RemoveAt(idx)
+            End If
+            Me.OutputFolderMRU.Add(Now, OutputFolder)
+
+            Me.ReloadComboBoxOutputFolderNameList()
             Me.ComboBoxOutputFolderName.SelectedItem = OutputFolder
 
             Dim OutputFileNameBase As String = INI.GetKeyValue("Output", "DefaultOutputFileNameBase")
@@ -177,7 +214,7 @@ Public Class FormStartup
             Dim Overwrite As String = INI.GetKeyValue("Output", "OverwriteExistingFile")
             Boolean.TryParse(Overwrite, Me.CheckBoxOverwriteOutputFile.Checked)
 
-            Dim s As String = INI.GetKeyValue("Output", "Format")
+            s = INI.GetKeyValue("Output", "Format")
             Dim ImageFormat As ImageType
             If [Enum].TryParse(Of ImageType)(s, ImageFormat) Then
                 Me.ComboBoxOutputFormat.SelectedItem = s
@@ -221,13 +258,19 @@ Public Class FormStartup
             Next
             Me.Height = Math.Max(Height, Me.Height)
             Me.Width = Math.Max(Width, Me.Width)
-
         Catch ex As Exception
             MsgBox("Error setting preferences from '" & INIFileName & "': " & ex.Message)
         End Try
 
         AddHandler GUIForm.FormClosing, AddressOf Me.GUIForm_FormClosing
 
+    End Sub
+
+    Private Sub ReloadComboBoxOutputFolderNameList()
+        Me.ComboBoxOutputFolderName.Items.Clear()
+        For Each Folder As String In Me.OutputFolderMRU.Values.Reverse
+            Me.ComboBoxOutputFolderName.Items.Add(Folder)
+        Next
     End Sub
 
     Private Function ExpandDateTimeVariables(ByVal StringContainingVariables As String) As String
@@ -574,7 +617,6 @@ Public Class FormStartup
 
     Private Sub OpenPDF(ByVal PageSize As iTextSharp.text.Rectangle)
         With Me.CurrentImage.PDF
-            '.FileName = Me.OutputDirectory & "\" & Me.ProductName & Now.ToString("_MMddyyyy_HHmmss_fff") & ".pdf"
             .FileStream = New System.IO.FileStream(Me.CurrentImage.FileName, IO.FileMode.Create, IO.FileAccess.Write, IO.FileShare.None)
             .iTextDocument = New iTextSharp.text.Document(PageSize, 0, 0, 0, 0)
             .iTextWriter = iTextSharp.text.pdf.PdfWriter.GetInstance(.iTextDocument, .FileStream)
@@ -745,6 +787,17 @@ Public Class FormStartup
     'End Sub
 
     Private Sub ButtonAcquire_Click(sender As Object, e As EventArgs) Handles ButtonAcquire.Click
+        Dim Folder As String = Me.ComboBoxOutputFolderName.Text
+        If Not String.IsNullOrWhiteSpace(Folder) Then
+            Dim idx As Integer = Me.OutputFolderMRU.IndexOfValue(Folder.Trim)
+            If idx > -1 Then
+                Me.OutputFolderMRU.RemoveAt(idx)
+            End If
+            Me.OutputFolderMRU.Add(Now, Folder.Trim)
+        End If
+        Me.ReloadComboBoxOutputFolderNameList()
+        Me.ComboBoxOutputFolderName.SelectedItem = Folder
+
         Dim OutputFormat As ImageType = [Enum].Parse(GetType(ImageType), Me.ComboBoxOutputFormat.Text)
         Try
             Dim fname As String = BuildFileName(OutputFormat, 1)
@@ -779,8 +832,7 @@ Public Class FormStartup
         fb.ShowNewFolderButton = True
         fb.Description = "Select a folder in which to place the scanned items."
         If fb.ShowDialog = Windows.Forms.DialogResult.OK Then
-            If Not Me.ComboBoxOutputFolderName.Items.Contains(fb.SelectedPath) Then Me.ComboBoxOutputFolderName.Items.Add(fb.SelectedPath)
-            Me.ComboBoxOutputFolderName.SelectedItem = fb.SelectedPath
+            Me.ComboBoxOutputFolderName.Text = fb.SelectedPath
         End If
     End Sub
 

@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<DOCUMENT Type="Advanced Installer" CreateVersion="9.8" version="10.9.1" Modules="simple" RootPath="." Language="en" Id="{737192D8-EF70-4043-A521-546E927B17BB}">
+<DOCUMENT Type="Advanced Installer" CreateVersion="9.8" version="11.6.1" Modules="simple" RootPath="." Language="en" Id="{737192D8-EF70-4043-A521-546E927B17BB}">
   <COMPONENT cid="caphyon.advinst.msicomp.MsiValidationComponent">
-    <ROW Table="File" Column="Sequence" MinValue="1" MaxValue="32767" Description="Sequence with respect to the media images; order must track cabinet order." Options="0" ColumnType="2" ColumnIndex="7" ColumnSize="2" MsiKey="File#Sequence"/>
-    <ROW Table="Media" Column="LastSequence" MinValue="0" MaxValue="32767" Description="File sequence number for the last file for this media." Options="0" ColumnType="2" ColumnIndex="1" ColumnSize="2" MsiKey="Media#LastSequence"/>
+    <ROW Table="File" Column="Sequence" MinValue="1" MaxValue="2147483647" Description="Sequence with respect to the media images; order must track cabinet order." Options="0" ColumnType="3" ColumnIndex="7" ColumnSize="4" MsiKey="File#Sequence"/>
+    <ROW Table="Media" Column="LastSequence" MinValue="0" MaxValue="2147483647" Description="File sequence number for the last file for this media." Options="0" ColumnType="3" ColumnIndex="1" ColumnSize="4" MsiKey="Media#LastSequence"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiPropsComponent">
     <ROW Property="AI_BITMAP_DISPLAY_MODE" Value="0"/>
@@ -13,18 +13,16 @@
     <ROW Property="ARPURLINFOABOUT" Value="http://sourceforge.net/projects/sanewinds/"/>
     <ROW Property="ARPURLUPDATEINFO" Value="http://sourceforge.net/projects/sanewinds/files/"/>
     <ROW Property="Manufacturer" Value="Alec Skelly"/>
-    <ROW Property="ProductCode" Value="1033:{FC56EC78-BEC3-4AC0-AAA0-677BCA51CA90} " Type="16"/>
+    <ROW Property="ProductCode" Value="1033:{B2717487-781A-4AB7-982F-BD9C242C00F6} " Type="16"/>
     <ROW Property="ProductLanguage" Value="1033"/>
     <ROW Property="ProductName" Value="SANEWinDS"/>
-    <ROW Property="ProductVersion" Value="0.9.5178" Type="32"/>
+    <ROW Property="ProductVersion" Value="0.9.5418" Type="32"/>
     <ROW Property="SecureCustomProperties" Value="OLDPRODUCTS;AI_NEWERPRODUCTFOUND"/>
     <ROW Property="UpgradeCode" Value="{28BC51C6-EB6A-40B0-A11C-01E9313074C3}"/>
     <ROW Property="WindowsType9X" MultiBuildValue="DefaultBuild:Windows 9x/ME" ValueLocId="-"/>
     <ROW Property="WindowsType9XDisplay" MultiBuildValue="DefaultBuild:Windows 9x/ME" ValueLocId="-"/>
-    <ROW Property="WindowsTypeNT" MultiBuildValue="DefaultBuild:Windows 9x/ME/NT/2000/XP/Vista/Windows 7/Windows 8 x86/Windows 8.1 x86" ValueLocId="-"/>
     <ROW Property="WindowsTypeNT40" MultiBuildValue="DefaultBuild:Windows NT 4.0" ValueLocId="-"/>
     <ROW Property="WindowsTypeNT40Display" MultiBuildValue="DefaultBuild:Windows NT 4.0" ValueLocId="-"/>
-    <ROW Property="WindowsTypeNTDisplay" MultiBuildValue="DefaultBuild:Windows 9x/ME/NT/2000/XP/Vista/Windows 7/Windows 8 x86/Windows 8.1 x86" ValueLocId="-"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiDirsComponent">
     <ROW Directory="APPDIR" Directory_Parent="TARGETDIR" DefaultDir="APPDIR:." IsPseudoRoot="1"/>
@@ -73,7 +71,8 @@
     <ROW File="SANEWinDS.dll_1" Component_="SANEWinDS.dll_1" FileName="SANEWi~1.dll|SANEWinDS.dll" Attributes="0" SourcePath="..\SANEWin\bin\Debug\SANEWinDS.dll" SelfReg="false" NextFile="genesys.ini"/>
     <ROW File="canon_dr.ini" Component_="canon_dr.ini" FileName="canon_dr.ini" Attributes="0" SourcePath="..\SANEWinDS\backend.ini\canon_dr.ini" SelfReg="false" NextFile="test.ini"/>
     <ROW File="canondr.ini" Component_="canon_dr.ini" FileName="canondr.ini" Attributes="0" SourcePath="..\SANEWinDS\backend.ini\canondr.ini" SelfReg="false" NextFile="hp3500.ini"/>
-    <ROW File="epkowa.ini" Component_="canon_dr.ini" FileName="epkowa.ini" Attributes="0" SourcePath="..\SANEWinDS\backend.ini\epkowa.ini" SelfReg="false"/>
+    <ROW File="epkowa.ini" Component_="canon_dr.ini" FileName="epkowa.ini" Attributes="0" SourcePath="..\SANEWinDS\backend.ini\epkowa.ini" SelfReg="false" NextFile="fujitsu.ini"/>
+    <ROW File="fujitsu.ini" Component_="canon_dr.ini" FileName="fujitsu.ini" Attributes="0" SourcePath="..\SANEWinDS\backend.ini\fujitsu.ini" SelfReg="false"/>
     <ROW File="genesys.ini" Component_="canon_dr.ini" FileName="genesys.ini" Attributes="0" SourcePath="..\SANEWinDS\backend.ini\genesys.ini" SelfReg="false" NextFile="hp5590.ini"/>
     <ROW File="hp3500.ini" Component_="canon_dr.ini" FileName="hp3500.ini" Attributes="0" SourcePath="..\SANEWinDS\backend.ini\hp3500.ini" SelfReg="false" NextFile="epkowa.ini"/>
     <ROW File="hp5590.ini" Component_="canon_dr.ini" FileName="hp5590.ini" Attributes="0" SourcePath="..\SANEWinDS\backend.ini\hp5590.ini" SelfReg="false" NextFile="niash.ini"/>
@@ -108,6 +107,7 @@
   <COMPONENT cid="caphyon.advinst.msicomp.MsiAppSearchComponent">
     <ROW Property="AI_DOTNET40_SEARCH" Signature_="AI_DotNet40SearchSgn" Builds="DefaultBuild"/>
     <ROW Property="AI_DOTNET451_SEARCH" Signature_="AI_DotNet451SearchSgn" Builds="DefaultBuild"/>
+    <ROW Property="AI_DOTNET452_SEARCH" Signature_="AI_DotNet452SearchSgn" Builds="DefaultBuild"/>
     <ROW Property="AI_DOTNET45_SEARCH" Signature_="AI_DotNet45SearchSgn" Builds="DefaultBuild"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiBinaryComponent">
@@ -143,7 +143,7 @@
     <ROW Dialog_="VerifyReadyDlg" Control_="Back" Event="NewDialog" Argument="PatchWelcomeDlg" Condition="AI_PATCH" Ordering="203"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiCreateFolderComponent">
-    <ROW Directory_="SHORTCUTDIR" Component_="SHORTCUTDIR"/>
+    <ROW Directory_="SHORTCUTDIR" Component_="SHORTCUTDIR" ManualDelete="false"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiCustActComponent">
     <ROW Action="AI_DOWNGRADE" Type="19" Target="4010"/>
@@ -152,7 +152,6 @@
     <ROW Action="AI_PREPARE_UPGRADE" Type="65" Source="aicustact.dll" Target="PrepareUpgrade"/>
     <ROW Action="AI_RESTORE_LOCATION" Type="65" Source="aicustact.dll" Target="RestoreLocation"/>
     <ROW Action="AI_ResolveKnownFolders" Type="1" Source="aicustact.dll" Target="AI_ResolveKnownFolders"/>
-    <ROW Action="AI_ResolveLocalizedCredentials" Type="1" Source="aicustact.dll" Target="GetLocalizedCredentials"/>
     <ROW Action="AI_SHOW_LOG" Type="65" Source="aicustact.dll" Target="LaunchLogFile" WithoutSeq="true"/>
     <ROW Action="AI_STORE_LOCATION" Type="51" Source="ARPINSTALLLOCATION" Target="[APPDIR]"/>
     <ROW Action="SET_APPDIR" Type="307" Source="APPDIR" Target="[ProgramFilesFolder][Manufacturer]\[ProductName]" MultiBuildTarget="DefaultBuild:[ProgramFilesFolder][ProductName]"/>
@@ -164,25 +163,26 @@
     <ROW Action="AI_RESTORE_LOCATION" Condition="APPDIR=&quot;&quot;" Sequence="749"/>
     <ROW Action="AI_STORE_LOCATION" Condition="(Not Installed) OR REINSTALL" Sequence="1501"/>
     <ROW Action="AI_PREPARE_UPGRADE" Condition="AI_UPGRADE=&quot;No&quot; AND (Not Installed)" Sequence="1399"/>
-    <ROW Action="AI_ResolveKnownFolders" Sequence="52"/>
-    <ROW Action="AI_ResolveLocalizedCredentials" Sequence="51"/>
+    <ROW Action="AI_ResolveKnownFolders" Sequence="51"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiInstallUISequenceComponent">
     <ROW Action="AI_RESTORE_LOCATION" Condition="APPDIR=&quot;&quot;" Sequence="749"/>
-    <ROW Action="AI_ResolveKnownFolders" Sequence="53"/>
-    <ROW Action="AI_ResolveLocalizedCredentials" Sequence="52"/>
+    <ROW Action="AI_ResolveKnownFolders" Sequence="52"/>
     <ROW Action="AI_DpiContentScale" Sequence="51"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiLaunchConditionsComponent">
-    <ROW Condition="( Version9X OR VersionNT64 )" Description="[ProductName] cannot be installed on [WindowsTypeNTDisplay]" DescriptionLocId="AI.LaunchCondition.NoNT" IsPredefined="true" Builds="DefaultBuild"/>
-    <ROW Condition="(AI_DOTNET40_SEARCH = &quot;#1&quot;) OR (AI_DOTNET45_SEARCH &gt;= &quot;4.5&quot;) OR (AI_DOTNET451_SEARCH = &quot;#378758&quot;) OR (AI_DOTNET451_SEARCH = &quot;#378675&quot;)" Description="[ProductName] cannot be installed on systems with .NET Framework version lower than [AI_MINDOTNETVERSION]" DescriptionLocId="AI.LaunchCondition.DotNET" IsPredefined="true" Builds="DefaultBuild"/>
+    <ROW Condition="(AI_DOTNET40_SEARCH = &quot;#1&quot;) OR (AI_DOTNET45_SEARCH &gt;= &quot;4.5&quot;) OR (AI_DOTNET451_SEARCH &gt;= &quot;#378675&quot;)" Description="[ProductName] cannot be installed on systems with .NET Framework version lower than [AI_MINDOTNETVERSION]" DescriptionLocId="AI.LaunchCondition.DotNET" IsPredefined="true" Builds="DefaultBuild"/>
     <ROW Condition="(VersionNT &lt;&gt; 400)" Description="[ProductName] cannot be installed on the following Windows versions: [WindowsTypeNT40Display]" DescriptionLocId="AI.LaunchCondition.NoNT40" IsPredefined="true" Builds="DefaultBuild"/>
     <ROW Condition="Privileged" Description="[ProductName] requires administrative privileges to install." DescriptionLocId="AI.LaunchCondition.Privileged" IsPredefined="true" Builds="DefaultBuild"/>
     <ROW Condition="VersionNT" Description="[ProductName] cannot be installed on [WindowsType9XDisplay]" DescriptionLocId="AI.LaunchCondition.No9X" IsPredefined="true" Builds="DefaultBuild"/>
   </COMPONENT>
+  <COMPONENT cid="caphyon.advinst.msicomp.MsiMergeModsComponent">
+    <ROW Module="Microsoft_VC110_CRT_x86.msm" Path="..\..\..\Program Files (x86)\Common Files\Merge modules\Microsoft_VC110_CRT_x86.msm" Feature="MainFeature" Directory="APPDIR"/>
+  </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiRegLocatorComponent">
     <ROW Signature_="AI_DotNet40SearchSgn" Root="2" Key="SOFTWARE\Microsoft\NET Framework Setup\NDP\v4\Full" Name="Install" Type="2"/>
     <ROW Signature_="AI_DotNet451SearchSgn" Root="2" Key="SOFTWARE\Microsoft\NET Framework Setup\NDP\v4\Full" Name="Release" Type="2"/>
+    <ROW Signature_="AI_DotNet452SearchSgn" Root="2" Key="SOFTWARE\Microsoft\NET Framework Setup\NDP\v4\Full" Name="Release" Type="2"/>
     <ROW Signature_="AI_DotNet45SearchSgn" Root="2" Key="SOFTWARE\Microsoft\NET Framework Setup\NDP\v4\Full" Name="Version" Type="2"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiRegsComponent">
@@ -190,8 +190,8 @@
     <ROW Registry="Version" Root="-1" Key="Software\[ProductName]" Name="Version" Value="[ProductVersion]" Component_="ProductInformation"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiShortsComponent">
-    <ROW Shortcut="SANEWin.exe" Directory_="SHORTCUTDIR" Name="SANEWin" Component_="SANEWin.exe" Target="[#SANEWin.exe]" Description="SANEWin.exe" Hotkey="0" IconIndex="0" ShowCmd="1" WkDir="APPDIR"/>
-    <ROW Shortcut="SANEWin.exe_1" Directory_="DesktopFolder" Name="SANEWin.exe" Component_="SANEWin.exe" Target="[#SANEWin.exe]" Description="SANEWin.exe" Hotkey="0" IconIndex="0" ShowCmd="1" WkDir="APPDIR"/>
+    <ROW Shortcut="SANEWin.exe" Directory_="SHORTCUTDIR" Name="SANEWin" Component_="SANEWin.exe" Target="[#SANEWin.exe]" Description="SANEWin" Hotkey="0" IconIndex="0" ShowCmd="1" WkDir="APPDIR"/>
+    <ROW Shortcut="SANEWin.exe_1" Directory_="DesktopFolder" Name="SANEWin" Component_="SANEWin.exe" Target="[#SANEWin.exe]" Description="SANEWin" Hotkey="0" IconIndex="0" ShowCmd="1" WkDir="APPDIR"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiThemeComponent">
     <ATTRIBUTE name="UsedTheme" value="classic"/>

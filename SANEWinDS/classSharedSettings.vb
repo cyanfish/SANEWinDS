@@ -117,7 +117,7 @@ Public Class SharedSettings
             INI.Save(UserSettingsFileName)
         End If
         INI.SetKeyValue("General", "INI_Version", Current_INI_Ver)
-        INI.SetKeyValue("General", "Version", My.Application.Info.Version.ToString)
+        INI.SetKeyValue("General", "Version", GetType(SANE_API).Assembly.GetName.Version.ToString)
 
         If INI.GetSection("Log") Is Nothing Then
             INI.AddSection("Log")
@@ -254,7 +254,7 @@ Public Class SharedSettings
 
         Dim App_Version As String = INI.GetKeyValue("General", "Version")
 
-        If App_Version <> My.Application.Info.Version.ToString Then
+        If App_Version <> GetType(SANE_API).Assembly.GetName.Version.ToString Then
             Dim r As MsgBoxResult = MsgBox("Please note that SANEWinDS is in the alpha stage of development.  Expect numerous bugs.  " _
                 & "When you encounter a bug, please notify the authors by opening a ticket or posting in the forum " _
                 & "at http://sourceforge.net/projects/sanewinds/.", MsgBoxStyle.Exclamation + MsgBoxStyle.OkOnly, "Alpha Software Alert")

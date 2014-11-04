@@ -252,15 +252,19 @@ Public Class SharedSettings
         Dim INI_Ver As Double = 0
         Double.TryParse(INI_Version, INI_Ver)
 
-        Dim App_Version As String = INI.GetKeyValue("General", "Version")
+        Dim SuppressWarning As Boolean = False
+        Boolean.TryParse(INI.GetKeyValue("General", "Suppress_Startup_Messages"), SuppressWarning)
 
-        If App_Version <> GetType(SANE_API).Assembly.GetName.Version.ToString Then
-            Dim r As MsgBoxResult = MsgBox("Please note that SANEWinDS is in the alpha stage of development.  Expect numerous bugs.  " _
-                & "When you encounter a bug, please notify the authors by opening a ticket or posting in the forum " _
-                & "at http://sourceforge.net/projects/sanewinds/.", MsgBoxStyle.Exclamation + MsgBoxStyle.OkOnly, "Alpha Software Alert")
-            r = MsgBox("SANEWinDS is hosted by SourceForge.  If you downloaded it from any other site you probably don't have the most recent version.  " _
-                & "The current version is available at http://sourceforge.net/projects/sanewinds/ along with configuration instructions and a forum for " _
-                & "bug reporting, feature requests, and backend.ini contributions.", MsgBoxStyle.Information + MsgBoxStyle.OkOnly, "SANEWinDS is hosted by SourceForge!")
+        If Not SuppressWarning Then
+            Dim App_Version As String = INI.GetKeyValue("General", "Version")
+            If App_Version <> GetType(SANE_API).Assembly.GetName.Version.ToString Then
+                Dim r As MsgBoxResult = MsgBox("Please note that SANEWinDS is in the alpha stage of development.  Expect numerous bugs.  " _
+                    & "When you encounter a bug, please notify the authors by opening a ticket or posting in the forum " _
+                    & "at http://sourceforge.net/projects/sanewinds/.", MsgBoxStyle.Exclamation + MsgBoxStyle.OkOnly, "Alpha Software Alert")
+                r = MsgBox("SANEWinDS is hosted by SourceForge.  If you downloaded it from any other site you probably don't have the most recent version.  " _
+                    & "The current version is available at http://sourceforge.net/projects/sanewinds/ along with configuration instructions and a forum for " _
+                    & "bug reporting, feature requests, and backend.ini contributions.", MsgBoxStyle.Information + MsgBoxStyle.OkOnly, "SANEWinDS is hosted by SourceForge!")
+            End If
         End If
 
         SANE.Hosts = GetSANEHostsFromINI(INI)

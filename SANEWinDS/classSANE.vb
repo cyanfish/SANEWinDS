@@ -1247,18 +1247,25 @@ Class SANE_API
         Finally
             Try
                 If ImageStream IsNot Nothing Then ImageStream.Close()
-                'If stream IsNot Nothing Then
-                '    Dim buf(Data_TCPClient.ReceiveBufferSize - 1) As Byte
-                '    Do While stream.DataAvailable 'hopefully prevent the server from staying in SANE_STATUS_BUSY
-                '        stream.Read(buf, 0, buf.Length)
-                '    Loop
-                '    stream.Close()
-                'End If
+            Catch ex As Exception
+                Logger.DebugException(ex.Message, ex)
+            End Try
+            'If stream IsNot Nothing Then
+            '    Dim buf(Data_TCPClient.ReceiveBufferSize - 1) As Byte
+            '    Do While stream.DataAvailable 'hopefully prevent the server from staying in SANE_STATUS_BUSY
+            '        stream.Read(buf, 0, buf.Length)
+            '    Loop
+            '    stream.Close()
+            'End If
+            Try
                 If stream IsNot Nothing Then stream.Close()
-                If Data_TCPClient IsNot Nothing Then
-                    If TCPClient_Connected(Data_TCPClient) Then Data_TCPClient.Close()
-                 End If
-            Catch
+            Catch ex As Exception
+                Logger.DebugException(ex.Message, ex)
+            End Try
+            Try
+                If Data_TCPClient IsNot Nothing Then Data_TCPClient.Close()
+            Catch ex As Exception
+                Logger.DebugException(ex.Message, ex)
             End Try
             ImageStream = Nothing
             stream = Nothing

@@ -46,23 +46,21 @@ Public Class FormMain
 
     Private Sub CloseCurrentHost()
         Logger.Debug("")
-        Try
-            Me.CloseCurrentDevice()
-            If ControlClient IsNot Nothing Then
-                If TCPClient_Connected(ControlClient) Then
-                    SANE.Net_Exit(ControlClient)
-                    Dim stream As System.Net.Sockets.NetworkStream = ControlClient.GetStream
-                    stream.Close()
-                    stream = Nothing
-                    ControlClient.Close()
-                End If
-                ControlClient = Nothing
-            End If
-        Catch ex As Exception
-            MsgBox(ex.Message)
-        Finally
-            'CurrentSettings.SANE.CurrentHostIndex = -1 'This jacks up TWAIN
-        End Try
+        Me.CloseCurrentDevice()
+        If ControlClient IsNot Nothing Then
+            Try
+                SANE.Net_Exit(ControlClient)
+            Catch ex As Exception
+                Logger.DebugException(ex.Message, ex)
+            End Try
+            Try
+                ControlClient.Close()
+            Catch ex As Exception
+                Logger.DebugException(ex.Message, ex)
+            End Try
+        End If
+        ControlClient = Nothing
+        'CurrentSettings.SANE.CurrentHostIndex = -1 'This jacks up TWAIN
     End Sub
 
     Private Function BytesToString(ByVal buffer As Byte(), ByVal offset As Integer, ByVal length As Integer) As String
@@ -341,7 +339,11 @@ Public Class FormMain
     Private Sub FormMain_FormClosed(sender As Object, e As FormClosedEventArgs) Handles Me.FormClosed
         Me.CloseCurrentHost()
         If ControlClient IsNot Nothing Then
-            If TCPClient_Connected(ControlClient) Then ControlClient.Close()
+            Try
+                ControlClient.Close()
+            Catch ex As Exception
+                Logger.DebugException(ex.Message, ex)
+            End Try
             ControlClient = Nothing
         End If
         If CurrentSettings IsNot Nothing Then CurrentSettings.Save()

@@ -4083,13 +4083,11 @@ Namespace TWAIN_VB
                                             SANE.Net_Exit(ControlClient)
                                         End If
 
-                                        If TCPClient_Connected(ControlClient) Then
-                                            Dim stream As System.Net.Sockets.NetworkStream = ControlClient.GetStream
-                                            stream.Close()
-                                            stream = Nothing
-                                        End If
-
-                                        If TCPClient_Connected(ControlClient) Then ControlClient.Close()
+                                        Try
+                                            If ControlClient IsNot Nothing Then ControlClient.Close()
+                                        Catch ex As Exception
+                                            Logger.DebugException(ex.Message, ex)
+                                        End Try
                                         ControlClient = Nothing
 
                                         Dim f As New FormSANEHostWizard
@@ -4121,15 +4119,12 @@ Namespace TWAIN_VB
                             Finally
                                 Try
                                     If Not CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Open Then
-                                        If ControlClient IsNot Nothing Then
-                                            If TCPClient_Connected(ControlClient) Then
-                                                Dim stream As System.Net.Sockets.NetworkStream = ControlClient.GetStream
-                                                stream.Close()
-                                                stream = Nothing
-                                            End If
-                                            If TCPClient_Connected(ControlClient) Then ControlClient.Close()
-                                            ControlClient = Nothing
-                                        End If
+                                        Try
+                                            If ControlClient IsNot Nothing Then ControlClient.Close()
+                                        Catch ex As Exception
+                                            Logger.DebugException(ex.Message, ex)
+                                        End Try
+                                        ControlClient = Nothing
                                     End If
                                 Catch ex As Exception
                                     Logger.ErrorException(ex.Message, ex)
@@ -4159,9 +4154,7 @@ Namespace TWAIN_VB
                                 MyForm = Nothing
                             End If
 
-                            If ControlClient IsNot Nothing Then
-                                If TCPClient_Connected(ControlClient) Then ControlClient.Close()
-                            End If
+                            If ControlClient IsNot Nothing Then ControlClient.Close()
                         Catch ex As Exception
                             Logger.ErrorException(ex.Message, ex)
                         Finally

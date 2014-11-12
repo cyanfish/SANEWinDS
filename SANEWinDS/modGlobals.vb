@@ -491,21 +491,21 @@ Module modGlobals
         If Client IsNot Nothing Then
             Dim timeout As Integer = Client.ReceiveTimeout
             Try
-                If (Client.Client.Connected) Then
-                    If ((Client.Client.Poll(0, System.Net.Sockets.SelectMode.SelectWrite)) And Not (Client.Client.Poll(0, System.Net.Sockets.SelectMode.SelectError))) Then
-                        Dim buffer(0) As Byte
-                        Client.ReceiveTimeout = 100 'a tenth of a second
-                        If (Client.Client.Receive(buffer, System.Net.Sockets.SocketFlags.Peek) = 0) Then
-                            Return False
-                        Else
-                            Return True
-                        End If
-                    Else
+                'If (Client.Client.Connected) Then
+                If ((Client.Client.Poll(0, System.Net.Sockets.SelectMode.SelectWrite)) And Not (Client.Client.Poll(0, System.Net.Sockets.SelectMode.SelectError))) Then
+                    Dim buffer(0) As Byte
+                    Client.ReceiveTimeout = 100 'a tenth of a second
+                    If (Client.Client.Receive(buffer, System.Net.Sockets.SocketFlags.Peek) = 0) Then
                         Return False
+                    Else
+                        Return True
                     End If
                 Else
                     Return False
                 End If
+                'Else
+                '    Return False
+                'End If
             Catch ex As System.Net.Sockets.SocketException
                 Return (ex.SocketErrorCode = Net.Sockets.SocketError.TimedOut) 'Nothing went wrong but there were no bytes waiting during Receive()
             Catch ex As Exception

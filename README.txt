@@ -1,5 +1,10 @@
 Changelog:
 
+Version 0.9.5434
+-"Suppress_Startup_Messages=True" in the [General] section of SANEWinDS.ini will disable the informational messages users get during the first startup of a new version.
+-Removed all checks of the TCPClient.Connected property.  It was causing unpredictable network connection behavior on different computers.
+-Fixed filename parsing in SANEWIN.exe to resolve hangs with filenames that contained no valid variables.
+
 Version 0.9.5418
 
 -Added fujitsu.ini to ProgramData\SANEWinDS

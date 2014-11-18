@@ -10,13 +10,14 @@
     <ROW Property="ALLUSERS" Value="1"/>
     <ROW Property="ARPCOMMENTS" Value="This installer database contains the logic and data required to install [|ProductName]." ValueLocId="*"/>
     <ROW Property="ARPHELPLINK" Value="http://sourceforge.net/p/sanewinds/tickets/"/>
+    <ROW Property="ARPPRODUCTICON" Value="SANEWin.exe" Type="8"/>
     <ROW Property="ARPURLINFOABOUT" Value="http://sourceforge.net/projects/sanewinds/"/>
     <ROW Property="ARPURLUPDATEINFO" Value="http://sourceforge.net/projects/sanewinds/files/"/>
     <ROW Property="Manufacturer" Value="Alec Skelly"/>
-    <ROW Property="ProductCode" Value="1033:{B2717487-781A-4AB7-982F-BD9C242C00F6} " Type="16"/>
+    <ROW Property="ProductCode" Value="1033:{BC0FD3E0-FE14-4031-A0BC-1B178C996422} " Type="16"/>
     <ROW Property="ProductLanguage" Value="1033"/>
     <ROW Property="ProductName" Value="SANEWinDS"/>
-    <ROW Property="ProductVersion" Value="0.9.5418" Type="32"/>
+    <ROW Property="ProductVersion" Value="0.9.5434" Type="32"/>
     <ROW Property="SecureCustomProperties" Value="OLDPRODUCTS;AI_NEWERPRODUCTFOUND"/>
     <ROW Property="UpgradeCode" Value="{28BC51C6-EB6A-40B0-A11C-01E9313074C3}"/>
     <ROW Property="WindowsType9X" MultiBuildValue="DefaultBuild:Windows 9x/ME" ValueLocId="-"/>
@@ -157,6 +158,9 @@
     <ROW Action="SET_APPDIR" Type="307" Source="APPDIR" Target="[ProgramFilesFolder][Manufacturer]\[ProductName]" MultiBuildTarget="DefaultBuild:[ProgramFilesFolder][ProductName]"/>
     <ROW Action="SET_SHORTCUTDIR" Type="307" Source="SHORTCUTDIR" Target="[ProgramMenuFolder][ProductName]"/>
     <ROW Action="SET_TARGETDIR_TO_APPDIR" Type="51" Source="TARGETDIR" Target="[APPDIR]"/>
+  </COMPONENT>
+  <COMPONENT cid="caphyon.advinst.msicomp.MsiIconsComponent">
+    <ROW Name="SANEWin.exe" SourcePath="..\SANEWin\bin\Debug\SANEWin.exe" Index="0"/>
   </COMPONENT>
   <COMPONENT cid="caphyon.advinst.msicomp.MsiInstExSeqComponent">
     <ROW Action="AI_DOWNGRADE" Condition="AI_NEWERPRODUCTFOUND AND (UILevel &lt;&gt; 5)" Sequence="210"/>

@@ -289,8 +289,12 @@ Public Class FormStartup
                         p = s.IndexOf("%")
                     Else
                         OutputString += s.Substring(p)
+                        s = ""
                     End If
-                End If
+                 End If
+            Else
+                OutputString += s
+                s = ""
             End If
         Loop
         Return OutputString

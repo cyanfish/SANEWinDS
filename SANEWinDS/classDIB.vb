@@ -78,7 +78,7 @@ Class DIB
             Array.Resize(B, 0)
 
         Catch ex As Exception
-            Logger.ErrorException(ex.Message, ex)
+            Logger.Error(ex.Message, ex)
             Throw
         End Try
     End Sub
@@ -92,7 +92,7 @@ Class DIB
             Array.Resize(B, 0)
             Return hBmp
         Catch ex As Exception
-            Logger.ErrorException(ex.Message, ex)
+            Logger.Error(ex.Message, ex)
             Throw
         End Try
     End Function
@@ -113,7 +113,7 @@ Class DIB
             Marshal.Copy(B, 0, pBuffer, B.Length)
             Array.Resize(B, 0)
         Catch ex As Exception
-            Logger.ErrorException(ex.Message, ex)
+            Logger.Error(ex.Message, ex)
             Throw
         End Try
     End Sub
@@ -156,7 +156,7 @@ Class DIB
 
             Return BIH
         Catch ex As Exception
-            Logger.ErrorException(ex.Message, ex)
+            Logger.Error(ex.Message, ex)
             Throw
         End Try
     End Function

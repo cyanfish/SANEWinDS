@@ -175,7 +175,7 @@ Public Class SharedSettings
                         INI.SetKeyValue(SectionName, "Password", crypto.Encrypt(.Password))
                     Catch ex As System.ArgumentNullException
                     Catch ex As Exception
-                        Logger.ErrorException(ex.Message, ex)
+                        Logger.Error(ex.Message, ex)
                     End Try
                     INI.SetKeyValue(SectionName, "TCP_Timeout_ms", .TCP_Timeout_ms.ToString)
                     INI.SetKeyValue(SectionName, "Image_Timeout_s", .Image_Timeout_s)
@@ -232,7 +232,7 @@ Public Class SharedSettings
             Me.SharedConfigDirectory = System.Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) & "\" & Me.ProductName.Name
             If Not My.Computer.FileSystem.DirectoryExists(Me.SharedConfigDirectory) Then My.Computer.FileSystem.CreateDirectory(Me.SharedConfigDirectory)
         Catch ex As Exception
-            Logger.LogException(NLog.LogLevel.Error, "Failed to create common configuration folder '" & Me.SharedConfigDirectory & "'", ex)
+            Logger.Log(NLog.LogLevel.Error, "Failed to create common configuration folder '" & Me.SharedConfigDirectory & "'", ex)
         End Try
 
         Dim UserSettingsFileName As String = Me.GetUserConfigFileName
@@ -324,7 +324,7 @@ Public Class SharedSettings
                     ts = Nothing
                     Logger.Debug("TS Client IP is '" & .NameOrAddress & "'")
                 Catch ex As Exception
-                    Logger.ErrorException("Error getting terminal server client IP address: " & ex.Message, ex)
+                    Logger.Error("Error getting terminal server client IP address: " & ex.Message, ex)
                     Return False
                 End Try
             End If
@@ -333,7 +333,7 @@ Public Class SharedSettings
                 Logger.Debug("Returning " & (IPs.Length > 0).ToString)
                 Return (IPs.Length > 0)
             Catch ex As Exception
-                Logger.ErrorException("Error resolving host '" & .NameOrAddress & "': " & ex.Message, ex)
+                Logger.Error("Error resolving host '" & .NameOrAddress & "': " & ex.Message, ex)
                 Return False
             End Try
         End With
@@ -379,7 +379,7 @@ Public Class SharedSettings
                     '        NameOrAddress = ts.GetCurrentSessionIP
                     '        ts = Nothing
                     '    Catch ex As Exception
-                    '        Logger.ErrorException("Error getting terminal server client IP address: " & ex.Message, ex)
+                    '        Logger.Error("Error getting terminal server client IP address: " & ex.Message, ex)
                     '    End Try
                     'End If
                     'If Not String.IsNullOrWhiteSpace(NameOrAddress) Then
@@ -406,9 +406,9 @@ Public Class SharedSettings
                                 Dim crypto As New SimpleCrypto
                                 If crypto.IsEncrypted(.Password) Then .Password = crypto.Decrypt(.Password)
                             Catch ex As SimpleCryptoExceptions.SuppliedStringNotEncryptedException
-                                Logger.WarnException(ex.Message, ex)
+                                Logger.Warn(ex.Message, ex)
                             Catch ex As Exception
-                                Logger.ErrorException(ex.Message, ex)
+                                Logger.Error(ex.Message, ex)
                             End Try
                             .Device = INI.GetKeyValue(SectionName, "Device")
                             .AutoLocateDevice = INI.GetKeyValue(SectionName, "AutoLocateDevice")
@@ -453,7 +453,7 @@ Public Class SharedSettings
                             Process.Start("https://sourceforge.net/p/sanewinds/discussion/backend-ini/")
                         Catch ex As Exception
                             Dim msg As String = "Unable to open web page: " & ex.Message
-                            Logger.ErrorException(msg, ex)
+                            Logger.Error(msg, ex)
                             MsgBox(msg, MsgBoxStyle.Critical)
                         End Try
                     End If
@@ -639,7 +639,7 @@ Public Class SharedSettings
                 fs.WriteLine("")
             Next
         Catch ex As Exception
-            Logger.LogException(NLog.LogLevel.Error, "Error writing '{0}'", ex)
+            Logger.Log(NLog.LogLevel.Error, "Error writing '{0}'", ex)
         Finally
             If fs IsNot Nothing Then fs.Close()
         End Try

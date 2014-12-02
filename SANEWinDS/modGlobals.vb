@@ -293,7 +293,7 @@ Module modGlobals
                 End If
             End If
         Catch ex As Exception
-            Logger.DebugException(ex.Message, ex)
+            Logger.Debug(ex.Message, ex)
         End Try
     End Sub
 
@@ -305,14 +305,14 @@ Module modGlobals
                         Try
                             ControlClient.Close()
                         Catch ex As Exception
-                            Logger.DebugException(ex.Message, ex)
+                            Logger.Debug(ex.Message, ex)
                         End Try
                         ControlClient = Nothing
                     End If
                 End If
             End If
         Catch ex As Exception
-            Logger.ErrorException(ex.Message, ex)
+            Logger.Error(ex.Message, ex)
         End Try
     End Sub
 
@@ -346,7 +346,7 @@ Module modGlobals
                         Status = SANE_API.SANE_Status.SANE_STATUS_CANCELLED
                         Exit Do
                     Catch ex As Exception
-                        Logger.ErrorException("AcquireFrame returned exception: " & ex.Message, ex)
+                        Logger.Error("AcquireFrame returned exception: " & ex.Message, ex)
                         Status = SANE_API.SANE_Status.SANE_STATUS_IO_ERROR
                         Exit Do
                     End Try
@@ -440,7 +440,7 @@ Module modGlobals
                         State.bmp.UnlockBits(bmp_data)
                     End If
                 Catch ex As Exception
-                    Logger.ErrorException("Error creating image: " & ex.Message, ex)
+                    Logger.Error("Error creating image: " & ex.Message, ex)
                     Status = SANE_API.SANE_Status.SANE_STATUS_IO_ERROR
                 Finally
                     'ReDim SANEImage.Frames(0).Data(-1)
@@ -462,7 +462,7 @@ Module modGlobals
             End If
         Catch ex As Exception
             Status = SANE_API.SANE_Status.SANE_STATUS_IO_ERROR
-            Logger.ErrorException("", ex)
+            Logger.Error("", ex)
         Finally
             State.Status = Status
             e.Result = State
@@ -477,12 +477,12 @@ Module modGlobals
             End If
 
             If e.Error IsNot Nothing Then
-                Logger.ErrorException("Exception returned from image data transfer thread", e.Error)
+                Logger.Error("Exception returned from image data transfer thread", e.Error)
                 MsgBox(e.Error.Message)
                 Exit Sub
             End If
         Catch ex As Exception
-            Logger.ErrorException("", ex)
+            Logger.Error("", ex)
         End Try
 
     End Sub

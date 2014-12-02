@@ -168,7 +168,7 @@ Public Class FormSANEHostWizard
             Dim ts As New TSAPI
             Me.TSClientIP = ts.GetCurrentSessionIP
         Catch ex As Exception
-            Logger.DebugException(ex.Message, ex)
+            Logger.Debug(ex.Message, ex)
         End Try
         Me.CheckBoxUseTSClientIP.Enabled = Not String.IsNullOrWhiteSpace(Me.TSClientIP)
 

@@ -519,7 +519,7 @@ Class SANE_API
                 Throw New Exception("Stream does not support reading")
             End If
         Catch ex As Exception
-            Logger.ErrorException(ex.Message, ex)
+            Logger.Error(ex.Message, ex)
             Throw
         Finally
             stream = Nothing
@@ -569,7 +569,7 @@ Class SANE_API
                 Throw New Exception("Stream does not support reading")
             End If
         Catch ex As Exception
-            Logger.ErrorException(ex.Message, ex)
+            Logger.Error(ex.Message, ex)
             Throw
         Finally
             stream = Nothing
@@ -621,7 +621,7 @@ Class SANE_API
                 Throw New Exception("Stream does not support reading")
             End If
         Catch ex As Exception
-            Logger.ErrorException(ex.Message, ex)
+            Logger.Error(ex.Message, ex)
             Throw
         Finally
             stream = Nothing
@@ -652,7 +652,7 @@ Class SANE_API
                 Throw New Exception("Stream does not support reading")
             End If
         Catch ex As Exception
-            Logger.ErrorException(ex.Message, ex)
+            Logger.Error(ex.Message, ex)
             Throw
         Finally
             stream = Nothing
@@ -683,7 +683,7 @@ Class SANE_API
                 Throw New Exception("Stream does not support reading")
             End If
         Catch ex As Exception
-            Logger.ErrorException(ex.Message, ex)
+            Logger.Error(ex.Message, ex)
             Throw
         Finally
             stream = Nothing
@@ -770,7 +770,7 @@ Class SANE_API
             End If
 
         Catch ex As Exception
-            Logger.ErrorException(ex.Message, ex)
+            Logger.Error(ex.Message, ex)
             Throw
         Finally
             stream = Nothing
@@ -1236,19 +1236,19 @@ Class SANE_API
         Catch ex As EmptyFrameException
             Throw
             'Catch ex As System.Net.Sockets.SocketException
-            '    Logger.ErrorException("Error acquiring image frame: " & ex.SocketErrorCode, ex)
+            '    Logger.Error("Error acquiring image frame: " & ex.SocketErrorCode, ex)
             '    Throw
             'Catch ex As ServerDisconnectedException
-            '    Logger.ErrorException("Error acquiring image frame: " & ex.Message, ex)
+            '    Logger.Error("Error acquiring image frame: " & ex.Message, ex)
             '    Throw
         Catch ex As Exception
-            Logger.ErrorException("Error acquiring image frame: " & ex.Message, ex)
+            Logger.Error("Error acquiring image frame: " & ex.Message, ex)
             Throw
         Finally
             Try
                 If ImageStream IsNot Nothing Then ImageStream.Close()
             Catch ex As Exception
-                Logger.DebugException(ex.Message, ex)
+                Logger.Debug(ex.Message, ex)
             End Try
             'If stream IsNot Nothing Then
             '    Dim buf(Data_TCPClient.ReceiveBufferSize - 1) As Byte
@@ -1260,12 +1260,12 @@ Class SANE_API
             Try
                 If stream IsNot Nothing Then stream.Close()
             Catch ex As Exception
-                Logger.DebugException(ex.Message, ex)
+                Logger.Debug(ex.Message, ex)
             End Try
             Try
                 If Data_TCPClient IsNot Nothing Then Data_TCPClient.Close()
             Catch ex As Exception
-                Logger.DebugException(ex.Message, ex)
+                Logger.Debug(ex.Message, ex)
             End Try
             ImageStream = Nothing
             stream = Nothing

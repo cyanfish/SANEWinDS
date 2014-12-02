@@ -2556,7 +2556,7 @@ Namespace TWAIN_VB
                             'genesys and gt68xx are examples.
                             SANE.Net_Cancel(ControlClient, SANE.CurrentDevice.Handle)
                         Catch ex As Exception
-                            Logger.ErrorException("", ex)
+                            Logger.Error("", ex)
                         End Try
                     End If
                     Marshal.StructureToPtr(CurrentJob.PendingXfers, _pData, True)
@@ -2573,7 +2573,7 @@ Namespace TWAIN_VB
                             'genesys and gt68xx are examples.
                             SANE.Net_Cancel(ControlClient, SANE.CurrentDevice.Handle)
                         Catch ex As Exception
-                            Logger.ErrorException("", ex)
+                            Logger.Error("", ex)
                         End Try
                         Marshal.StructureToPtr(CurrentJob.PendingXfers, _pData, True)
                         SetResult(TWRC.TWRC_SUCCESS)
@@ -2664,7 +2664,7 @@ Namespace TWAIN_VB
                                     Return MyResult
                                 End If
                             Catch ex As Exception
-                                Logger.ErrorException(ex.Message, ex)
+                                Logger.Error(ex.Message, ex)
                                 MsgBox(ex.Message)
                                 SetCondition(TWCC.TWCC_OPERATIONERROR)
                                 SetResult(TWRC.TWRC_FAILURE)
@@ -2793,7 +2793,7 @@ Namespace TWAIN_VB
                                     Return MyResult
                                 End If
                             Catch ex As Exception
-                                Logger.ErrorException(ex.Message, ex)
+                                Logger.Error(ex.Message, ex)
                                 MsgBox(ex.Message)
                                 SetCondition(TWCC.TWCC_OPERATIONERROR)
                                 SetResult(TWRC.TWRC_FAILURE)
@@ -3080,7 +3080,7 @@ Namespace TWAIN_VB
                         SetResult(TWRC.TWRC_SUCCESS)
                         Return MyResult
                     Catch ex As Exception
-                        Logger.ErrorException(ex.Message, ex)
+                        Logger.Error(ex.Message, ex)
                         SetCondition(TWCC.TWCC_BUMMER)
                         SetResult(TWRC.TWRC_FAILURE)
                         Return MyResult
@@ -3148,7 +3148,7 @@ Namespace TWAIN_VB
                         SetResult(TWRC.TWRC_SUCCESS)
                         Return MyResult
                     Catch ex As Exception
-                        Logger.ErrorException(ex.Message, ex)
+                        Logger.Error(ex.Message, ex)
                         SetCondition(TWCC.TWCC_BUMMER)
                         SetResult(TWRC.TWRC_FAILURE)
                         Return MyResult
@@ -3228,7 +3228,7 @@ Namespace TWAIN_VB
                                 Try
                                     Marshal.WriteInt16(pContainer + ItemOffset + i, ccap.Key)
                                 Catch ex As Exception
-                                    Logger.ErrorException(ex.Message, ex)
+                                    Logger.Error(ex.Message, ex)
                                 End Try
                                 i += 2
                             Next
@@ -3273,7 +3273,7 @@ Namespace TWAIN_VB
                                             Try
                                                 Marshal.WriteInt16(pContainer + ItemOffset + i, ps)
                                             Catch ex As Exception
-                                                Logger.ErrorException(ex.Message, ex)
+                                                Logger.Error(ex.Message, ex)
                                             End Try
                                             i += 2
                                         Next
@@ -3431,7 +3431,7 @@ Namespace TWAIN_VB
                                                     Marshal.WriteInt16(pContainer + ItemOffset + i, res.Frac)
                                                     i += 2
                                                 Catch ex As Exception
-                                                    Logger.ErrorException(ex.Message, ex)
+                                                    Logger.Error(ex.Message, ex)
                                                 End Try
                                             Next
                                             '
@@ -4086,7 +4086,7 @@ Namespace TWAIN_VB
                                         Try
                                             If ControlClient IsNot Nothing Then ControlClient.Close()
                                         Catch ex As Exception
-                                            Logger.DebugException(ex.Message, ex)
+                                            Logger.Debug(ex.Message, ex)
                                         End Try
                                         ControlClient = Nothing
 
@@ -4099,7 +4099,7 @@ Namespace TWAIN_VB
                                     End If
                                 End If
                             Catch ex As Exception
-                                Logger.ErrorException(ex.Message, ex)
+                                Logger.Error(ex.Message, ex)
                                 Try
                                     If SANE.CurrentDevice.Open Then
                                         SANE.Net_Close(ControlClient, SANE.CurrentDevice.Handle)
@@ -4122,12 +4122,12 @@ Namespace TWAIN_VB
                                         Try
                                             If ControlClient IsNot Nothing Then ControlClient.Close()
                                         Catch ex As Exception
-                                            Logger.DebugException(ex.Message, ex)
+                                            Logger.Debug(ex.Message, ex)
                                         End Try
                                         ControlClient = Nothing
                                     End If
                                 Catch ex As Exception
-                                    Logger.ErrorException(ex.Message, ex)
+                                    Logger.Error(ex.Message, ex)
                                 End Try
                             End Try
                         Loop While Not SANE.CurrentDevice.Open
@@ -4156,7 +4156,7 @@ Namespace TWAIN_VB
 
                             If ControlClient IsNot Nothing Then ControlClient.Close()
                         Catch ex As Exception
-                            Logger.ErrorException(ex.Message, ex)
+                            Logger.Error(ex.Message, ex)
                         Finally
                             'CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Open = False
                             ControlClient = Nothing
@@ -4584,7 +4584,7 @@ Namespace TWAIN_VB
                 End If
 
             Catch ex As Exception
-                Logger.ErrorException("Error setting capability '" & Capability.ToString & "': " & ex.Message, ex)
+                Logger.Error("Error setting capability '" & Capability.ToString & "': " & ex.Message, ex)
             End Try
         End Sub
 
@@ -4725,7 +4725,7 @@ Namespace TWAIN_VB
                                                             Logger.Debug("Default value: {0}", FIX32ToFloat(.DefaultValue))
                                                         End With
                                                     Catch ex As Exception
-                                                        Logger.WarnException("Error translating SANE range constraint for resolution: " & ex.Message, ex)
+                                                        Logger.Warn("Error translating SANE range constraint for resolution: " & ex.Message, ex)
                                                     End Try
                                                 Case SANE_API.SANE_Constraint_Type.SANE_CONSTRAINT_WORD_LIST
                                                     Try
@@ -4747,7 +4747,7 @@ Namespace TWAIN_VB
                                                                 Throw New Exception("Invalid data type '" & SANE.CurrentDevice.OptionDescriptors(i).type & "'")
                                                         End Select
                                                     Catch ex As Exception
-                                                        Logger.WarnException("Error translating SANE word list constraint for resolution: " & ex.Message, ex)
+                                                        Logger.Warn("Error translating SANE word list constraint for resolution: " & ex.Message, ex)
                                                     End Try
                                             End Select
                                             Caps(icap) = cap
@@ -4780,7 +4780,7 @@ Namespace TWAIN_VB
                 'End If
 
             Catch ex As Exception
-                Logger.ErrorException(ex.Message, ex)
+                Logger.Error(ex.Message, ex)
             End Try
             Logger.Debug("end")
         End Sub

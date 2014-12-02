@@ -51,12 +51,12 @@ Public Class FormMain
             Try
                 SANE.Net_Exit(ControlClient)
             Catch ex As Exception
-                Logger.DebugException(ex.Message, ex)
+                Logger.Debug(ex.Message, ex)
             End Try
             Try
                 ControlClient.Close()
             Catch ex As Exception
-                Logger.DebugException(ex.Message, ex)
+                Logger.Debug(ex.Message, ex)
             End Try
         End If
         ControlClient = Nothing
@@ -82,7 +82,7 @@ Public Class FormMain
                 End If
             End If
         Catch ex As Exception
-            Logger.ErrorException(ex.Message, ex)
+            Logger.Error(ex.Message, ex)
         Finally
             SANE.CurrentDevice.Open = False
         End Try
@@ -160,7 +160,7 @@ Public Class FormMain
                         'genesys and gt68xx are examples.
                         SANE.Net_Cancel(ControlClient, SANE.CurrentDevice.Handle)
                     Catch ex As Exception
-                        Logger.ErrorException("", ex)
+                        Logger.Error("", ex)
                     End Try
                     'If Net_Cancel() was called during the image transfer, the server may have disconnected the control connection (depends on backend).
                     'We'll need to reconnect and restore all settings.
@@ -215,7 +215,7 @@ Public Class FormMain
             End If
             Return SANE.CurrentDevice.Open
         Catch ex As Exception
-            Logger.ErrorException("", ex)
+            Logger.Error("", ex)
             Return SANE.CurrentDevice.Open
         End Try
     End Function
@@ -331,7 +331,7 @@ Public Class FormMain
                 End If
             End If
         Catch ex As Exception
-            Logger.ErrorException(ex.Message, ex)
+            Logger.Error(ex.Message, ex)
         End Try
 
     End Sub
@@ -342,7 +342,7 @@ Public Class FormMain
             Try
                 ControlClient.Close()
             Catch ex As Exception
-                Logger.DebugException(ex.Message, ex)
+                Logger.Debug(ex.Message, ex)
             End Try
             ControlClient = Nothing
         End If
@@ -371,7 +371,7 @@ Public Class FormMain
             'Me.ButtonHost.Enabled = Not TWAIN_Is_Active 'XXX is it ok to reconfigure with TWAIN active?
 
             If SANE Is Nothing Then SANE = New SANE_API
- 
+
             AddHandler SANE.FrameProgress, AddressOf ImageFrameProgress
 
             If Not TWAIN_Is_Active Then
@@ -519,7 +519,7 @@ Public Class FormMain
                 End If
             End If
         Catch ex As Exception
-            Logger.ErrorException(ex.Message, ex)
+            Logger.Error(ex.Message, ex)
             MsgBox(ex.Message, MsgBoxStyle.Critical)
             Close_SANE()
         Finally
@@ -994,7 +994,7 @@ Public Class FormMain
         Try
             If Me.PanelOptIsDirty Then SetOption()
         Catch ex As Exception
-            Logger.ErrorException(ex.Message, ex)
+            Logger.Error(ex.Message, ex)
         End Try
     End Sub
 
@@ -1016,7 +1016,7 @@ Public Class FormMain
                     End If
                 End If
             Catch ex As Exception
-                Logger.ErrorException("Exception reading ScanContinuously setting from backend.ini: " & ex.Message, ex)
+                Logger.Error("Exception reading ScanContinuously setting from backend.ini: " & ex.Message, ex)
             End Try
             Logger.Info("ScanContinuously = '{0}'", CurrentSettings.ScanContinuously)
             Me.CheckBoxBatchMode.Checked = CurrentSettings.ScanContinuously
@@ -1060,7 +1060,7 @@ Public Class FormMain
                     End If
                 End If
             Catch ex As Exception
-                Logger.ErrorException("Exception reading MaxPaperWidth setting from backend.ini: " & ex.Message, ex)
+                Logger.Error("Exception reading MaxPaperWidth setting from backend.ini: " & ex.Message, ex)
             End Try
             Try
                 'Dim opt As String = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.GetKeyValue("General", "MaxPaperHeight")
@@ -1073,7 +1073,7 @@ Public Class FormMain
                     End If
                 End If
             Catch ex As Exception
-                Logger.ErrorException("Exception reading MaxPaperHeight setting from backend.ini: " & ex.Message, ex)
+                Logger.Error("Exception reading MaxPaperHeight setting from backend.ini: " & ex.Message, ex)
             End Try
             If (MaxWidth = 0) And (MaxHeight = 0) Then
                 Me.Get_Current_Device_Physical_Size_In_Inches(MaxWidth, MaxHeight)
@@ -1131,7 +1131,7 @@ Public Class FormMain
                     End If
                 End If
             Catch ex As Exception
-                Logger.ErrorException("Exception while attempting to set DefaultPaperSize value: " & ex.Message, ex)
+                Logger.Error("Exception while attempting to set DefaultPaperSize value: " & ex.Message, ex)
             End Try
             If Me.ComboBoxPageSize.SelectedItem Is Nothing Then
                 If Me.ComboBoxPageSize.Items.Contains("Maximum") Then
@@ -1228,7 +1228,7 @@ Public Class FormMain
                 Height = PhysicalLength
             End If
         Catch ex As Exception
-            Logger.ErrorException(ex.Message, ex)
+            Logger.Error(ex.Message, ex)
         End Try
     End Sub
 
@@ -1412,10 +1412,10 @@ Public Class FormMain
 
             Return Status
         Catch ex As ApplicationException
-            Logger.WarnException(ex.Message, ex)
+            Logger.Warn(ex.Message, ex)
             Throw
         Catch ex As Exception
-            Logger.ErrorException(ex.Message, ex)
+            Logger.Error(ex.Message, ex)
             Throw
         End Try
 
@@ -1453,7 +1453,7 @@ Public Class FormMain
                 End If
             End If
         Catch ex As Exception
-            Logger.ErrorException("Unable to set option value: " & ex.Message, ex)
+            Logger.Error("Unable to set option value: " & ex.Message, ex)
         End Try
     End Sub
 
@@ -1589,7 +1589,7 @@ Public Class FormMain
                 End If
             End If
         Catch ex As Exception
-            Logger.ErrorException("Error setting page dimensions: " & ex.Message, ex)
+            Logger.Error("Error setting page dimensions: " & ex.Message, ex)
         End Try
     End Sub
 
@@ -1613,7 +1613,7 @@ Public Class FormMain
                 ctl = Nothing
             Next
         Catch ex As Exception
-            Logger.ErrorException("Error removing event handlers from panel controls: " & ex.Message, ex)
+            Logger.Error("Error removing event handlers from panel controls: " & ex.Message, ex)
         End Try
         Me.PanelOpt.Controls.Clear()
     End Sub
@@ -1689,7 +1689,7 @@ Public Class FormMain
 
                     g.DrawRectangle(New Pen(BorderColor, 2), imCurveRect)
                 Catch ex As Exception
-                    Logger.ErrorException("Error painting ImageCurve rulers: " & ex.Message, ex)
+                    Logger.Error("Error painting ImageCurve rulers: " & ex.Message, ex)
                 End Try
 
                 Exit For
@@ -1740,10 +1740,10 @@ Public Class FormMain
                         For i As Integer = 0 To Me.Controls.Count - 1
                             Me.Controls(i).Enabled = OriginalControlState(i)
                         Next
-                     End If
+                    End If
             End Select
         Catch ex As Exception
-            Logger.ErrorException("", ex)
+            Logger.Error("", ex)
         End Try
     End Sub
 End Class

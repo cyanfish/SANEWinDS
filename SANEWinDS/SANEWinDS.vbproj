@@ -142,6 +142,7 @@
     <Compile Include="ImageCurve Control\classSpline.vb" />
     <Compile Include="ImageCurve Control\classVector.vb" />
     <Compile Include="modGlobals.vb" />
+    <Compile Include="modINIFile.vb" />
     <Compile Include="My Project\AssemblyInfo.vb" />
     <Compile Include="My Project\Application.Designer.vb">
       <AutoGen>True</AutoGen>
@@ -208,12 +209,6 @@
     </None>
     <None Include="packages.config" />
     <None Include="TWAIN_VB.snk" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\IniFile\IniFile.vbproj">
-      <Project>{34b5b176-3c0d-4201-a100-cc6f8b2bf5ed}</Project>
-      <Name>IniFile</Name>
-    </ProjectReference>
   </ItemGroup>
   <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.VisualBasic.targets" />

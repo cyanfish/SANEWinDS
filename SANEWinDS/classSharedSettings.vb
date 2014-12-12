@@ -28,8 +28,8 @@ Public Class SharedSettings
         User = 1
     End Enum
     Public Structure ConfigFile
-        Dim [Shared] As IniFile.IniFile
-        Dim User As IniFile.IniFile
+        Dim [Shared] As String
+        Dim User As String
     End Structure
     Public Structure HostInfo
         Dim NameOrAddress As String
@@ -107,79 +107,31 @@ Public Class SharedSettings
     End Sub
 
     Private Sub WriteSettings()
-        'XXX The INIFile class writes the settings out of order
-        Dim INI As New IniFile.IniFile
         Dim UserSettingsFileName As String = Me.GetUserConfigFileName
-        INI.Load(UserSettingsFileName)
 
-        If INI.GetSection("General") Is Nothing Then
-            INI.AddSection("General")
-            INI.Save(UserSettingsFileName)
-        End If
-        INI.SetKeyValue("General", "INI_Version", Current_INI_Ver)
-        INI.SetKeyValue("General", "Version", GetType(SANE_API).Assembly.GetName.Version.ToString)
-
-        If INI.GetSection("Log") Is Nothing Then
-            INI.AddSection("Log")
-            INI.Save(UserSettingsFileName)
-        End If
-        'XXX this value isn't currently saved in memory anywhere.
-        'If String.IsNullOrEmpty(INI.GetKeyValue("Log", "RetainDays")) Then
-        '    INI.SetKeyValue("Log", "RetainDays", CurrentSettings.)
-        '    INI.Save(UserSettingsFileName)
-        'End If
-        If INI.GetSection("SANE") Is Nothing Then
-            INI.AddSection("SANE")
-            INI.Save(UserSettingsFileName)
-        End If
-        'If String.IsNullOrEmpty(INI.GetKeyValue("SANE", "Hosts")) Then
-        '    INI.SetKeyValue("SANE", "Hosts", " ")
-        '    INI.Save(UserSettingsFileName)
-        'End If
-
-        'If Me.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).NameOrAddress IsNot Nothing Then
-        '    If Me.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Port > 0 Then
-        '        Dim CurrentHostString As String = Me.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).NameOrAddress.Trim & ":" & Me.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Port.ToString
-        '        Dim Current_Host_Is_In_The_List As Boolean = False
-        '        Dim hostlist As String = INI.GetKeyValue("SANE", "Hosts")
-        '        If Not String.IsNullOrEmpty(hostlist) Then
-        '            Dim hosts() As HostInfo = Me.GetSANEHostsFromString(hostlist)
-        '            For Each host As HostInfo In hosts
-        '                If host.NameOrAddress.ToLower = Me.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).NameOrAddress.ToLower Then
-        '                    If host.Port = Me.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Port Then
-        '                        Current_Host_Is_In_The_List = True
-        '                        Exit For
-        '                    End If
-        '                End If
-        '            Next
-        '        End If
-        '        If Not Current_Host_Is_In_The_List Then
-
-        '        End If
-        '    End If
-        'End If
+        WriteIni(UserSettingsFileName, "General", "INI_Version", Current_INI_Ver)
+        WriteIni(UserSettingsFileName, "General", "Version", GetType(SANE_API).Assembly.GetName.Version.ToString)
 
         Dim HostList As String = Nothing
         For idx As Integer = 0 To MAX_HOSTS
             Dim SectionName As String = "Host." & idx.ToString
-            INI.RemoveSection(SectionName)
+            RemoveINISection(UserSettingsFileName, SectionName)
             If idx < SANE.Hosts.Length Then
-                INI.AddSection(SectionName)
                 With SANE.Hosts(idx)
-                    INI.SetKeyValue(SectionName, "NameOrAddress", .NameOrAddress)
-                    INI.SetKeyValue(SectionName, "UseTSClientIP", .UseTSClientIP.ToString)
-                    INI.SetKeyValue(SectionName, "Port", .Port.ToString)
-                    INI.SetKeyValue(SectionName, "Username", .Username)
+                    WriteIni(UserSettingsFileName, SectionName, "NameOrAddress", .NameOrAddress)
+                    WriteIni(UserSettingsFileName, SectionName, "UseTSClientIP", .UseTSClientIP.ToString)
+                    WriteIni(UserSettingsFileName, SectionName, "Port", .Port.ToString)
+                    WriteIni(UserSettingsFileName, SectionName, "Username", .Username)
                     Dim crypto As New SimpleCrypto
                     Try
-                        INI.SetKeyValue(SectionName, "Password", crypto.Encrypt(.Password))
+                        WriteIni(UserSettingsFileName, SectionName, "Password", crypto.Encrypt(.Password))
                     Catch ex As System.ArgumentNullException
                     Catch ex As Exception
                         Logger.Error(ex.Message, ex)
                     End Try
-                    INI.SetKeyValue(SectionName, "TCP_Timeout_ms", .TCP_Timeout_ms.ToString)
-                    INI.SetKeyValue(SectionName, "Image_Timeout_s", .Image_Timeout_s)
-                    INI.SetKeyValue(SectionName, "Device", .Device)
+                    WriteIni(UserSettingsFileName, SectionName, "TCP_Timeout_ms", .TCP_Timeout_ms.ToString)
+                    WriteIni(UserSettingsFileName, SectionName, "Image_Timeout_s", .Image_Timeout_s)
+                    WriteIni(UserSettingsFileName, SectionName, "Device", .Device)
 
                     If String.IsNullOrEmpty(.AutoLocateDevice) Then
                         If Not String.IsNullOrEmpty(.Device) Then
@@ -190,28 +142,12 @@ Public Class SharedSettings
                         End If
                     End If
 
-                    INI.SetKeyValue(SectionName, "AutoLocateDevice", .AutoLocateDevice)
+                    WriteIni(UserSettingsFileName, SectionName, "AutoLocateDevice", .AutoLocateDevice)
                 End With
             End If
         Next
 
-        INI.SetKeyValue("SANE", "DefaultHost", CurrentSettings.SANE.CurrentHostIndex)
-
-        'If String.IsNullOrEmpty(INI.GetKeyValue("SANE", "DefaultHost")) Then
-        '    INI.SetKeyValue("SANE", "DefaultHost", "0")
-        '    INI.Save(UserSettingsFileName)
-        'End If
-        'If String.IsNullOrEmpty(INI.GetKeyValue("SANE", "Device")) Then
-        '    INI.SetKeyValue("SANE", "Device", " ")
-        '    INI.Save(UserSettingsFileName)
-        'End If
-        'If String.IsNullOrEmpty(INI.GetKeyValue("SANE", "AutoLocateDevice")) Then
-        '    INI.SetKeyValue("SANE", "AutoLocateDevice", " ")
-        '    INI.Save(UserSettingsFileName)
-        'End If
-
-        INI.Save(UserSettingsFileName)
-
+        WriteIni(UserSettingsFileName, "SANE", "DefaultHost", CurrentSettings.SANE.CurrentHostIndex)
     End Sub
 
     Private Sub ReadSettings()
@@ -245,18 +181,16 @@ Public Class SharedSettings
             f = Nothing
         End If
 
-        Dim INI As New IniFile.IniFile
-        INI.Load(UserSettingsFileName)
-
-        Dim INI_Version As String = INI.GetKeyValue("General", "INI_Version")
+ 
+        Dim INI_Version As String = ReadIni(UserSettingsFileName, "General", "INI_Version")
         Dim INI_Ver As Double = 0
         Double.TryParse(INI_Version, INI_Ver)
 
         Dim SuppressWarning As Boolean = False
-        Boolean.TryParse(INI.GetKeyValue("General", "Suppress_Startup_Messages"), SuppressWarning)
+        Boolean.TryParse(ReadIni(UserSettingsFileName, "General", "Suppress_Startup_Messages"), SuppressWarning)
 
         If Not SuppressWarning Then
-            Dim App_Version As String = INI.GetKeyValue("General", "Version")
+            Dim App_Version As String = ReadIni(UserSettingsFileName, "General", "Version")
             If App_Version <> GetType(SANE_API).Assembly.GetName.Version.ToString Then
                 Dim r As MsgBoxResult = MsgBox("Please note that SANEWinDS is in the alpha stage of development.  Expect numerous bugs.  " _
                     & "When you encounter a bug, please notify the authors by opening a ticket or posting in the forum " _
@@ -267,7 +201,7 @@ Public Class SharedSettings
             End If
         End If
 
-        SANE.Hosts = GetSANEHostsFromINI(INI)
+        SANE.Hosts = GetSANEHostsFromINI(UserSettingsFileName)
 
         'increase the timeout for image acquisition.  1200 is the default beginning with INI version 0.8.
         If INI_Ver < 0.8 Then
@@ -278,7 +212,7 @@ Public Class SharedSettings
 
         SANE.CurrentHostIndex = -1
         Dim CurrentHostIndex As Integer = -1
-        Dim s As String = INI.GetKeyValue("SANE", "DefaultHost")
+        Dim s As String = ReadIni(UserSettingsFileName, "SANE", "DefaultHost")
         If IsNumeric(s) Then Integer.TryParse(s, CurrentHostIndex)
         If (CurrentHostIndex > -1) And (CurrentHostIndex < SANE.Hosts.Length) Then
             SANE.CurrentHostIndex = CurrentHostIndex
@@ -293,24 +227,6 @@ Public Class SharedSettings
         Else
             Logger.Log(NLog.LogLevel.Warn, "No hosts are configured")
         End If
-        ''clean up expired log files
-        'Dim DebugLogMaxAgeDays As Integer = 0 'never delete
-        'Try
-        '    s = INI.GetKeyValue("Log", "RetainDays")
-        '    If s Is Nothing OrElse s.Length < 1 Then Throw New Exception("RetainDays value is not configured in the [Log] section")
-        '    If Integer.TryParse(s, DebugLogMaxAgeDays) Then
-        '        If DebugLogMaxAgeDays = 0 Then
-        '            Logger.Log(NLog.LogLevel.Info, "Retaining logs forever")
-        '        Else
-        '            Logger.Log(NLog.LogLevel.Info, "Retaining logs for '{0}'", DebugLogMaxAgeDays)
-        '        End If
-        '        Logger.Delete_Expired_Logs(DebugLogMaxAgeDays)
-        '    Else
-        '        Throw New Exception("Unable to interpret '" & s & "' as an integer")
-        '    End If
-        'Catch ex As Exception
-        '    Logger.Write(DebugLogger.Level.Error_, False, "Error reading RetainDays value from '" & UserSettingsFileName & "': " & ex.Message)
-        'End Try
 
     End Sub
 
@@ -364,27 +280,17 @@ Public Class SharedSettings
         End With
     End Function
 
-    Private Function GetSANEHostsFromINI(INI As IniFile.IniFile) As HostInfo()
+    Private Function GetSANEHostsFromINI(INI As String) As HostInfo()
         Dim hi(-1) As HostInfo
         If INI IsNot Nothing Then
             For idx As Integer = 0 To MAX_HOSTS - 1
                 Dim SectionName As String = "Host." & idx.ToString
-                If INI.GetSection(SectionName) IsNot Nothing Then
-                    Dim NameOrAddress As String = INI.GetKeyValue(SectionName, "NameOrAddress")
+                If ReadIniSections(INI).Contains(SectionName) Then
+                    Dim NameOrAddress As String = ReadIni(INI, SectionName, "NameOrAddress")
                     Dim UseTSClientIP As Boolean
-                    Boolean.TryParse(INI.GetKeyValue(SectionName, "UseTSClientIP"), UseTSClientIP)
-                    'If UseTSClientIP Then
-                    '    Try
-                    '        Dim ts As New TSAPI
-                    '        NameOrAddress = ts.GetCurrentSessionIP
-                    '        ts = Nothing
-                    '    Catch ex As Exception
-                    '        Logger.Error("Error getting terminal server client IP address: " & ex.Message, ex)
-                    '    End Try
-                    'End If
-                    'If Not String.IsNullOrWhiteSpace(NameOrAddress) Then
+                    Boolean.TryParse(ReadIni(INI, SectionName, "UseTSClientIP"), UseTSClientIP)
                     Dim Port As Integer = 0
-                    Integer.TryParse(INI.GetKeyValue(SectionName, "Port"), Port)
+                    Integer.TryParse(ReadIni(INI, SectionName, "Port"), Port)
                     If Port = 0 Then Port = 6566
                     If Port > 0 Then
                         ReDim Preserve hi(hi.Count)
@@ -392,16 +298,16 @@ Public Class SharedSettings
                             If NameOrAddress IsNot Nothing Then .NameOrAddress = NameOrAddress.Trim
                             .UseTSClientIP = UseTSClientIP
                             .Port = Port
-                            Integer.TryParse(INI.GetKeyValue(SectionName, "TCP_Timeout_ms"), .TCP_Timeout_ms)
+                            Integer.TryParse(ReadIni(INI, SectionName, "TCP_Timeout_ms"), .TCP_Timeout_ms)
                             If .TCP_Timeout_ms = 0 Then .TCP_Timeout_ms = 5000
                             If .TCP_Timeout_ms < 1000 Then .TCP_Timeout_ms = 1000
 
-                            Integer.TryParse(INI.GetKeyValue(SectionName, "Image_Timeout_s"), .Image_Timeout_s)
+                            Integer.TryParse(ReadIni(INI, SectionName, "Image_Timeout_s"), .Image_Timeout_s)
                             If .Image_Timeout_s = 0 Then .Image_Timeout_s = 1200 '20 minutes
                             If .Image_Timeout_s < 5 Then .Image_Timeout_s = 5 '5 seconds
 
-                            .Username = INI.GetKeyValue(SectionName, "Username")
-                            .Password = INI.GetKeyValue(SectionName, "Password")
+                            .Username = ReadIni(INI, SectionName, "Username")
+                            .Password = ReadIni(INI, SectionName, "Password")
                             Try
                                 Dim crypto As New SimpleCrypto
                                 If crypto.IsEncrypted(.Password) Then .Password = crypto.Decrypt(.Password)
@@ -410,11 +316,10 @@ Public Class SharedSettings
                             Catch ex As Exception
                                 Logger.Error(ex.Message, ex)
                             End Try
-                            .Device = INI.GetKeyValue(SectionName, "Device")
-                            .AutoLocateDevice = INI.GetKeyValue(SectionName, "AutoLocateDevice")
+                            .Device = ReadIni(INI, SectionName, "Device")
+                            .AutoLocateDevice = ReadIni(INI, SectionName, "AutoLocateDevice")
                         End With
                     End If
-                    'End If
                 Else
                     'Exit For
                 End If
@@ -646,16 +551,16 @@ Public Class SharedSettings
         '
     End Sub
 
-    Public Function GetINIKeyValue(Section As String, Key As String, Preferred_INIFile As IniFile.IniFile, Alternate_INIFile As IniFile.IniFile) As String
+    Public Function GetINIKeyValue(Section As String, Key As String, Preferred_INIFile As String, Alternate_INIFile As String) As String
         Dim Result As String = Nothing
         If Preferred_INIFile IsNot Nothing Then
-            Result = Preferred_INIFile.GetKeyValue(Section, Key)
+            Result = ReadIni(Preferred_INIFile, Section, Key)
         End If
         If Result IsNot Nothing Then 'The user may have intentionally specified an empty string as a value, so look elsewhere only if it's Nothing.
             Return Result
         Else
             If Alternate_INIFile IsNot Nothing Then
-                Result = Alternate_INIFile.GetKeyValue(Section, Key)
+                Result = ReadIni(Alternate_INIFile, Section, Key)
                 If Result IsNot Nothing Then Return Result
             End If
         End If

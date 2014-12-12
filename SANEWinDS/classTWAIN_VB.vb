@@ -4050,13 +4050,11 @@ Namespace TWAIN_VB
 
                                                 MyForm.GetOpts(True) 'must occur prior to reading GetDeviceConfigFileName()!
 
-                                                CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.Shared = New IniFile.IniFile
                                                 Dim s As String = CurrentSettings.GetDeviceConfigFileName(SharedSettings.ConfigFileScope.Shared)
-                                                If s IsNot Nothing AndAlso s.Length > 0 Then CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.Shared.Load(s)
+                                                If s IsNot Nothing AndAlso s.Length > 0 Then CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.Shared = s
 
-                                                CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.User = New IniFile.IniFile
                                                 s = CurrentSettings.GetDeviceConfigFileName(SharedSettings.ConfigFileScope.User)
-                                                If s IsNot Nothing AndAlso s.Length > 0 Then CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.User.Load(s)
+                                                If s IsNot Nothing AndAlso s.Length > 0 Then CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.User = s
 
                                                 Import_SANE_Options()
                                                 MyForm.SetUserDefaults()

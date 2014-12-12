@@ -63,7 +63,7 @@ Public Class FormStartup
     'Public ProductName As System.Reflection.AssemblyName = System.Reflection.Assembly.GetExecutingAssembly.GetName
 
     Private INIFileName As String
-    Private INI As New IniFile.IniFile
+    'Private INI As New IniFile.IniFile
     Private UserConfigDirectory As String
     Private SharedConfigDirectory As String
     Private LogDirectory As String
@@ -72,18 +72,18 @@ Public Class FormStartup
     Private OutputFolderMRU As New SortedList(Of DateTime, String)
 
     Private Sub FormStartup_FormClosed(sender As Object, e As FormClosedEventArgs) Handles Me.FormClosed
-        If Me.INI IsNot Nothing Then
+        If Me.INIFileName IsNot Nothing Then
 
             If Not String.IsNullOrWhiteSpace(Me.ComboBoxOutputFolderName.Text) Then
-                Me.INI.SetKeyValue("Output", "DefaultOutputFolder", Me.ComboBoxOutputFolderName.Text)
+                WriteIni(Me.INIFileName, "Output", "DefaultOutputFolder", Me.ComboBoxOutputFolderName.Text)
             End If
             If Not String.IsNullOrWhiteSpace(Me.TextBoxOutputFileNameBase.Text) Then
-                Me.INI.SetKeyValue("Output", "DefaultOutputFileNameBase", Me.TextBoxOutputFileNameBase.Text)
+                WriteIni(Me.INIFileName, "Output", "DefaultOutputFileNameBase", Me.TextBoxOutputFileNameBase.Text)
             End If
-            Me.INI.SetKeyValue("Output", "OverwriteExistingFile", Me.CheckBoxOverwriteOutputFile.Checked.ToString)
-            Me.INI.SetKeyValue("Output", "Format", Me.ComboBoxOutputFormat.Text)
-            Me.INI.SetKeyValue("Output", "Compression", Me.ComboBoxCompression.Text)
-            Me.INI.SetKeyValue("Output", "ViewAfterAcquire", Me.CheckBoxViewAfterAcquire.Checked.ToString)
+            WriteIni(Me.INIFileName, "Output", "OverwriteExistingFile", Me.CheckBoxOverwriteOutputFile.Checked.ToString)
+            WriteIni(Me.INIFileName, "Output", "Format", Me.ComboBoxOutputFormat.Text)
+            WriteIni(Me.INIFileName, "Output", "Compression", Me.ComboBoxCompression.Text)
+            WriteIni(Me.INIFileName, "Output", "ViewAfterAcquire", Me.CheckBoxViewAfterAcquire.Checked.ToString)
 
             Dim OutputMRU As String = ""
             Dim i As Integer = 0
@@ -92,16 +92,13 @@ Public Class FormStartup
                 i += 1
                 If i > 9 Then Exit For 'only save the most recent 10 folders
             Next
-            Me.INI.SetKeyValue("Output", "FolderMRU", OutputMRU)
+            WriteIni(Me.INIFileName, "Output", "FolderMRU", OutputMRU)
 
-            Me.INI.SetKeyValue("Window", "Top", Me.Top)
-            Me.INI.SetKeyValue("Window", "Left", Me.Left)
-            Me.INI.SetKeyValue("Window", "Height", Me.Height)
-            Me.INI.SetKeyValue("Window", "Width", Me.Width)
+            WriteIni(Me.INIFileName, "Window", "Top", Me.Top)
+            WriteIni(Me.INIFileName, "Window", "Left", Me.Left)
+            WriteIni(Me.INIFileName, "Window", "Height", Me.Height)
+            WriteIni(Me.INIFileName, "Window", "Width", Me.Width)
 
-            If Me.INIFileName IsNot Nothing AndAlso Me.INIFileName.Trim.Length > 0 Then
-                Me.INI.Save(Me.INIFileName)
-            End If
         End If
     End Sub
 
@@ -156,13 +153,10 @@ Public Class FormStartup
         End With
 
         Try
-            If Not My.Computer.FileSystem.FileExists(INIFileName) Then Me.INI.Save(INIFileName) 'create new file
-            Me.INI.Load(INIFileName)
-            If Me.INI.GetSection("Output") Is Nothing Then Me.INI.AddSection("Output")
-            Dim OutputFolder As String = INI.GetKeyValue("Output", "DefaultOutputFolder")
+            Dim OutputFolder As String = ReadIni(Me.INIFileName, "Output", "DefaultOutputFolder")
             If String.IsNullOrWhiteSpace(OutputFolder) Then
                 OutputFolder = My.Computer.FileSystem.SpecialDirectories.Temp & "\" & Me.ProductName
-                Me.INI.SetKeyValue("Output", "DefaultOutputFolder", "")
+                WriteIni(Me.INIFileName, "Output", "DefaultOutputFolder", "")
             Else
                 OutputFolder = String.Join("-", OutputFolder.Split(IO.Path.GetInvalidPathChars)).Trim
             End If
@@ -175,7 +169,7 @@ Public Class FormStartup
             'FolderMRU format is "Folder1,Timestamp1;Folder2,Timestamp2;Folder3,Timestamp3"...
             Me.OutputFolderMRU.Reverse()
             Dim FolderMRU() As String = Nothing
-            Dim s As String = INI.GetKeyValue("Output", "FolderMRU")
+            Dim s As String = ReadIni(Me.INIFileName, "Output", "FolderMRU")
             If Not String.IsNullOrWhiteSpace(s) Then
                 FolderMRU = s.Split(";")
                 For Each Folder As String In FolderMRU
@@ -202,19 +196,19 @@ Public Class FormStartup
             Me.ReloadComboBoxOutputFolderNameList()
             Me.ComboBoxOutputFolderName.SelectedItem = OutputFolder
 
-            Dim OutputFileNameBase As String = INI.GetKeyValue("Output", "DefaultOutputFileNameBase")
+            Dim OutputFileNameBase As String = ReadIni(Me.INIFileName, "Output", "DefaultOutputFileNameBase")
             If String.IsNullOrWhiteSpace(OutputFileNameBase) Then
                 OutputFileNameBase = Me.ProductName & "_%MMddyyyy_HHmmss_fff%"
-                Me.INI.SetKeyValue("Output", "DefaultOutputFileNameBase", "")
+                WriteIni(Me.INIFileName, "Output", "DefaultOutputFileNameBase", "")
             Else
                 OutputFileNameBase = OutputFileNameBase.Trim
             End If
             Me.TextBoxOutputFileNameBase.Text = OutputFileNameBase
 
-            Dim Overwrite As String = INI.GetKeyValue("Output", "OverwriteExistingFile")
+            Dim Overwrite As String = ReadIni(Me.INIFileName, "Output", "OverwriteExistingFile")
             Boolean.TryParse(Overwrite, Me.CheckBoxOverwriteOutputFile.Checked)
 
-            s = INI.GetKeyValue("Output", "Format")
+            s = ReadIni(Me.INIFileName, "Output", "Format")
             Dim ImageFormat As ImageType
             If [Enum].TryParse(Of ImageType)(s, ImageFormat) Then
                 Me.ComboBoxOutputFormat.SelectedItem = s
@@ -223,29 +217,29 @@ Public Class FormStartup
             End If
 
             If ImageFormat = ImageType.TIFF Then
-                s = INI.GetKeyValue("Output", "Compression")
+                s = ReadIni(Me.INIFileName, "Output", "Compression")
                 Dim ImageCompression As TIFFCompressionMethod
                 If [Enum].TryParse(Of TIFFCompressionMethod)(s, ImageCompression) Then
                     Me.ComboBoxCompression.SelectedItem = s
                 End If
             End If
 
-            s = INI.GetKeyValue("Output", "ViewAfterAcquire")
+            s = ReadIni(Me.INIFileName, "Output", "ViewAfterAcquire")
             Boolean.TryParse(s, Me.CheckBoxViewAfterAcquire.Checked)
 
-            s = INI.GetKeyValue("Window", "Top")
+            s = ReadIni(Me.INIFileName, "Window", "Top")
             Dim Top As Integer = 0
             Integer.TryParse(s, Top)
 
-            s = INI.GetKeyValue("Window", "Left")
+            s = ReadIni(Me.INIFileName, "Window", "Left")
             Dim Left As Integer = 0
             Integer.TryParse(s, Left)
 
-            s = INI.GetKeyValue("Window", "Height")
+            s = ReadIni(Me.INIFileName, "Window", "Height")
             Dim Height As Integer = 0
             Integer.TryParse(s, Height)
 
-            s = INI.GetKeyValue("Window", "Width")
+            s = ReadIni(Me.INIFileName, "Window", "Width")
             Dim Width As Integer = 0
             Integer.TryParse(s, Width)
 
@@ -377,7 +371,7 @@ Public Class FormStartup
     Private Sub OnImageAcquired(ByVal PageNumber As Integer, ByVal bmp As Bitmap) Handles GUIForm.ImageAcquired
         Try
             If Not My.Computer.FileSystem.DirectoryExists(Me.ComboBoxOutputFolderName.Text) Then My.Computer.FileSystem.CreateDirectory(Me.ComboBoxOutputFolderName.Text)
-            Me.INI.SetKeyValue("Output", "DefaultOutputFolder", Me.ComboBoxOutputFolderName.Text)
+            WriteIni(Me.INIFileName, "Output", "DefaultOutputFolder", Me.ComboBoxOutputFolderName.Text)
         Catch ex As Exception
             MsgBox("Error creating directory '" & Me.ComboBoxOutputFolderName.Text & "': " & ex.Message)
         End Try

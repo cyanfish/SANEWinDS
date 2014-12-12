@@ -77,7 +77,7 @@
   <ItemGroup>
     <Reference Include="NLog, Version=3.1.0.0, Culture=neutral, PublicKeyToken=5120e14c03d0593c, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\CardinalAccountExpress\packages\NLog.3.1.0.0\lib\net40\NLog.dll</HintPath>
+      <HintPath>bin\x86\Debug\NLog.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Data" />

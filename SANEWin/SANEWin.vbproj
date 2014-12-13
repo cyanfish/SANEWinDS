@@ -130,6 +130,7 @@
       <CustomToolNamespace>My</CustomToolNamespace>
       <LastGenOutput>Settings.Designer.vb</LastGenOutput>
     </None>
+    <None Include="NLog.xsd" />
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>

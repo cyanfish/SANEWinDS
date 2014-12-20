@@ -450,9 +450,9 @@ Public Class FormStartup
                                 Case Is < 1.034
                                     PageSize = iTextSharp.text.PageSize.LETTER
                                 Case Is < 1.471
-                                    PageSize = iTextSharp.text.PageSize.LETTER_LANDSCAPE
+                                    PageSize = iTextSharp.text.PageSize.LETTER.Rotate
                                 Case Else
-                                    PageSize = iTextSharp.text.PageSize.LEGAL_LANDSCAPE
+                                    PageSize = iTextSharp.text.PageSize.LEGAL.Rotate
                             End Select
 
                             Me.OpenPDF(PageSize)

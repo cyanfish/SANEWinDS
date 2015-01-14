@@ -162,6 +162,7 @@
   <ItemGroup>
     <EmbeddedResource Include="FormMain.resx">
       <DependentUpon>FormMain.vb</DependentUpon>
+      <SubType>Designer</SubType>
     </EmbeddedResource>
     <EmbeddedResource Include="FormSANEHostWizard.resx">
       <DependentUpon>FormSANEHostWizard.vb</DependentUpon>

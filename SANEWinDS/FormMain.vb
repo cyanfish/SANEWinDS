@@ -35,6 +35,15 @@ Public Class FormMain
         Scan = 0
         Configure = 1
     End Enum
+    'Setting DialogResult closes the form, so we need our own result code
+    Public Enum UIResult As Integer
+        None = DialogResult.None
+        OK = DialogResult.OK
+        Cancel = DialogResult.Cancel
+        CancelDuringScan = DialogResult.Abort
+        ErrorDuringScan = DialogResult.Abort And &H80
+    End Enum
+    Public Result As UIResult = UIResult.None
     Public TWAIN_Is_Active As Boolean = False
     Public TWAINInstance As TWAIN_VB.DS_Entry_Pump
     Public Mode As UIMode = UIMode.Scan
@@ -89,6 +98,7 @@ Public Class FormMain
     End Sub
 
     Public Sub CancelScan()
+        Me.Result = UIResult.CancelDuringScan
         If SANE IsNot Nothing Then
             If SANE.CurrentDevice.Open Then
                 Try
@@ -103,6 +113,7 @@ Public Class FormMain
 
     Private Sub ButtonOK_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles ButtonOK.Click
         Logger.Debug("")
+        Me.Result = UIResult.OK
         If Not TWAIN_Is_Active Then 'TWAIN_VB registers its own event handler
             Dim PageNo As Integer = 0
             If SANE.CurrentDevice.Name IsNot Nothing Then
@@ -144,10 +155,12 @@ Public Class FormMain
                                     RaiseEvent BatchCompleted(PageNo - 1)
                                 Case Else
                                     frmProgress.Visible = False
+                                    Me.Result = UIResult.ErrorDuringScan
                                     RaiseEvent ImageError(PageNo, Status.ToString)
                             End Select
                         Catch ex As Exception
                             frmProgress.Visible = False
+                            Me.Result = UIResult.ErrorDuringScan
                             RaiseEvent ImageError(PageNo, ex.Message)
                             Exit Do
                         Finally
@@ -175,10 +188,12 @@ Public Class FormMain
                     End If
                 Else
                     If frmProgress IsNot Nothing AndAlso (Not frmProgress.IsDisposed) Then frmProgress.Visible = False
+                    Me.Result = UIResult.ErrorDuringScan
                     RaiseEvent ImageError(PageNo, "The SANE device '" & SANE.CurrentDevice.Name & "' has not been opened")
                 End If
             Else
                 If frmProgress IsNot Nothing AndAlso (Not frmProgress.IsDisposed) Then frmProgress.Visible = False
+                Me.Result = UIResult.ErrorDuringScan
                 RaiseEvent ImageError(PageNo, "The SANE device name is not defined")
             End If
             WinAPI.SetProcessWorkingSetSize(Process.GetCurrentProcess().Handle, -1, -1) 'reclaim memory
@@ -1511,6 +1526,7 @@ Public Class FormMain
 
     Private Sub ButtonCancel_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles ButtonCancel.Click
         'TWAIN_VB will capture the FormClosing event and cancel it, sending MSG_CLOSEDSREQ instead.
+        Me.Result = UIResult.Cancel
         Me.Close()
     End Sub
 
@@ -1744,5 +1760,19 @@ Public Class FormMain
             Logger.Error("", ex)
         End Try
     End Sub
+
+    Public Shadows Sub Show()
+        Me.Result = UIResult.None
+        MyBase.Show()
+    End Sub
+    Public Shadows Sub Show(ByVal Owner As IWin32Window)
+        Me.Result = UIResult.None
+        MyBase.Show(Owner)
+    End Sub
+    Public Shadows Function ShowDialog()
+        Me.Result = UIResult.None
+        Return MyBase.ShowDialog()
+    End Function
+
 End Class
 

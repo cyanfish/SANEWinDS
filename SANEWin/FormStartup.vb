@@ -804,8 +804,8 @@ Public Class FormStartup
             Try
                 Me.GUIForm_Shown = True
                 Me.Cursor = Cursors.WaitCursor
-                Dim DialogResult As DialogResult = GUIForm.ShowDialog
-            Catch ex As Exception
+                GUIForm.ShowDialog()
+             Catch ex As Exception
                 MsgBox(ex.Message & vbCrLf & ex.StackTrace)
                 Me.ClosePDF()
                 Me.CloseTIFF(0)

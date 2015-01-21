@@ -299,7 +299,7 @@ Public Class SharedSettings
                             .UseTSClientIP = UseTSClientIP
                             .Port = Port
                             Integer.TryParse(ReadIni(INI, SectionName, "TCP_Timeout_ms"), .TCP_Timeout_ms)
-                            If .TCP_Timeout_ms = 0 Then .TCP_Timeout_ms = 5000
+                            If .TCP_Timeout_ms = 0 Then .TCP_Timeout_ms = 30000
                             If .TCP_Timeout_ms < 1000 Then .TCP_Timeout_ms = 1000
 
                             Integer.TryParse(ReadIni(INI, SectionName, "Image_Timeout_s"), .Image_Timeout_s)

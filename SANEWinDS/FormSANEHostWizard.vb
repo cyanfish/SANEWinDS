@@ -21,7 +21,7 @@ Public Class FormSANEHostWizard
     Private Shared Logger As NLog.Logger = NLog.LogManager.GetCurrentClassLogger()
     Private TSClientIP As String
     Private Const DefaultPortString As String = "6566"
-    Private Const DefaultTimeoutString As String = "5000"
+    Private Const DefaultTimeoutString As String = "30000"
     Private OriginalHostIndex As Integer
 
     Private Sub ButtonNext_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles ButtonNext.Click

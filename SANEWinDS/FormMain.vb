@@ -1595,8 +1595,8 @@ Public Class FormMain
 
                 If Me.SetSANEOption("tl-x", {0}) And _
                     Me.SetSANEOption("tl-y", {0}) And _
-                    Me.SetSANEOption("br-x", {br_x}) And _
-                    Me.SetSANEOption("br-y", {br_y}) Then
+                    Me.SetSANEOption("br-x", {Math.Truncate(br_x * 10000) / 10000}) And _
+                    Me.SetSANEOption("br-y", {Math.Truncate(br_y * 10000) / 10000}) Then
                     'ok
                 Else
                     Throw New Exception("Unable to set SANE option")

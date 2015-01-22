@@ -154,12 +154,12 @@ Class SANE_API
         Return ((code >> 0) And &HFFFF)
     End Function
 
-    Friend Function SANE_FIX(ByVal w As Double) As Int32
+    Friend Function SANE_FIX(ByVal d As Double) As Int32
         Try
-            Return CInt(w * (1 << SANE_FIXED_SCALE_SHIFT))
+            Return CInt(d * (1 << SANE_FIXED_SCALE_SHIFT))
         Catch ofe As OverflowException
-            Logger.Warn("The number '{0}' had to be adjusted to avoid an overflow.", w)
-            If w > 0 Then
+            Logger.Warn("The number '{0}' had to be adjusted to avoid an overflow.", d)
+            If d > 0 Then
                 Return Int32.MaxValue
             Else
                 Return Int32.MinValue

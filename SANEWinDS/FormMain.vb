@@ -1769,10 +1769,10 @@ Public Class FormMain
         Me.Result = UIResult.None
         MyBase.Show(Owner)
     End Sub
-    Public Shadows Function ShowDialog()
+    Public Shadows Function ShowDialog() As UIResult
         Me.Result = UIResult.None
-        Return MyBase.ShowDialog()
+        MyBase.ShowDialog()
+        Return Me.Result
     End Function
-
 End Class
 

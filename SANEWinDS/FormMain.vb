@@ -256,6 +256,9 @@ Public Class FormMain
                 'Ignore the avision backend's 'nvram-values' option, which takes forever to read and isn't settable.
                 If Descriptors(i).name = "nvram-values" Then Continue For
 
+                'Ignore any option missing both name and title (hpaio backend has one).
+                If Descriptors(i).name Is Nothing AndAlso Descriptors(i).title Is Nothing Then Continue For
+
                 Select Case Descriptors(i).type
                     Case SANE_API.SANE_Value_Type.SANE_TYPE_GROUP
                         If Recreate Then

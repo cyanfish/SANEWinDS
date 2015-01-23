@@ -1,5 +1,12 @@
 Changelog:
 
+Version 0.9.5500
+-Added hpaio.ini to ProgramData\SANEWinDS.
+-Automatically decrease SANE_TYPE_FIXED values if rejected by the backend.  Fixes error setting br-x and br-y values (hpaio).
+-Ignore SANE option descriptors missing both name and title (hpaio).
+-Changed default TCP timeout from 5s to 30s to prevent timeouts with Officejets (hpaio).
+-Upgraded NLog and iTextSharp to current versions.
+
 Version 0.9.5434
 -"Suppress_Startup_Messages=True" in the [General] section of SANEWinDS.ini will disable the informational messages users get during the first startup of a new version.
 -Removed all checks of the TCPClient.Connected property.  It was causing unpredictable network connection behavior on different computers.

@@ -1389,6 +1389,12 @@ Public Class FormMain
                 End Select
             Next
             Dim Status As SANE_API.SANE_Status
+            'The following variables and related code were added because of the lossy conversion between SANE_TYPE_FIXED and Double (SANE_FIX and SANE_UNFIX).
+            'Because SANE_UNFIX rounds up, we should only ever need to decrease the value to avoid errors.
+            Dim FixedFudgeCount As Integer = 0 'The number of times we've decreased a SANE_TYPE_FIXED value because the backend refused it.
+            Dim MaxFixedFudgeCount As Integer = 3 'The maximum number of times we'll try to fudge a SANE_TYPE_FIXED value.
+            Dim FixedFudgeIncrement As Double = 0.0001R 'The amount to subtract from a SANE_TYPE_FIXED value to see if the backend will accept it.
+            '
             Do
                 Status = SANE.Net_Control_Option(ControlClient, OptReq, OptReply, _
                                                                              CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Username, _
@@ -1419,8 +1425,16 @@ Public Class FormMain
                 Else
                     Dim msg As String = "Error setting '" & od.type.ToString & "' option '" & od.title & "': " & Status.ToString
                     Logger.Warn(msg)
-                    MsgBox(msg)
-                    Exit Do
+                    If OptReq.value_type = SANE_API.SANE_Value_Type.SANE_TYPE_FIXED AndAlso FixedFudgeCount < MaxFixedFudgeCount Then
+                        FixedFudgeCount += 1
+                        Logger.Warn("Fudging SANE_TYPE_FIXED value -0.0001 (attempt " & FixedFudgeCount.ToString & " of " & MaxFixedFudgeCount.ToString & ")")
+                        For j As Integer = 0 To OptReq.values.Length - 1
+                            OptReq.values(j) -= FixedFudgeIncrement
+                        Next
+                    Else
+                        MsgBox(msg)
+                        Exit Do
+                    End If
                 End If
             Loop
 
@@ -1598,8 +1612,8 @@ Public Class FormMain
 
                 If Me.SetSANEOption("tl-x", {0}) And _
                     Me.SetSANEOption("tl-y", {0}) And _
-                    Me.SetSANEOption("br-x", {Math.Truncate(br_x * 10000) / 10000}) And _
-                    Me.SetSANEOption("br-y", {Math.Truncate(br_y * 10000) / 10000}) Then
+                    Me.SetSANEOption("br-x", {br_x}) And _
+                    Me.SetSANEOption("br-y", {br_y}) Then
                     'ok
                 Else
                     Throw New Exception("Unable to set SANE option")

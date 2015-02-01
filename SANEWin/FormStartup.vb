@@ -804,6 +804,7 @@ Public Class FormStartup
             Try
                 Me.GUIForm_Shown = True
                 Me.Cursor = Cursors.WaitCursor
+                GUIForm.ShowScanProgress = True
                 GUIForm.ShowDialog()
              Catch ex As Exception
                 MsgBox(ex.Message & vbCrLf & ex.StackTrace)

@@ -2,7 +2,6 @@
 Imports System.Drawing
 
 Public Class FormScanProgress
-
     Public Event ScanCancelled()
 
     Public Sub New()

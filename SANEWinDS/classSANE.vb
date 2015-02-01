@@ -1136,6 +1136,7 @@ Class SANE_API
             End If
 
             Dim ReportProgressAt As Integer = 1 'The next percentage point at which to report progress
+            Dim LastReportedProgress As Date = Date.MinValue
 
             Dim LastGoodRead As Date = Now
             Do
@@ -1202,8 +1203,11 @@ Class SANE_API
                 If Expected_Total_Bytes > 0 Then
                     Dim Progress As Integer = (TransferredBytes / Expected_Total_Bytes) * 100
                     If Progress > ReportProgressAt Then
-                        ReportProgressAt = Progress + 1
-                        RaiseEvent FrameProgress(Progress)
+                        If Now > LastReportedProgress.AddMilliseconds(2000) Then 'don't report progress any more frequently than every 2 seconds.
+                            RaiseEvent FrameProgress(Progress)
+                            LastReportedProgress = Now
+                            ReportProgressAt = Progress + 10
+                        End If
                     End If
                 Else 'we don't know how many bytes to expect (hand scanner).  Report -1 progress only once.  GUI should use a marquee-style progress bar.
                     If ReportProgressAt = 1 Then

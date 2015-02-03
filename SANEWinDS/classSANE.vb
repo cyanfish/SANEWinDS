@@ -1267,6 +1267,11 @@ Class SANE_API
                 Logger.Debug(ex.Message, ex)
             End Try
             Try
+                If Data_TCPClient IsNot Nothing Then Data_TCPClient.Client.Shutdown(Net.Sockets.SocketShutdown.Both)
+            Catch ex As Exception
+                Logger.Debug(ex.Message, ex)
+            End Try
+            Try
                 If Data_TCPClient IsNot Nothing Then Data_TCPClient.Close()
             Catch ex As Exception
                 Logger.Debug(ex.Message, ex)

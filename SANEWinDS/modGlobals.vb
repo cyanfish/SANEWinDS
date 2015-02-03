@@ -303,6 +303,11 @@ Module modGlobals
                 If Not CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Open Then
                     If ControlClient IsNot Nothing Then
                         Try
+                            ControlClient.Client.Shutdown(Net.Sockets.SocketShutdown.Both)
+                        Catch ex As Exception
+                            Logger.Debug(ex.Message, ex)
+                        End Try
+                        Try
                             ControlClient.Close()
                         Catch ex As Exception
                             Logger.Debug(ex.Message, ex)

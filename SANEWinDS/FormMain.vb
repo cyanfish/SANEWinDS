@@ -207,7 +207,7 @@ Public Class FormMain
             'store current device info
             Dim DeviceName As String = SANE.CurrentDevice.Name
             Dim OptVals() As Object = SANE.CurrentDevice.OptionValues.Clone
-            Try_Init_SANE()
+            Try_Init_SANE(False)
             Update_Host_GUI()
 
             If SANE.CurrentDevice.Name = DeviceName Then 'we reconnected to the same device
@@ -401,18 +401,33 @@ Public Class FormMain
                     Dim f As New FormSANEHostWizard
                     If f.ShowDialog <> Windows.Forms.DialogResult.OK Then
                         Logger.Debug("User cancelled SANE host wizard")
-                        'XXX
+                    Else
+                        Try_Init_SANE(False)
+                    End If
+                Else
+                    Try_Init_SANE(True)
+                    If Not SANE.CurrentDevice.Open Then
+                        Dim f As New FormSANEHostWizard
+                        If f.ShowDialog <> Windows.Forms.DialogResult.OK Then
+                            Logger.Debug("User cancelled SANE host wizard")
+                        Else
+                            Try_Init_SANE(False)
+                        End If
                     End If
                 End If
-                Try_Init_SANE()
             End If
+            Update_Host_GUI()
             If Me.Mode = UIMode.Scan Then Me.ButtonOK.Text = "Scan" Else Me.ButtonOK.Text = "OK"
         End If
     End Sub
 
-    Private Sub Try_Init_SANE()
+    Private Sub Try_Init_SANE(ByVal SuppressCommonErrorMessages As Boolean)
         Try
-            If ControlClient Is Nothing Then ControlClient = New System.Net.Sockets.TcpClient
+            If ControlClient IsNot Nothing Then
+                Close_SANE()
+                Close_Net()
+            End If
+            ControlClient = New System.Net.Sockets.TcpClient
             If ControlClient IsNot Nothing Then
                 If (CurrentSettings.SANE.CurrentHostIndex > -1) And (CurrentSettings.SANE.CurrentHostIndex < CurrentSettings.SANE.Hosts.Count) Then
                     CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Open = False
@@ -501,7 +516,11 @@ Public Class FormMain
                                     Else
                                         Dim msg As String = "The SANE backend reported " & Status.ToString & " during initialization"
                                         Logger.Warn(msg)
-                                        If MsgBox(msg, MsgBoxStyle.Exclamation + MsgBoxStyle.RetryCancel) = MsgBoxResult.Cancel Then Exit Do
+                                        If SuppressCommonErrorMessages Then
+                                            Exit Do
+                                        Else
+                                            If MsgBox(msg, MsgBoxStyle.Exclamation + MsgBoxStyle.RetryCancel) = MsgBoxResult.Cancel Then Exit Do
+                                        End If
                                     End If
                                 Loop
 
@@ -512,7 +531,7 @@ Public Class FormMain
                     Else
                         Dim msg As String = "Unable to resolve host '" & CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).NameOrAddress & "'"
                         Logger.Warn(msg)
-                        MsgBox(msg, MsgBoxStyle.Exclamation)
+                        If Not SuppressCommonErrorMessages Then MsgBox(msg, MsgBoxStyle.Exclamation)
                     End If
 
                     If SANE.CurrentDevice.Open Then
@@ -1568,9 +1587,9 @@ Public Class FormMain
         Dim f As New FormSANEHostWizard
         If f.ShowDialog <> Windows.Forms.DialogResult.OK Then
             Logger.Debug("User cancelled SANE host wizard")
-            'XXX
+        Else
+            Try_Init_SANE(False)
         End If
-        Try_Init_SANE()
         Update_Host_GUI()
     End Sub
 

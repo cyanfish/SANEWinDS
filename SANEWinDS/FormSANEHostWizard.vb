@@ -45,11 +45,11 @@ Public Class FormSANEHostWizard
                             End With
                             If CurrentSettings.ResolveHost(Host) Then
                                 Try
-
-                                    Close_SANE()
-                                    Close_Net()
-
-                                    If ControlClient Is Nothing Then ControlClient = New System.Net.Sockets.TcpClient
+                                    If ControlClient IsNot Nothing Then
+                                        Close_SANE()
+                                        Close_Net()
+                                    End If
+                                    ControlClient = New System.Net.Sockets.TcpClient
                                     If ControlClient IsNot Nothing Then
                                         ControlClient.ReceiveTimeout = Host.TCP_Timeout_ms
                                         ControlClient.SendTimeout = Host.TCP_Timeout_ms

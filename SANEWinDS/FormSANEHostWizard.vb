@@ -85,6 +85,7 @@ Public Class FormSANEHostWizard
                                                     CurrentSettings.SANE.CurrentHostIndex = Host_Index
                                                     Host.Username = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Username 'preserve existing username
                                                     Host.Password = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Password 'preserve existing password
+                                                    Host.AutoLocateDevice = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).AutoLocateDevice 'preserve existing autolocate list
                                                     'XXX
                                                     Host.Image_Timeout_s = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Image_Timeout_s 'this should be added to the GUI
                                                     '

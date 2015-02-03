@@ -446,10 +446,10 @@ Public Class FormMain
                                                 Dim AutoLocateDeviceStrings() As String = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).AutoLocateDevice.Split(New Char() {",", ";"})
                                                 Dim FoundDevice As Boolean = False
                                                 Dim FoundDeviceName As String = Nothing
-                                                For i As Integer = 0 To Devices.Length - 1
-                                                    For Each DevName In AutoLocateDeviceStrings
-                                                        If DevName IsNot Nothing Then DevName = DevName.Trim
-                                                        If Not String.IsNullOrWhiteSpace(DevName) Then
+                                                For Each DevName As String In AutoLocateDeviceStrings
+                                                    If DevName IsNot Nothing Then DevName = DevName.Trim
+                                                    If Not String.IsNullOrWhiteSpace(DevName) Then
+                                                        For i As Integer = 0 To Devices.Length - 1
                                                             If DevName = "*" Then
                                                                 FoundDevice = True
                                                                 FoundDeviceName = Devices(i).name
@@ -463,8 +463,9 @@ Public Class FormMain
                                                                     End If
                                                                 End If
                                                             End If
-                                                        End If
-                                                    Next
+                                                        Next
+                                                        If FoundDevice Then Exit For
+                                                    End If
                                                 Next
                                                 If FoundDevice Then
                                                     Logger.Debug("Auto-located device '{0}'; attempting to open...", FoundDeviceName)

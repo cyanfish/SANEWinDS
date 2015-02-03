@@ -1178,7 +1178,7 @@ Class SANE_API
                         Dim TotalBytes As UInt32 = 0
                         Do
                             Dim ImageBytes As UInt32 = stream.Read(ImageBuf, 0, datalen - TotalBytes)
-                            Logger.Debug("Received " & ImageBytes.ToString & " bytes")
+                            Logger.Debug("Received {0} bytes", ImageBytes)
                             ImageStream.Write(ImageBuf, 0, ImageBytes)
                             TotalBytes += ImageBytes
                             If ImageBytes > 0 Then
@@ -1189,7 +1189,7 @@ Class SANE_API
                             If Now > LastGoodRead.AddMilliseconds(TCP_Timeout_ms) Then Throw New Exception("Timeout waiting for image data")
                         Loop While TotalBytes < datalen
                         TransferredBytes += TotalBytes
-                        Logger.Debug("Received a total of " & TransferredBytes.ToString & " bytes so far")
+                        Logger.Debug("Received a total of {0} bytes so far", TransferredBytes)
                     Else
                         Logger.Warn("The value of the data length field looks bogus: &H" & Hex(datalen) & "; aborting transfer")
                         'If this happens the remaining image data will be filled with zeros below.  

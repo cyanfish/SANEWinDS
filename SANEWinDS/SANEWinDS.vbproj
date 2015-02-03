@@ -182,16 +182,17 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
-    <Content Include="backend.ini\canon_dr.ini" />
-    <Content Include="backend.ini\epkowa.ini" />
-    <Content Include="backend.ini\fujitsu.ini" />
-    <Content Include="backend.ini\genesys.ini" />
-    <Content Include="backend.ini\hp3500.ini" />
-    <Content Include="backend.ini\hp5590.ini" />
-    <Content Include="backend.ini\hpaio.ini" />
-    <Content Include="backend.ini\niash.ini" />
-    <Content Include="backend.ini\plustek.ini" />
-    <Content Include="backend.ini\test.ini" />
+    <None Include="backend.ini\canon_dr.ini" />
+    <None Include="backend.ini\epkowa.ini" />
+    <None Include="backend.ini\fujitsu.ini" />
+    <None Include="backend.ini\genesys.ini" />
+    <None Include="backend.ini\hp3500.ini" />
+    <None Include="backend.ini\hp5590.ini" />
+    <None Include="backend.ini\hpaio.ini" />
+    <None Include="backend.ini\niash.ini" />
+    <None Include="backend.ini\plustek.ini" />
+    <None Include="backend.ini\test.ini" />
+    <None Include="backend.ini\avision.ini" />
     <None Include="My Project\Application.myapp">
       <Generator>MyApplicationCodeGenerator</Generator>
       <LastGenOutput>Application.Designer.vb</LastGenOutput>
@@ -201,7 +202,7 @@
       <CustomToolNamespace>My</CustomToolNamespace>
       <LastGenOutput>Settings.Designer.vb</LastGenOutput>
     </None>
-    <Content Include="backend.ini\canondr.ini" />
+    <None Include="backend.ini\canondr.ini" />
     <Content Include="NLog.config">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       <SubType>Designer</SubType>

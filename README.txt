@@ -1,5 +1,14 @@
 Changelog:
 
+Version 0.9.5511
+-Dramatically increased scanning speed for most scans by reporting progress less frequently.
+-Added socket shutdown prior to closing.
+-Fixed prioritization of backends in AutoLocate list.
+-Suppressed some error messages after failing to connect to a scanner at startup (launches wizard instead).
+-Added avision.ini.
+-Standardized all backend.ini defaults to 8-bit color, ~150dpi.
+-Switched from Debug to Release build to improve performance.
+
 Version 0.9.5500
 -Added hpaio.ini to ProgramData\SANEWinDS.
 -Automatically decrease SANE_TYPE_FIXED values if rejected by the backend.  Fixes error setting br-x and br-y values (hpaio).

@@ -19,7 +19,7 @@
 Module modINIFile
     Private Logger As NLog.Logger = NLog.LogManager.GetCurrentClassLogger
 
-    Public Function ReadIniSections(FileName As String) As List(Of String)
+    Public Function ReadIniSections(ByVal FileName As String) As List(Of String)
         Dim Result As New List(Of String)
 
         Dim sr As System.IO.StreamReader = Nothing
@@ -54,7 +54,7 @@ Module modINIFile
         Return Result
     End Function
 
-    Public Function ReadIni(ByVal FileName As String, ByRef strSection As String, ByRef strKey As String) As String
+    Public Function ReadIni(ByVal FileName As String, ByVal strSection As String, ByVal strKey As String) As String
         Dim sr As System.IO.StreamReader = Nothing
         Try
 
@@ -112,7 +112,7 @@ Module modINIFile
         Return Nothing
     End Function
 
-    Public Sub WriteIni(ByVal FileName As String, ByRef strSection As String, ByRef strKey As String, ByRef strValue As String)
+    Public Sub WriteIni(ByVal FileName As String, ByVal strSection As String, ByVal strKey As String, ByVal strValue As String)
         Dim sr As System.IO.StreamReader = Nothing
         Dim sw As System.IO.StreamWriter = Nothing
 

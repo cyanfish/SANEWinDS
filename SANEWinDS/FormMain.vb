@@ -370,7 +370,7 @@ Public Class FormMain
     Private Sub Form1_Load(ByVal sender As Object, ByVal e As System.EventArgs) Handles Me.Load
         If Not Me.Initialized Then
             Me.Initialized = True
-            Me.Text = GetType(SANE_API).Assembly.GetName.Name.ToString() & " " & GetType(SANE_API).Assembly.GetName.Version.ToString() & " Alpha"
+            Me.Text = GetType(SANE_API).Assembly.GetName.Name.ToString() & " " & GetType(SANE_API).Assembly.GetName.Version.ToString() & " Beta"
             Me.MinimumSize = Me.Size
 
             Me.TreeViewOptions.HideSelection = False

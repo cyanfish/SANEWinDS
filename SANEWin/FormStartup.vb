@@ -119,7 +119,7 @@ Public Class FormStartup
 
     Private Sub FormStartup_Load(ByVal sender As Object, ByVal e As System.EventArgs) Handles Me.Load
 
-        Me.Text = My.Application.Info.ProductName & " " & My.Application.Info.Version.ToString & " Alpha" 'Assembly Version
+        Me.Text = My.Application.Info.ProductName & " " & My.Application.Info.Version.ToString & " Beta" 'Assembly Version
 
         Me.MinimumSize = Me.Size
 

@@ -1,6 +1,6 @@
 ﻿
 '
-'   Copyright 2011, 2012 Alec Skelly
+'   Copyright 2011-2015 Alec Skelly
 '
 '   This file is part of SANEWinDS.
 '
@@ -107,10 +107,10 @@ Public Class FormStartup
         If Me.GUIForm_Shown Then
             'XXX MS bug: The FormClosing and FormClosed events don't fire when the form is hidden.
             '            Make the form as inconspicuous as possible before showing it.
-            GUIForm.Controls.Clear()
-            GUIForm.ControlBox = False
-            GUIForm.FormBorderStyle = Windows.Forms.FormBorderStyle.None
-            GUIForm.Size = New Size(0, 0)
+            'GUIForm.Controls.Clear()
+            'GUIForm.ControlBox = False
+            'GUIForm.FormBorderStyle = Windows.Forms.FormBorderStyle.None
+            'GUIForm.Size = New Size(0, 0)
             GUIForm.Show()
             '
             GUIForm.Close()
@@ -119,7 +119,7 @@ Public Class FormStartup
 
     Private Sub FormStartup_Load(ByVal sender As Object, ByVal e As System.EventArgs) Handles Me.Load
 
-        Me.Text = My.Application.Info.ProductName & " " & My.Application.Info.Version.ToString & " Alpha" 'Assembly Version
+        Me.Text = My.Application.Info.ProductName & " " & My.Application.Info.Version.ToString & " Beta" 'Assembly Version
 
         Me.MinimumSize = Me.Size
 

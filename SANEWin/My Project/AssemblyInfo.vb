@@ -12,7 +12,7 @@ Imports System.Runtime.InteropServices
 <Assembly: AssemblyDescription("")> 
 <Assembly: AssemblyCompany("Microsoft")> 
 <Assembly: AssemblyProduct("SANEWin")> 
-<Assembly: AssemblyCopyright("Copyright © Alec Skelly 2012-2014")> 
+<Assembly: AssemblyCopyright("Copyright © Alec Skelly 2012-2015")> 
 <Assembly: AssemblyTrademark("")> 
 
 <Assembly: ComVisible(False)>

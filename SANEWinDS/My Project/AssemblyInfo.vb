@@ -12,7 +12,7 @@ Imports System.Runtime.InteropServices
 <Assembly: AssemblyDescription("TWAIN Data Source for SANE scanners")> 
 <Assembly: AssemblyCompany("Alec Skelly")> 
 <Assembly: AssemblyProduct("SANEWinDS")> 
-<Assembly: AssemblyCopyright("Copyright © Alec Skelly 2012-2014")> 
+<Assembly: AssemblyCopyright("Copyright © Alec Skelly 2012-2015")> 
 <Assembly: AssemblyTrademark("")> 
 
 <Assembly: ComVisible(False)> 

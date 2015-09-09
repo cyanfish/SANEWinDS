@@ -1,5 +1,5 @@
 ﻿'
-'   Copyright 2011, 2012 Alec Skelly
+'   Copyright 2011-2015 Alec Skelly
 '
 '   This file is part of SANEWinDS.
 '
@@ -333,6 +333,10 @@ Public Class SharedSettings
     End Function
 
     Public Function GetDeviceConfigFileName(Scope As ConfigFileScope) As String
+        Return GetDeviceConfigFileName(Scope, False, False)
+    End Function
+    Public Function GetDeviceConfigFileName(Scope As ConfigFileScope, ForceCreateUserConfig As Boolean, SuppressNotifications As Boolean) As String
+        'ForceCreateUserConfig=True will create a user config file even if a shared config file exists.
         Dim BackEnd As String = modGlobals.SANE.CurrentDevice.Name
         Dim p As Integer = BackEnd.IndexOf(":")
         If p Then BackEnd = BackEnd.Substring(0, p)
@@ -342,25 +346,27 @@ Public Class SharedSettings
             If My.Computer.FileSystem.FileExists(f) Then
                 Return f
             Else
-                If My.Computer.FileSystem.FileExists(ff) Then
+                If My.Computer.FileSystem.FileExists(ff) And (Not ForceCreateUserConfig) Then
                     Return Nothing 'We have a shared backend.ini we can use.  No need to auto-create a user backend.ini.
                 Else
-                    CreateDeviceConfigFile(f)
-                    Dim r As MsgBoxResult = MsgBox("The configuration file '" & BackEnd & ".ini' for the '" & BackEnd & "' backend was not found." _
-                        & "  A file containing reasonable defaults has been created in the folder '" & CurrentSettings.UserConfigDirectory & "'." _
-                        & "  You will most likely need to modify this new file to take full advantage of your backend, particularly if" _
-                        & " you intend to use it through TWAIN.  Once you have tested your configuration, please help other users" _
-                        & " by submitting '" & BackEnd & ".ini' back to the project at https://sourceforge.net/p/sanewinds/discussion/backend-ini/." _
-                        & "  Would you like to open the backend forum now?" _
-                        , MsgBoxStyle.Exclamation + MsgBoxStyle.YesNo)
-                    If r = MsgBoxResult.Yes Then
-                        Try
-                            Process.Start("https://sourceforge.net/p/sanewinds/discussion/backend-ini/")
-                        Catch ex As Exception
-                            Dim msg As String = "Unable to open web page: " & ex.Message
-                            Logger.Error(msg, ex)
-                            MsgBox(msg, MsgBoxStyle.Critical)
-                        End Try
+                    CreateDeviceConfigFile(f, My.Computer.FileSystem.FileExists(ff)) 'if we have a shared backend.ini, create the user backend.ini with all values commented out.
+                    If Not SuppressNotifications Then
+                        Dim r As MsgBoxResult = MsgBox("The configuration file '" & BackEnd & ".ini' for the '" & BackEnd & "' backend was not found." _
+                            & "  A file containing reasonable defaults has been created in the folder '" & CurrentSettings.UserConfigDirectory & "'." _
+                            & "  You will most likely need to modify this new file to take full advantage of your backend, particularly if" _
+                            & " you intend to use it through TWAIN.  Once you have tested your configuration, please help other users" _
+                            & " by submitting '" & BackEnd & ".ini' back to the project at https://sourceforge.net/p/sanewinds/discussion/backend-ini/." _
+                            & "  Would you like to open the backend forum now?" _
+                            , MsgBoxStyle.Exclamation + MsgBoxStyle.YesNo)
+                        If r = MsgBoxResult.Yes Then
+                            Try
+                                Process.Start("https://sourceforge.net/p/sanewinds/discussion/backend-ini/")
+                            Catch ex As Exception
+                                Dim msg As String = "Unable to open web page: " & ex.Message
+                                Logger.Error(msg, ex)
+                                MsgBox(msg, MsgBoxStyle.Critical)
+                            End Try
+                        End If
                     End If
                     Return f
                 End If
@@ -385,82 +391,95 @@ Public Class SharedSettings
         Return False
     End Function
 
+    Private Sub WriteDeviceConfigLine(ByRef Writer As System.IO.StreamWriter, ByVal Text As String)
+        WriteDeviceConfigLine(Writer, Text, False)
+    End Sub
+    Private Sub WriteDeviceConfigLine(ByRef Writer As System.IO.StreamWriter, ByVal Text As String, ByVal WriteAsComment As Boolean)
+        If Not ((Not String.IsNullOrEmpty(Text)) AndAlso Text.Substring(0, 1) = ";") Then
+            If WriteAsComment Then Text = ";" & Text
+        End If
+        Writer.WriteLine(Text)
+    End Sub
+
     Private Sub CreateDeviceConfigFile(ByVal FileName As String)
+        CreateDeviceConfigFile(FileName, False)
+    End Sub
+    Private Sub CreateDeviceConfigFile(ByVal FileName As String, ByVal WriteValuesAsComments As Boolean)
         'Create .INI file to hold all settings for SANE backend
         Dim fs As System.IO.StreamWriter = Nothing
         Try
             fs = New System.IO.StreamWriter(FileName)
-            fs.WriteLine("[General]")
-            fs.WriteLine(";ScanContinuously is a boolean value that determines whether to scan a single page or continue until the ADF is empty.")
-            fs.WriteLine(";In most cases the correct value will be guessed automatically.")
-            fs.WriteLine(";ScanContinuously=True")
-            fs.WriteLine("")
-            fs.WriteLine(";MaxPaperWidth and MaxPaperHeight values are in inches and determine the ICAP_SUPPORTEDSIZES values for TWAIN.")
-            fs.WriteLine(";These values will be taken from the default br-x and br-y values if not specified here.")
-            fs.WriteLine(";MaxPaperWidth=8.5")
-            fs.WriteLine(";MaxPaperHeight=14")
-            fs.WriteLine("")
-            fs.WriteLine(";DefaultPaperSize is the name of the paper size as displayed in the SANEWinDS GUI.")
-            fs.WriteLine(";DefaultPaperSize=Letter")
-            fs.WriteLine("")
+            WriteDeviceConfigLine(fs, "[General]")
+            WriteDeviceConfigLine(fs, ";ScanContinuously is a boolean value that determines whether to scan a single page or continue until the ADF is empty.")
+            WriteDeviceConfigLine(fs, ";In most cases the correct value will be guessed automatically.")
+            WriteDeviceConfigLine(fs, ";ScanContinuously=True")
+            WriteDeviceConfigLine(fs, "")
+            WriteDeviceConfigLine(fs, ";MaxPaperWidth and MaxPaperHeight values are in inches and determine the ICAP_SUPPORTEDSIZES values for TWAIN.")
+            WriteDeviceConfigLine(fs, ";These values will be taken from the default br-x and br-y values if not specified here.")
+            WriteDeviceConfigLine(fs, ";MaxPaperWidth=8.5")
+            WriteDeviceConfigLine(fs, ";MaxPaperHeight=14")
+            WriteDeviceConfigLine(fs, "")
+            WriteDeviceConfigLine(fs, ";DefaultPaperSize is the name of the paper size as displayed in the SANEWinDS GUI.")
+            WriteDeviceConfigLine(fs, ";DefaultPaperSize=Letter")
+            WriteDeviceConfigLine(fs, "")
             For i As Integer = 1 To modGlobals.SANE.CurrentDevice.OptionDescriptors.Count - 1 'skip the first option, which is just the option count
                 Select Case modGlobals.SANE.CurrentDevice.OptionDescriptors(i).type
                     Case SANE_API.SANE_Value_Type.SANE_TYPE_GROUP, SANE_API.SANE_Value_Type.SANE_TYPE_BUTTON
                         'no need to map these options
                     Case Else
-                        fs.WriteLine("[Option." & modGlobals.SANE.CurrentDevice.OptionDescriptors(i).name & "]")
-                        fs.WriteLine(";Name: " & modGlobals.SANE.CurrentDevice.OptionDescriptors(i).name)
-                        fs.WriteLine(";Title: " & modGlobals.SANE.CurrentDevice.OptionDescriptors(i).title)
-                        fs.WriteLine(";Description: " & modGlobals.SANE.CurrentDevice.OptionDescriptors(i).desc)
-                        fs.WriteLine(";Unit: " & modGlobals.SANE.CurrentDevice.OptionDescriptors(i).unit.ToString)
-                        fs.WriteLine(";Type: " & modGlobals.SANE.CurrentDevice.OptionDescriptors(i).type.ToString)
-                        fs.WriteLine(";Constraint Type: " & modGlobals.SANE.CurrentDevice.OptionDescriptors(i).constraint_type.ToString)
+                        WriteDeviceConfigLine(fs, "[Option." & modGlobals.SANE.CurrentDevice.OptionDescriptors(i).name & "]")
+                        WriteDeviceConfigLine(fs, ";Name: " & modGlobals.SANE.CurrentDevice.OptionDescriptors(i).name)
+                        WriteDeviceConfigLine(fs, ";Title: " & modGlobals.SANE.CurrentDevice.OptionDescriptors(i).title)
+                        WriteDeviceConfigLine(fs, ";Description: " & modGlobals.SANE.CurrentDevice.OptionDescriptors(i).desc)
+                        WriteDeviceConfigLine(fs, ";Unit: " & modGlobals.SANE.CurrentDevice.OptionDescriptors(i).unit.ToString)
+                        WriteDeviceConfigLine(fs, ";Type: " & modGlobals.SANE.CurrentDevice.OptionDescriptors(i).type.ToString)
+                        WriteDeviceConfigLine(fs, ";Constraint Type: " & modGlobals.SANE.CurrentDevice.OptionDescriptors(i).constraint_type.ToString)
 
                         Select Case modGlobals.SANE.CurrentDevice.OptionDescriptors(i).constraint_type
                             Case SANE_API.SANE_Constraint_Type.SANE_CONSTRAINT_NONE
                             Case SANE_API.SANE_Constraint_Type.SANE_CONSTRAINT_RANGE
-                                fs.WriteLine(";Constraint Values: ")
-                                fs.WriteLine(";" & vbTab & "min: " & IIf(modGlobals.SANE.CurrentDevice.OptionDescriptors(i).type = SANE_API.SANE_Value_Type.SANE_TYPE_FIXED, modGlobals.SANE.SANE_UNFIX(modGlobals.SANE.CurrentDevice.OptionDescriptors(i).constraint.range.min).ToString, modGlobals.SANE.CurrentDevice.OptionDescriptors(i).constraint.range.min.ToString))
-                                fs.WriteLine(";" & vbTab & "max: " & IIf(modGlobals.SANE.CurrentDevice.OptionDescriptors(i).type = SANE_API.SANE_Value_Type.SANE_TYPE_FIXED, modGlobals.SANE.SANE_UNFIX(modGlobals.SANE.CurrentDevice.OptionDescriptors(i).constraint.range.max).ToString, modGlobals.SANE.CurrentDevice.OptionDescriptors(i).constraint.range.max.ToString))
-                                fs.WriteLine(";" & vbTab & "step: " & IIf(modGlobals.SANE.CurrentDevice.OptionDescriptors(i).type = SANE_API.SANE_Value_Type.SANE_TYPE_FIXED, modGlobals.SANE.SANE_UNFIX(modGlobals.SANE.CurrentDevice.OptionDescriptors(i).constraint.range.quant).ToString, modGlobals.SANE.CurrentDevice.OptionDescriptors(i).constraint.range.quant.ToString))
+                                WriteDeviceConfigLine(fs, ";Constraint Values: ")
+                                WriteDeviceConfigLine(fs, ";" & vbTab & "min: " & IIf(modGlobals.SANE.CurrentDevice.OptionDescriptors(i).type = SANE_API.SANE_Value_Type.SANE_TYPE_FIXED, modGlobals.SANE.SANE_UNFIX(modGlobals.SANE.CurrentDevice.OptionDescriptors(i).constraint.range.min).ToString, modGlobals.SANE.CurrentDevice.OptionDescriptors(i).constraint.range.min.ToString))
+                                WriteDeviceConfigLine(fs, ";" & vbTab & "max: " & IIf(modGlobals.SANE.CurrentDevice.OptionDescriptors(i).type = SANE_API.SANE_Value_Type.SANE_TYPE_FIXED, modGlobals.SANE.SANE_UNFIX(modGlobals.SANE.CurrentDevice.OptionDescriptors(i).constraint.range.max).ToString, modGlobals.SANE.CurrentDevice.OptionDescriptors(i).constraint.range.max.ToString))
+                                WriteDeviceConfigLine(fs, ";" & vbTab & "step: " & IIf(modGlobals.SANE.CurrentDevice.OptionDescriptors(i).type = SANE_API.SANE_Value_Type.SANE_TYPE_FIXED, modGlobals.SANE.SANE_UNFIX(modGlobals.SANE.CurrentDevice.OptionDescriptors(i).constraint.range.quant).ToString, modGlobals.SANE.CurrentDevice.OptionDescriptors(i).constraint.range.quant.ToString))
                             Case SANE_API.SANE_Constraint_Type.SANE_CONSTRAINT_STRING_LIST
-                                fs.WriteLine(";Constraint Values: ")
+                                WriteDeviceConfigLine(fs, ";Constraint Values: ")
                                 For j As Integer = 0 To modGlobals.SANE.CurrentDevice.OptionDescriptors(i).constraint.string_list.Count - 1
-                                    fs.WriteLine(";" & vbTab & modGlobals.SANE.CurrentDevice.OptionDescriptors(i).constraint.string_list(j))
+                                    WriteDeviceConfigLine(fs, ";" & vbTab & modGlobals.SANE.CurrentDevice.OptionDescriptors(i).constraint.string_list(j))
                                 Next
                             Case SANE_API.SANE_Constraint_Type.SANE_CONSTRAINT_WORD_LIST
-                                fs.WriteLine(";Constraint Values: ")
+                                WriteDeviceConfigLine(fs, ";Constraint Values: ")
                                 For j As Integer = 0 To modGlobals.SANE.CurrentDevice.OptionDescriptors(i).constraint.word_list.Count - 1
-                                    fs.WriteLine(";" & vbTab & IIf(modGlobals.SANE.CurrentDevice.OptionDescriptors(i).type = SANE_API.SANE_Value_Type.SANE_TYPE_FIXED, modGlobals.SANE.SANE_UNFIX(modGlobals.SANE.CurrentDevice.OptionDescriptors(i).constraint.word_list(j)).ToString, modGlobals.SANE.CurrentDevice.OptionDescriptors(i).constraint.word_list(j).ToString))
+                                    WriteDeviceConfigLine(fs, ";" & vbTab & IIf(modGlobals.SANE.CurrentDevice.OptionDescriptors(i).type = SANE_API.SANE_Value_Type.SANE_TYPE_FIXED, modGlobals.SANE.SANE_UNFIX(modGlobals.SANE.CurrentDevice.OptionDescriptors(i).constraint.word_list(j)).ToString, modGlobals.SANE.CurrentDevice.OptionDescriptors(i).constraint.word_list(j).ToString))
                                 Next
                         End Select
-                        'fs.WriteLine(SANE.CurrentDevice.OptionDescriptors(i).name & "=")
-                        fs.WriteLine("DefaultValue=")
+                        'WriteDeviceConfigLine(fs,SANE.CurrentDevice.OptionDescriptors(i).name & "=")
+                        WriteDeviceConfigLine(fs, "DefaultValue=", WriteValuesAsComments)
 
                         'Configure TWAIN capability mappings for SANE well-known options
                         Select Case modGlobals.SANE.CurrentDevice.OptionDescriptors(i).name.ToLower
                             Case "resolution"
-                                fs.WriteLine("TWAIN=ICAP_XRESOLUTION,#;ICAP_YRESOLUTION,#")
+                                WriteDeviceConfigLine(fs, "TWAIN=ICAP_XRESOLUTION,#;ICAP_YRESOLUTION,#", WriteValuesAsComments)
                                 If Not SANE_Option_Defined("x-resolution") Then
-                                    fs.WriteLine("")
-                                    fs.WriteLine("[TWAIN.ICAP_XRESOLUTION]")
-                                    fs.WriteLine("SANE=resolution,#")
+                                    WriteDeviceConfigLine(fs, "")
+                                    WriteDeviceConfigLine(fs, "[TWAIN.ICAP_XRESOLUTION]")
+                                    WriteDeviceConfigLine(fs, "SANE=resolution,#", WriteValuesAsComments)
                                 End If
                                 If Not SANE_Option_Defined("y-resolution") Then
-                                    fs.WriteLine("")
-                                    fs.WriteLine("[TWAIN.ICAP_YRESOLUTION]")
-                                    fs.WriteLine("SANE=resolution,#")
+                                    WriteDeviceConfigLine(fs, "")
+                                    WriteDeviceConfigLine(fs, "[TWAIN.ICAP_YRESOLUTION]")
+                                    WriteDeviceConfigLine(fs, "SANE=resolution,#", WriteValuesAsComments)
                                 End If
                             Case "x-resolution" 'SANE 2.0 draft
-                                fs.WriteLine("TWAIN=ICAP_XRESOLUTION,#")
-                                fs.WriteLine("")
-                                fs.WriteLine("[TWAIN.ICAP_XRESOLUTION]")
-                                fs.WriteLine("SANE=x-resolution,#")
+                                WriteDeviceConfigLine(fs, "TWAIN=ICAP_XRESOLUTION,#", WriteValuesAsComments)
+                                WriteDeviceConfigLine(fs, "")
+                                WriteDeviceConfigLine(fs, "[TWAIN.ICAP_XRESOLUTION]")
+                                WriteDeviceConfigLine(fs, "SANE=x-resolution,#", WriteValuesAsComments)
                             Case "y-resolution" 'SANE 2.0 draft
-                                fs.WriteLine("TWAIN=ICAP_YRESOLUTION,#")
-                                fs.WriteLine("")
-                                fs.WriteLine("[TWAIN.ICAP_YRESOLUTION]")
-                                fs.WriteLine("SANE=y-resolution,#")
+                                WriteDeviceConfigLine(fs, "TWAIN=ICAP_YRESOLUTION,#", WriteValuesAsComments)
+                                WriteDeviceConfigLine(fs, "")
+                                WriteDeviceConfigLine(fs, "[TWAIN.ICAP_YRESOLUTION]")
+                                WriteDeviceConfigLine(fs, "SANE=y-resolution,#", WriteValuesAsComments)
                             Case "preview"
                                 'XXX
                             Case "tl-x"
@@ -472,41 +491,41 @@ Public Class SharedSettings
                             Case "br-y"
                                 'XXX
                             Case "depth" 'SANE 2.0 draft
-                                fs.WriteLine("TWAIN=ICAP_BITDEPTH,#")
-                                fs.WriteLine("")
-                                fs.WriteLine("[TWAIN.ICAP_BITDEPTH]")
-                                fs.WriteLine("SANE=depth,#")
+                                WriteDeviceConfigLine(fs, "TWAIN=ICAP_BITDEPTH,#", WriteValuesAsComments)
+                                WriteDeviceConfigLine(fs, "")
+                                WriteDeviceConfigLine(fs, "[TWAIN.ICAP_BITDEPTH]")
+                                WriteDeviceConfigLine(fs, "SANE=depth,#", WriteValuesAsComments)
                             Case "mode" 'SANE 2.0 draft
                                 If modGlobals.SANE.CurrentDevice.OptionDescriptors(i).constraint_type = SANE_API.SANE_Constraint_Type.SANE_CONSTRAINT_STRING_LIST Then
                                     If modGlobals.SANE.CurrentDevice.OptionDescriptors(i).constraint.string_list.Contains("Lineart") Then
-                                        fs.WriteLine("TWAIN.Lineart=ICAP_PIXELTYPE,TWPT_BW;ICAP_BITDEPTH,1")
+                                        WriteDeviceConfigLine(fs, "TWAIN.Lineart=ICAP_PIXELTYPE,TWPT_BW;ICAP_BITDEPTH,1", WriteValuesAsComments)
                                     End If
                                     If modGlobals.SANE.CurrentDevice.OptionDescriptors(i).constraint.string_list.Contains("Gray") Then
                                         If SANE_Option_Defined("depth") Then
-                                            fs.WriteLine("TWAIN.Gray=ICAP_PIXELTYPE,TWPT_GRAY")
+                                            WriteDeviceConfigLine(fs, "TWAIN.Gray=ICAP_PIXELTYPE,TWPT_GRAY", WriteValuesAsComments)
                                         Else
-                                            fs.WriteLine("TWAIN.Gray=ICAP_PIXELTYPE,TWPT_GRAY;ICAP_BITDEPTH,8")
+                                            WriteDeviceConfigLine(fs, "TWAIN.Gray=ICAP_PIXELTYPE,TWPT_GRAY;ICAP_BITDEPTH,8", WriteValuesAsComments)
                                         End If
                                     End If
                                     If modGlobals.SANE.CurrentDevice.OptionDescriptors(i).constraint.string_list.Contains("Color") Then
                                         If SANE_Option_Defined("depth") Then
-                                            fs.WriteLine("TWAIN.Color=ICAP_PIXELTYPE,TWPT_RGB")
+                                            WriteDeviceConfigLine(fs, "TWAIN.Color=ICAP_PIXELTYPE,TWPT_RGB", WriteValuesAsComments)
                                         Else
-                                            fs.WriteLine("TWAIN.Color=ICAP_PIXELTYPE,TWPT_RGB;ICAP_BITDEPTH,8")
+                                            WriteDeviceConfigLine(fs, "TWAIN.Color=ICAP_PIXELTYPE,TWPT_RGB;ICAP_BITDEPTH,8", WriteValuesAsComments)
                                         End If
                                     End If
                                     'XXX 'Halftone' is possible also.
 
-                                    fs.WriteLine("")
-                                    fs.WriteLine("[TWAIN.ICAP_PIXELTYPE]")
+                                    WriteDeviceConfigLine(fs, "")
+                                    WriteDeviceConfigLine(fs, "[TWAIN.ICAP_PIXELTYPE]")
                                     If modGlobals.SANE.CurrentDevice.OptionDescriptors(i).constraint.string_list.Contains("Lineart") Then
-                                        fs.WriteLine("SANE.TWPT_BW=mode,Lineart")
+                                        WriteDeviceConfigLine(fs, "SANE.TWPT_BW=mode,Lineart", WriteValuesAsComments)
                                     End If
                                     If modGlobals.SANE.CurrentDevice.OptionDescriptors(i).constraint.string_list.Contains("Gray") Then
-                                        fs.WriteLine("SANE.TWPT_GRAY=mode,Gray")
+                                        WriteDeviceConfigLine(fs, "SANE.TWPT_GRAY=mode,Gray", WriteValuesAsComments)
                                     End If
                                     If modGlobals.SANE.CurrentDevice.OptionDescriptors(i).constraint.string_list.Contains("Color") Then
-                                        fs.WriteLine("SANE.TWPT_RGB=mode,Color")
+                                        WriteDeviceConfigLine(fs, "SANE.TWPT_RGB=mode,Color", WriteValuesAsComments)
                                     End If
                                     'XXX 'Halftone' is possible also.
 
@@ -514,26 +533,26 @@ Public Class SharedSettings
                             Case "source" 'SANE 2.0 draft
                                 If modGlobals.SANE.CurrentDevice.OptionDescriptors(i).constraint_type = SANE_API.SANE_Constraint_Type.SANE_CONSTRAINT_STRING_LIST Then
                                     If modGlobals.SANE.CurrentDevice.OptionDescriptors(i).constraint.string_list.Contains("Flatbed") Then
-                                        fs.WriteLine("TWAIN.Flatbed=CAP_FEEDERENABLED,False")
+                                        WriteDeviceConfigLine(fs, "TWAIN.Flatbed=CAP_FEEDERENABLED,False", WriteValuesAsComments)
                                     End If
                                     If modGlobals.SANE.CurrentDevice.OptionDescriptors(i).constraint.string_list.Contains("Transparency Adapter") Then
                                         'XXX how does a Transparency Adapter behave?
-                                        fs.WriteLine("TWAIN.TransparencyAdapter=CAP_FEEDERENABLED,False")
+                                        WriteDeviceConfigLine(fs, "TWAIN.TransparencyAdapter=CAP_FEEDERENABLED,False", WriteValuesAsComments)
                                     End If
                                     If modGlobals.SANE.CurrentDevice.OptionDescriptors(i).constraint.string_list.Contains("Automatic Document Feeder") Then
-                                        fs.WriteLine("TWAIN.AutomaticDocumentFeeder=CAP_FEEDERENABLED,True")
+                                        WriteDeviceConfigLine(fs, "TWAIN.AutomaticDocumentFeeder=CAP_FEEDERENABLED,True", WriteValuesAsComments)
                                     End If
-                                    fs.WriteLine("")
-                                    fs.WriteLine("[TWAIN.CAP_FEEDERENABLED]")
+                                    WriteDeviceConfigLine(fs, "")
+                                    WriteDeviceConfigLine(fs, "[TWAIN.CAP_FEEDERENABLED]")
                                     If modGlobals.SANE.CurrentDevice.OptionDescriptors(i).constraint.string_list.Contains("Flatbed") Then
-                                        fs.WriteLine("SANE.0=source,Flatbed")
+                                        WriteDeviceConfigLine(fs, "SANE.0=source,Flatbed", WriteValuesAsComments)
                                     End If
                                     'If modGlobals.SANE.CurrentDevice.OptionDescriptors(i).constraint.string_list.Contains("Transparency Adapter") Then
                                     '    'XXX how does a Transparency Adapter behave?
-                                    '    fs.WriteLine("SANE.0=source,Flatbed")
+                                    '    WriteDeviceConfigLine(fs,"SANE.0=source,Flatbed", WriteValuesAsComments)
                                     'End If
                                     If modGlobals.SANE.CurrentDevice.OptionDescriptors(i).constraint.string_list.Contains("Automatic Document Feeder") Then
-                                        fs.WriteLine("SANE.1=source,Automatic Document Feeder")
+                                        WriteDeviceConfigLine(fs, "SANE.1=source,Automatic Document Feeder", WriteValuesAsComments)
                                     End If
                                 End If
                             Case Else
@@ -541,7 +560,7 @@ Public Class SharedSettings
 
                         End Select
                 End Select
-                fs.WriteLine("")
+                WriteDeviceConfigLine(fs, "")
             Next
         Catch ex As Exception
             Logger.Log(NLog.LogLevel.Error, "Error writing '{0}'", ex)

@@ -60,7 +60,7 @@ Partial Class FormMain
         Me.CheckBoxBatchMode.Location = New System.Drawing.Point(13, 338)
         Me.CheckBoxBatchMode.Name = "CheckBoxBatchMode"
         Me.CheckBoxBatchMode.Size = New System.Drawing.Size(200, 17)
-        Me.CheckBoxBatchMode.TabIndex = 8
+        Me.CheckBoxBatchMode.TabIndex = 7
         Me.CheckBoxBatchMode.Text = "Scan continuously (for use with ADF)"
         Me.CheckBoxBatchMode.UseVisualStyleBackColor = True
         '
@@ -77,6 +77,7 @@ Partial Class FormMain
         'ButtonCancel
         '
         Me.ButtonCancel.Anchor = CType((System.Windows.Forms.AnchorStyles.Bottom Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
+        Me.ButtonCancel.DialogResult = System.Windows.Forms.DialogResult.Cancel
         Me.ButtonCancel.Location = New System.Drawing.Point(453, 334)
         Me.ButtonCancel.Name = "ButtonCancel"
         Me.ButtonCancel.Size = New System.Drawing.Size(75, 23)
@@ -203,7 +204,6 @@ Partial Class FormMain
         Me.Controls.Add(Me.SplitContainerOptions)
         Me.Icon = CType(resources.GetObject("$this.Icon"), System.Drawing.Icon)
         Me.Name = "FormMain"
-        Me.Text = "`"
         Me.SplitContainerOptions.Panel1.ResumeLayout(False)
         Me.SplitContainerOptions.Panel2.ResumeLayout(False)
         CType(Me.SplitContainerOptions, System.ComponentModel.ISupportInitialize).EndInit()

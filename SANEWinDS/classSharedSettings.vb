@@ -127,7 +127,7 @@ Public Class SharedSettings
                         WriteIni(UserSettingsFileName, SectionName, "Password", crypto.Encrypt(.Password))
                     Catch ex As System.ArgumentNullException
                     Catch ex As Exception
-                        Logger.Error(ex.Message, ex)
+                        Logger.Error(ex, ex.Message)
                     End Try
                     WriteIni(UserSettingsFileName, SectionName, "TCP_Timeout_ms", .TCP_Timeout_ms.ToString)
                     WriteIni(UserSettingsFileName, SectionName, "Image_Timeout_s", .Image_Timeout_s)
@@ -181,7 +181,7 @@ Public Class SharedSettings
             f = Nothing
         End If
 
- 
+
         Dim INI_Version As String = ReadIni(UserSettingsFileName, "General", "INI_Version")
         Dim INI_Ver As Double = 0
         Double.TryParse(INI_Version, INI_Ver)
@@ -311,7 +311,7 @@ Public Class SharedSettings
                             Catch ex As SimpleCryptoExceptions.SuppliedStringNotEncryptedException
                                 Logger.Warn(ex.Message, ex)
                             Catch ex As Exception
-                                Logger.Error(ex.Message, ex)
+                                Logger.Error(ex, ex.Message)
                             End Try
                             .Device = ReadIni(INI, SectionName, "Device")
                             .AutoLocateDevice = ReadIni(INI, SectionName, "AutoLocateDevice")

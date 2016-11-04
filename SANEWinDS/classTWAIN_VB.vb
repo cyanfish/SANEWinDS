@@ -2664,7 +2664,7 @@ Namespace TWAIN_VB
                                     Return MyResult
                                 End If
                             Catch ex As Exception
-                                Logger.Error(ex.Message, ex)
+                                Logger.Error(ex, ex.Message)
                                 MsgBox(ex.Message)
                                 SetCondition(TWCC.TWCC_OPERATIONERROR)
                                 SetResult(TWRC.TWRC_FAILURE)
@@ -2793,7 +2793,7 @@ Namespace TWAIN_VB
                                     Return MyResult
                                 End If
                             Catch ex As Exception
-                                Logger.Error(ex.Message, ex)
+                                Logger.Error(ex, ex.Message)
                                 MsgBox(ex.Message)
                                 SetCondition(TWCC.TWCC_OPERATIONERROR)
                                 SetResult(TWRC.TWRC_FAILURE)
@@ -2980,17 +2980,17 @@ Namespace TWAIN_VB
                 .Compression = TWCP.TWCP_NONE
 
                 Logger.Debug("XResolution -> {0}", FIX32ToFloat(.XResolution))
-                logger.debug("YResolution -> {0}", FIX32ToFloat(.YResolution))
-                logger.debug("ImageWidth -> {0}", .ImageWidth)
-                logger.debug("ImageLength -> {0}", .ImageLength)
-                logger.debug("SamplesPerPixel -> {0}", .SamplesPerPixel)
+                Logger.Debug("YResolution -> {0}", FIX32ToFloat(.YResolution))
+                Logger.Debug("ImageWidth -> {0}", .ImageWidth)
+                Logger.Debug("ImageLength -> {0}", .ImageLength)
+                Logger.Debug("SamplesPerPixel -> {0}", .SamplesPerPixel)
                 For i As Integer = 0 To .BitsPerSample.Length - 1
-                    logger.debug("BitsPerSample({0}) -> {1}", i, .BitsPerSample(i))
+                    Logger.Debug("BitsPerSample({0}) -> {1}", i, .BitsPerSample(i))
                 Next
-                logger.debug("BitsPerPixel -> {0}", .BitsPerPixel)
-                logger.debug("Planar -> {0}", CBool(.Planar))
-                logger.debug("PixelType -> {0}", .PixelType)
-                logger.debug("Compression -> {0}", .Compression)
+                Logger.Debug("BitsPerPixel -> {0}", .BitsPerPixel)
+                Logger.Debug("Planar -> {0}", CBool(.Planar))
+                Logger.Debug("PixelType -> {0}", .PixelType)
+                Logger.Debug("Compression -> {0}", .Compression)
 
             End With
         End Sub
@@ -3080,7 +3080,7 @@ Namespace TWAIN_VB
                         SetResult(TWRC.TWRC_SUCCESS)
                         Return MyResult
                     Catch ex As Exception
-                        Logger.Error(ex.Message, ex)
+                        Logger.Error(ex, ex.Message)
                         SetCondition(TWCC.TWCC_BUMMER)
                         SetResult(TWRC.TWRC_FAILURE)
                         Return MyResult
@@ -3148,7 +3148,7 @@ Namespace TWAIN_VB
                         SetResult(TWRC.TWRC_SUCCESS)
                         Return MyResult
                     Catch ex As Exception
-                        Logger.Error(ex.Message, ex)
+                        Logger.Error(ex, ex.Message)
                         SetCondition(TWCC.TWCC_BUMMER)
                         SetResult(TWRC.TWRC_FAILURE)
                         Return MyResult
@@ -3228,7 +3228,7 @@ Namespace TWAIN_VB
                                 Try
                                     Marshal.WriteInt16(pContainer + ItemOffset + i, ccap.Key)
                                 Catch ex As Exception
-                                    Logger.Error(ex.Message, ex)
+                                    Logger.Error(ex, ex.Message)
                                 End Try
                                 i += 2
                             Next
@@ -3273,7 +3273,7 @@ Namespace TWAIN_VB
                                             Try
                                                 Marshal.WriteInt16(pContainer + ItemOffset + i, ps)
                                             Catch ex As Exception
-                                                Logger.Error(ex.Message, ex)
+                                                Logger.Error(ex, ex.Message)
                                             End Try
                                             i += 2
                                         Next
@@ -3431,7 +3431,7 @@ Namespace TWAIN_VB
                                                     Marshal.WriteInt16(pContainer + ItemOffset + i, res.Frac)
                                                     i += 2
                                                 Catch ex As Exception
-                                                    Logger.Error(ex.Message, ex)
+                                                    Logger.Error(ex, ex.Message)
                                                 End Try
                                             Next
                                             '
@@ -4084,7 +4084,7 @@ Namespace TWAIN_VB
                                         Try
                                             If ControlClient IsNot Nothing Then ControlClient.Close()
                                         Catch ex As Exception
-                                            Logger.Debug(ex.Message, ex)
+                                            Logger.Debug(ex, ex.Message)
                                         End Try
                                         ControlClient = Nothing
 
@@ -4097,7 +4097,7 @@ Namespace TWAIN_VB
                                     End If
                                 End If
                             Catch ex As Exception
-                                Logger.Error(ex.Message, ex)
+                                Logger.Error(ex, ex.Message)
                                 Try
                                     If SANE.CurrentDevice.Open Then
                                         SANE.Net_Close(ControlClient, SANE.CurrentDevice.Handle)
@@ -4120,12 +4120,12 @@ Namespace TWAIN_VB
                                         Try
                                             If ControlClient IsNot Nothing Then ControlClient.Close()
                                         Catch ex As Exception
-                                            Logger.Debug(ex.Message, ex)
+                                            Logger.Debug(ex, ex.Message)
                                         End Try
                                         ControlClient = Nothing
                                     End If
                                 Catch ex As Exception
-                                    Logger.Error(ex.Message, ex)
+                                    Logger.Error(ex, ex.Message)
                                 End Try
                             End Try
                         Loop While Not SANE.CurrentDevice.Open
@@ -4154,7 +4154,7 @@ Namespace TWAIN_VB
 
                             If ControlClient IsNot Nothing Then ControlClient.Close()
                         Catch ex As Exception
-                            Logger.Error(ex.Message, ex)
+                            Logger.Error(ex, ex.Message)
                         Finally
                             'CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Open = False
                             ControlClient = Nothing
@@ -4778,7 +4778,7 @@ Namespace TWAIN_VB
                 'End If
 
             Catch ex As Exception
-                Logger.Error(ex.Message, ex)
+                Logger.Error(ex, ex.Message)
             End Try
             Logger.Debug("end")
         End Sub

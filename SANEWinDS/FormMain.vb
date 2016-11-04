@@ -60,12 +60,12 @@ Public Class FormMain
             Try
                 SANE.Net_Exit(ControlClient)
             Catch ex As Exception
-                Logger.Debug(ex.Message, ex)
+                Logger.Debug(ex, ex.Message)
             End Try
             Try
                 ControlClient.Close()
             Catch ex As Exception
-                Logger.Debug(ex.Message, ex)
+                Logger.Debug(ex, ex.Message)
             End Try
         End If
         ControlClient = Nothing
@@ -91,7 +91,7 @@ Public Class FormMain
                 End If
             End If
         Catch ex As Exception
-            Logger.Error(ex.Message, ex)
+            Logger.Error(ex, ex.Message)
         Finally
             SANE.CurrentDevice.Open = False
         End Try
@@ -349,7 +349,7 @@ Public Class FormMain
                 End If
             End If
         Catch ex As Exception
-            Logger.Error(ex.Message, ex)
+            Logger.Error(ex, ex.Message)
         End Try
 
     End Sub
@@ -360,7 +360,7 @@ Public Class FormMain
             Try
                 ControlClient.Close()
             Catch ex As Exception
-                Logger.Debug(ex.Message, ex)
+                Logger.Debug(ex, ex.Message)
             End Try
             ControlClient = Nothing
         End If
@@ -555,7 +555,7 @@ Public Class FormMain
                 End If
             End If
         Catch ex As Exception
-            Logger.Error(ex.Message, ex)
+            Logger.Error(ex, ex.Message)
             MsgBox(ex.Message, MsgBoxStyle.Critical)
             Close_SANE()
         Finally
@@ -1030,7 +1030,7 @@ Public Class FormMain
         Try
             If Me.PanelOptIsDirty Then SetOption()
         Catch ex As Exception
-            Logger.Error(ex.Message, ex)
+            Logger.Error(ex, ex.Message)
         End Try
     End Sub
 
@@ -1264,7 +1264,7 @@ Public Class FormMain
                 Height = PhysicalLength
             End If
         Catch ex As Exception
-            Logger.Error(ex.Message, ex)
+            Logger.Error(ex, ex.Message)
         End Try
     End Sub
 
@@ -1465,7 +1465,7 @@ Public Class FormMain
             Logger.Warn(ex.Message, ex)
             Throw
         Catch ex As Exception
-            Logger.Error(ex.Message, ex)
+            Logger.Error(ex, ex.Message)
             Throw
         End Try
 

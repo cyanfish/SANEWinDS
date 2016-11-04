@@ -293,7 +293,7 @@ Module modGlobals
                 End If
             End If
         Catch ex As Exception
-            Logger.Debug(ex.Message, ex)
+            Logger.Debug(ex, ex.Message)
         End Try
     End Sub
 
@@ -305,19 +305,19 @@ Module modGlobals
                         Try
                             ControlClient.Client.Shutdown(Net.Sockets.SocketShutdown.Both)
                         Catch ex As Exception
-                            Logger.Debug(ex.Message, ex)
+                            Logger.Debug(ex, ex.Message)
                         End Try
                         Try
                             ControlClient.Close()
                         Catch ex As Exception
-                            Logger.Debug(ex.Message, ex)
+                            Logger.Debug(ex, ex.Message)
                         End Try
                         ControlClient = Nothing
                     End If
                 End If
             End If
         Catch ex As Exception
-            Logger.Error(ex.Message, ex)
+            Logger.Error(ex, ex.Message)
         End Try
     End Sub
 

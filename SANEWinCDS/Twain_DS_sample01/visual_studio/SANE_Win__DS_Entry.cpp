@@ -83,7 +83,7 @@ void DS_EntryWrapper::Log(std::string message)
 		_managedObject = vb.GetWrapper();
 
 		MethodInfo^ LogMethod = vb.MyType->GetMethod("Log");
-		array<String^>^ params = gcnew array<String^>(1);
+		cli::array<String^>^ params = gcnew cli::array<String^>(1);
 		params[0] = gcnew System::String(message.c_str());
 		LogMethod->Invoke(_managedObject, params);
 	}
@@ -101,7 +101,7 @@ TW_INT16 DS_EntryWrapper::Message_To_DS(pTW_IDENTITY _pOrigin, unsigned __int32 
 		_managedObject = vb.GetWrapper();
 
 		MethodInfo^ MTDSMethod = vb.MyType->GetMethod("Message_To_DS");
-		array<System::Object^>^params = gcnew array<System::Object^>(5);
+		cli::array<System::Object^>^params = gcnew cli::array<System::Object^>(5);
 		params[0] = (System::IntPtr) _pOrigin;
 		params[1] = (System::UInt32) _DG;
 		params[2] = (System::UInt32) _DAT;

@@ -3059,7 +3059,7 @@ Namespace TWAIN_VB
                         Dim cds As CustomDSData
                         cds.ScanContinuously = CurrentSettings.ScanContinuously
                         cds.ScanContinouslyUserConfigured = CurrentSettings.ScanContinuouslyUserConfigured
-                        cds.SANEOptionValues = SANE.CurrentDevice.OptionValues
+                        cds.SANEOptionValues = SANE.CurrentDevice.OptionValueSets("Current")
 
                         Dim ser As New System.Web.Script.Serialization.JavaScriptSerializer
                         Dim MyStr As String = ser.Serialize(cds)
@@ -3108,11 +3108,11 @@ Namespace TWAIN_VB
                                 Dim od As SANE_API.SANE_Option_Descriptor = SANE.CurrentDevice.OptionDescriptors(Index)
                                 Dim OptionDifferent As Boolean = False
                                 If od.type <> SANE_API.SANE_Value_Type.SANE_TYPE_GROUP Then
-                                    If StoredOptionValues(Index) IsNot Nothing AndAlso SANE.CurrentDevice.OptionValues(Index) IsNot Nothing Then
+                                    If StoredOptionValues(Index) IsNot Nothing AndAlso SANE.CurrentDevice.OptionValueSets("Current")(Index) IsNot Nothing Then
                                         For val_idx As Integer = 0 To StoredOptionValues(Index).Length - 1
-                                            If StoredOptionValues(Index)(val_idx) IsNot Nothing AndAlso SANE.CurrentDevice.OptionValues(Index)(val_idx) IsNot Nothing Then
-                                                Logger.Debug("Option '{0}': Current = '{1}', Stored = '{2}'", od.name, SANE.CurrentDevice.OptionValues(Index)(val_idx), StoredOptionValues(Index)(val_idx))
-                                                If StoredOptionValues(Index)(val_idx) <> SANE.CurrentDevice.OptionValues(Index)(val_idx) Then
+                                            If StoredOptionValues(Index)(val_idx) IsNot Nothing AndAlso SANE.CurrentDevice.OptionValueSets("Current")(Index)(val_idx) IsNot Nothing Then
+                                                Logger.Debug("Option '{0}': Current = '{1}', Stored = '{2}'", od.name, SANE.CurrentDevice.OptionValueSets("Current")(Index)(val_idx), StoredOptionValues(Index)(val_idx))
+                                                If StoredOptionValues(Index)(val_idx) <> SANE.CurrentDevice.OptionValueSets("Current")(Index)(val_idx) Then
                                                     OptionDifferent = True
                                                     Exit For
                                                 End If
@@ -4679,14 +4679,14 @@ Namespace TWAIN_VB
                     If (SANE.CurrentDevice.OptionDescriptors(i).type <> SANE_API.SANE_Value_Type.SANE_TYPE_GROUP) And (SANE.CurrentDevice.OptionDescriptors(i).type <> SANE_API.SANE_Value_Type.SANE_TYPE_BUTTON) Then
                         If SANE.SANE_OPTION_IS_READABLE(SANE.CurrentDevice.OptionDescriptors(i).cap) Then
                             Dim logstr As String = "Option '" & SANE.CurrentDevice.OptionDescriptors(i).name & "'"
-                            If (SANE.CurrentDevice.OptionValues(i).Length > 0) AndAlso (SANE.CurrentDevice.OptionValues(i)(0) IsNot Nothing) Then
-                                logstr += ", Value '" & SANE.CurrentDevice.OptionValues(i)(0).ToString & "'"
+                            If (SANE.CurrentDevice.OptionValueSets("Current")(i).Length > 0) AndAlso (SANE.CurrentDevice.OptionValueSets("Current")(i)(0) IsNot Nothing) Then
+                                logstr += ", Value '" & SANE.CurrentDevice.OptionValueSets("Current")(i)(0).ToString & "'"
                             End If
                             Logger.Debug(logstr)
                             Dim TWAINcap As String = Nothing
                             Select Case SANE.CurrentDevice.OptionDescriptors(i).name.ToLower
                                 Case "resolution"
-                                    Dim res_dpi As Double = SANE.CurrentDevice.OptionValues(i)(0)
+                                    Dim res_dpi As Double = SANE.CurrentDevice.OptionValueSets("Current")(i)(0)
                                     Dim caparray() As CAP = {CAP.ICAP_XRESOLUTION, CAP.ICAP_YRESOLUTION, CAP.ICAP_XNATIVERESOLUTION, CAP.ICAP_YNATIVERESOLUTION}
                                     For Each icap As CAP In caparray
                                         If Caps.ContainsKey(icap) Then
@@ -4757,7 +4757,7 @@ Namespace TWAIN_VB
                                 Case "preview"  'No reason to map this
                                 Case Else
                                     'process any SANE-->TWAIN mappings to make TWAIN defaults match SANE defaults
-                                    MyForm.SetTWAINCaps(SANE.CurrentDevice.OptionDescriptors(i), SANE.CurrentDevice.OptionValues(i), True)
+                                    MyForm.SetTWAINCaps(SANE.CurrentDevice.OptionDescriptors(i), SANE.CurrentDevice.OptionValueSets("Current")(i), True)
                             End Select
                         Else
                             Logger.Debug("Unreadable Option '{0}'", SANE.CurrentDevice.OptionDescriptors(i).name)

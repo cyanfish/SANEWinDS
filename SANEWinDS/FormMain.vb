@@ -210,7 +210,7 @@ Public Class FormMain
             ControlClient = Nothing
             'store current device info
             Dim DeviceName As String = SANE.CurrentDevice.Name
-            Dim OptVals() As Object = SANE.CurrentDevice.OptionValues.Clone
+            Dim OptVals() As Object = SANE.CurrentDevice.OptionValueSets("Current").Clone
             Try_Init_SANE(False)
             Update_Host_GUI()
 
@@ -248,14 +248,17 @@ Public Class FormMain
             Dim Descriptors() As SANE_API.SANE_Option_Descriptor
             Descriptors = SANE.Net_Get_Option_Descriptors(ControlClient, SANE.CurrentDevice.Handle)
             SANE.CurrentDevice.OptionDescriptors = Descriptors
-            ReDim SANE.CurrentDevice.OptionValues(Descriptors.Length - 1)
+
+            With SANE.CurrentDevice.OptionValueSets
+                If Not .ContainsKey("Current") Then .Add("Current", New Object(Descriptors.Length - 1) {})
+            End With
 
             Dim BackEndConfigFile As String = CurrentSettings.GetDeviceConfigFileName(SharedSettings.ConfigFileScope.User) 'this will create the config file if it doesn't already exist
 
             Dim GroupNode As TreeNode = Nothing
             Dim AdvancedNode As TreeNode = Nothing
             For i As Integer = 1 To Descriptors.Length - 1 'skip the first element, which contains the array length
-                ReDim SANE.CurrentDevice.OptionValues(i)(SANE.OptionValueArrayLength(Descriptors(i).size, Descriptors(i).type) - 1) 'make sure it's not Nothing, even for unreadable options
+                ReDim SANE.CurrentDevice.OptionValueSets("Current")(i)(SANE.OptionValueArrayLength(Descriptors(i).size, Descriptors(i).type) - 1) 'make sure it's not Nothing, even for unreadable options
 
                 'Ignore the avision backend's 'nvram-values' option, which takes forever to read and isn't settable.
                 If Descriptors(i).name = "nvram-values" Then Continue For
@@ -321,12 +324,12 @@ Public Class FormMain
                                 OptReq.value_size = Descriptors(i).size
                                 OptReq.values = Nothing
                                 Do
-                                    Dim Status As SANE_API.SANE_Status = SANE.Net_Control_Option(ControlClient, OptReq, OptReply, _
-                                                                                                 CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Username, _
-                                                                                                 CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Password)
+                                    Dim Status As SANE_API.SANE_Status = SANE.Net_Control_Option(ControlClient, OptReq, OptReply,
+                                                                         CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Username,
+                                                                         CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Password)
                                     If Status = SANE_API.SANE_Status.SANE_STATUS_GOOD Then
-                                        ReDim SANE.CurrentDevice.OptionValues(i)(OptReply.values.Length - 1)
-                                        Array.Copy(OptReply.values, SANE.CurrentDevice.OptionValues(i), OptReply.values.Length)
+                                        ReDim SANE.CurrentDevice.OptionValueSets("Current")(i)(OptReply.values.Length - 1)
+                                        Array.Copy(OptReply.values, SANE.CurrentDevice.OptionValueSets("Current")(i), OptReply.values.Length)
                                         Exit Do
                                     ElseIf Status = SANE_API.SANE_Status.SANE_STATUS_ACCESS_DENIED Then
                                         Dim PwdBox As New FormSANEAuth
@@ -346,6 +349,13 @@ Public Class FormMain
                         'MsgBox("Name: " & Devices(i).name & vbCr & "Vendor: " & Devices(i).vendor & vbCr & "Model: " & Devices(i).model & vbCr & "Type: " & Devices(i).type)
                 End Select
             Next
+
+            With SANE.CurrentDevice.OptionValueSets
+                If Not .ContainsKey("Backend Defaults") Then
+                    .Add("Backend Defaults", .Item("Current").Clone)
+                End If
+            End With
+
             If Recreate Then
                 If Me.TreeViewOptions.Nodes.Count > 0 Then Me.TreeViewOptions.SelectedNode = Me.TreeViewOptions.TopNode
             End If
@@ -454,8 +464,8 @@ Public Class FormMain
                                     SANE.CurrentDevice = New SANE_API.CurrentDeviceInfo
 
                                     Dim DeviceHandle As Integer
-                                    Status = SANE.Net_Open(ControlClient, CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Device, DeviceHandle, _
-                                                           CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Username, _
+                                    Status = SANE.Net_Open(ControlClient, CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Device, DeviceHandle,
+                                                           CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Username,
                                                            CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Password)
                                     Logger.Debug("Net_Open returned status '{0}'", Status)
                                     If (Status <> SANE_API.SANE_Status.SANE_STATUS_GOOD) And (Status <> SANE_API.SANE_Status.SANE_STATUS_ACCESS_DENIED) Then  'Auto-Locate
@@ -491,8 +501,8 @@ Public Class FormMain
                                                 Next
                                                 If FoundDevice Then
                                                     Logger.Debug("Auto-located device '{0}'; attempting to open...", FoundDeviceName)
-                                                    Status = SANE.Net_Open(ControlClient, FoundDeviceName, DeviceHandle, _
-                                                                          CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Username, _
+                                                    Status = SANE.Net_Open(ControlClient, FoundDeviceName, DeviceHandle,
+                                                                          CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Username,
                                                                           CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Password)
                                                     Logger.Debug("Net_Open returned status '{0}'", Status)
                                                     If Status = SANE_API.SANE_Status.SANE_STATUS_GOOD Then CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Device = FoundDeviceName
@@ -542,6 +552,7 @@ Public Class FormMain
                     End If
 
                     If SANE.CurrentDevice.Open Then
+                        SANE.CurrentDevice.OptionValueSets = New Dictionary(Of String, Object())(StringComparer.InvariantCultureIgnoreCase)
 
                         Me.GetOpts(True)  'must occur prior to reading GetDeviceConfigFileName()!
 
@@ -606,13 +617,13 @@ Public Class FormMain
 
             'WinAPI.SetProcessWorkingSetSize(Process.GetCurrentProcess().Handle, -1, -1) 'reclaim memory
 
-            ReDim OptionValueControls(SANE.CurrentDevice.OptionValues(OptionIndex).Length - 1)
+            ReDim OptionValueControls(SANE.CurrentDevice.OptionValueSets("Current")(OptionIndex).Length - 1)
         End If
 
         Select Case od.type
             Case SANE_API.SANE_Value_Type.SANE_TYPE_BOOL
                 Dim vOffs As Integer = 0
-                For j = 0 To SANE.CurrentDevice.OptionValues(OptionIndex).Length - 1
+                For j = 0 To SANE.CurrentDevice.OptionValueSets("Current")(OptionIndex).Length - 1
                     Dim chk As New CheckBox
                     If RecreateControls Then
 
@@ -627,11 +638,11 @@ Public Class FormMain
                         chk = Me.OptionValueControls(j)
                     End If
 
-                    If SANE.CurrentDevice.OptionValues IsNot Nothing Then
-                        If SANE.CurrentDevice.OptionValues(OptionIndex) IsNot Nothing Then
-                            If SANE.CurrentDevice.OptionValues(OptionIndex).length - 1 >= j Then
-                                If SANE.CurrentDevice.OptionValues(OptionIndex)(j) IsNot Nothing Then
-                                    chk.Checked = SANE.CurrentDevice.OptionValues(OptionIndex)(j)
+                    If SANE.CurrentDevice.OptionValueSets("Current") IsNot Nothing Then
+                        If SANE.CurrentDevice.OptionValueSets("Current")(OptionIndex) IsNot Nothing Then
+                            If SANE.CurrentDevice.OptionValueSets("Current")(OptionIndex).length - 1 >= j Then
+                                If SANE.CurrentDevice.OptionValueSets("Current")(OptionIndex)(j) IsNot Nothing Then
+                                    chk.Checked = SANE.CurrentDevice.OptionValueSets("Current")(OptionIndex)(j)
                                 End If
                             End If
                         End If
@@ -690,7 +701,7 @@ Public Class FormMain
 
             Case SANE_API.SANE_Value_Type.SANE_TYPE_FIXED
                 Dim vOffs As Integer = 0
-                For j = 0 To SANE.CurrentDevice.OptionValues(OptionIndex).Length - 1
+                For j = 0 To SANE.CurrentDevice.OptionValueSets("Current")(OptionIndex).Length - 1
                     Dim ctl As Control = Nothing
                     If RecreateControls Then
                         Select Case od.constraint_type
@@ -739,21 +750,21 @@ Public Class FormMain
                         ulbl.Enabled = ctl.Enabled
                     End If
 
-                    If SANE.CurrentDevice.OptionValues IsNot Nothing Then
-                        If SANE.CurrentDevice.OptionValues(OptionIndex) IsNot Nothing Then
-                            If SANE.CurrentDevice.OptionValues(OptionIndex).length - 1 >= j Then
-                                If SANE.CurrentDevice.OptionValues(OptionIndex)(j) IsNot Nothing Then
+                    If SANE.CurrentDevice.OptionValueSets("Current") IsNot Nothing Then
+                        If SANE.CurrentDevice.OptionValueSets("Current")(OptionIndex) IsNot Nothing Then
+                            If SANE.CurrentDevice.OptionValueSets("Current")(OptionIndex).length - 1 >= j Then
+                                If SANE.CurrentDevice.OptionValueSets("Current")(OptionIndex)(j) IsNot Nothing Then
                                     If ctl.GetType = GetType(NumericUpDown) Then
                                         Dim ud As NumericUpDown = DirectCast(ctl, NumericUpDown)
-                                        If (SANE.CurrentDevice.OptionValues(OptionIndex)(j) < ud.Minimum) Then
-                                            Logger.Warn("Current option value '{0}' is below the minimum of '{1}' specified in the option constraint; changing value to constraint minimum.", SANE.CurrentDevice.OptionValues(OptionIndex)(j), ud.Minimum)
-                                            SANE.CurrentDevice.OptionValues(OptionIndex)(j) = ud.Minimum
+                                        If (SANE.CurrentDevice.OptionValueSets("Current")(OptionIndex)(j) < ud.Minimum) Then
+                                            Logger.Warn("Current option value '{0}' is below the minimum of '{1}' specified in the option constraint; changing value to constraint minimum.", SANE.CurrentDevice.OptionValueSets("Current")(OptionIndex)(j), ud.Minimum)
+                                            SANE.CurrentDevice.OptionValueSets("Current")(OptionIndex)(j) = ud.Minimum
                                         End If
-                                        If (SANE.CurrentDevice.OptionValues(OptionIndex)(j) > ud.Maximum) Then
-                                            Logger.Warn("Current option value '{0}' is above the maximum of '{1}' specified in the option constraint; changing value to constraint maximum.", SANE.CurrentDevice.OptionValues(OptionIndex)(j), ud.Maximum)
-                                            SANE.CurrentDevice.OptionValues(OptionIndex)(j) = ud.Maximum
+                                        If (SANE.CurrentDevice.OptionValueSets("Current")(OptionIndex)(j) > ud.Maximum) Then
+                                            Logger.Warn("Current option value '{0}' is above the maximum of '{1}' specified in the option constraint; changing value to constraint maximum.", SANE.CurrentDevice.OptionValueSets("Current")(OptionIndex)(j), ud.Maximum)
+                                            SANE.CurrentDevice.OptionValueSets("Current")(OptionIndex)(j) = ud.Maximum
                                         End If
-                                        ud.Value = SANE.CurrentDevice.OptionValues(OptionIndex)(j)
+                                        ud.Value = SANE.CurrentDevice.OptionValueSets("Current")(OptionIndex)(j)
 
                                         If RecreateControls Then
                                             ulbl.Text += " (" & ud.Minimum.ToString("0.####") & " to " & ud.Maximum.ToString("0.####")
@@ -763,7 +774,7 @@ Public Class FormMain
                                             ulbl.Text += ")"
                                         End If
                                     Else
-                                        Dim d As Double = SANE.CurrentDevice.OptionValues(OptionIndex)(j)
+                                        Dim d As Double = SANE.CurrentDevice.OptionValueSets("Current")(OptionIndex)(j)
                                         ctl.Text = d.ToString("0.####")
                                     End If
                                 End If
@@ -816,11 +827,11 @@ Public Class FormMain
                 If od.name IsNot Nothing _
                   AndAlso od.name.ToLower.Contains("gamma-table") _
                   AndAlso od.constraint_type = SANE_API.SANE_Constraint_Type.SANE_CONSTRAINT_RANGE _
-                  AndAlso SANE.CurrentDevice.OptionValues(OptionIndex).Length >= 255 Then
+                  AndAlso SANE.CurrentDevice.OptionValueSets("Current")(OptionIndex).Length >= 255 Then
 
                     Dim ic As ImageCurve
                     If RecreateControls Then
-                        ic = New ImageCurve(SANE.CurrentDevice.OptionValues(OptionIndex).Length, od.constraint.range.max)
+                        ic = New ImageCurve(SANE.CurrentDevice.OptionValueSets("Current")(OptionIndex).Length, od.constraint.range.max)
                         ic.Top = 4
                         ic.Left = 50
                         ic.Width = 300
@@ -863,7 +874,7 @@ Public Class FormMain
 
                 Else
                     Dim vOffs As Integer = 0
-                    For j = 0 To SANE.CurrentDevice.OptionValues(OptionIndex).Length - 1
+                    For j = 0 To SANE.CurrentDevice.OptionValueSets("Current")(OptionIndex).Length - 1
 
                         Dim ctl As Control = Nothing
                         If RecreateControls Then
@@ -901,23 +912,23 @@ Public Class FormMain
                             ctl = Me.OptionValueControls(j)
                         End If
 
-                        If SANE.CurrentDevice.OptionValues IsNot Nothing Then
-                            If SANE.CurrentDevice.OptionValues(OptionIndex) IsNot Nothing Then
-                                If SANE.CurrentDevice.OptionValues(OptionIndex).length - 1 >= j Then
-                                    If SANE.CurrentDevice.OptionValues(OptionIndex)(j) IsNot Nothing Then
+                        If SANE.CurrentDevice.OptionValueSets("Current") IsNot Nothing Then
+                            If SANE.CurrentDevice.OptionValueSets("Current")(OptionIndex) IsNot Nothing Then
+                                If SANE.CurrentDevice.OptionValueSets("Current")(OptionIndex).length - 1 >= j Then
+                                    If SANE.CurrentDevice.OptionValueSets("Current")(OptionIndex)(j) IsNot Nothing Then
                                         If ctl.GetType = GetType(NumericUpDown) Then
                                             Dim ud As NumericUpDown = DirectCast(ctl, NumericUpDown)
-                                            If (SANE.CurrentDevice.OptionValues(OptionIndex)(j) < ud.Minimum) Then
-                                                Logger.Warn("Current option value '{0}' is below the minimum of '{1}' specified in the option constraint; changing value to constraint minimum.", SANE.CurrentDevice.OptionValues(OptionIndex)(j), ud.Minimum)
-                                                SANE.CurrentDevice.OptionValues(OptionIndex)(j) = ud.Minimum
+                                            If (SANE.CurrentDevice.OptionValueSets("Current")(OptionIndex)(j) < ud.Minimum) Then
+                                                Logger.Warn("Current option value '{0}' is below the minimum of '{1}' specified in the option constraint; changing value to constraint minimum.", SANE.CurrentDevice.OptionValueSets("Current")(OptionIndex)(j), ud.Minimum)
+                                                SANE.CurrentDevice.OptionValueSets("Current")(OptionIndex)(j) = ud.Minimum
                                             End If
-                                            If (SANE.CurrentDevice.OptionValues(OptionIndex)(j) > ud.Maximum) Then
-                                                Logger.Warn("Current option value '{0}' is above the maximum of '{1}' specified in the option constraint; changing value to constraint maximum.", SANE.CurrentDevice.OptionValues(OptionIndex)(j), ud.Maximum)
-                                                SANE.CurrentDevice.OptionValues(OptionIndex)(j) = ud.Maximum
+                                            If (SANE.CurrentDevice.OptionValueSets("Current")(OptionIndex)(j) > ud.Maximum) Then
+                                                Logger.Warn("Current option value '{0}' is above the maximum of '{1}' specified in the option constraint; changing value to constraint maximum.", SANE.CurrentDevice.OptionValueSets("Current")(OptionIndex)(j), ud.Maximum)
+                                                SANE.CurrentDevice.OptionValueSets("Current")(OptionIndex)(j) = ud.Maximum
                                             End If
-                                            ud.Value = SANE.CurrentDevice.OptionValues(OptionIndex)(j)
+                                            ud.Value = SANE.CurrentDevice.OptionValueSets("Current")(OptionIndex)(j)
                                         Else
-                                            ctl.Text = SANE.CurrentDevice.OptionValues(OptionIndex)(j).ToString
+                                            ctl.Text = SANE.CurrentDevice.OptionValueSets("Current")(OptionIndex)(j).ToString
                                         End If
                                     End If
                                 End If
@@ -1017,11 +1028,11 @@ Public Class FormMain
                     ctl = Me.OptionValueControls(0)
                 End If
 
-                If SANE.CurrentDevice.OptionValues IsNot Nothing Then
-                    If SANE.CurrentDevice.OptionValues(OptionIndex) IsNot Nothing Then
-                        If SANE.CurrentDevice.OptionValues(OptionIndex).length - 1 >= 0 Then
-                            If SANE.CurrentDevice.OptionValues(OptionIndex)(0) IsNot Nothing Then
-                                ctl.Text = SANE.CurrentDevice.OptionValues(OptionIndex)(0).ToString
+                If SANE.CurrentDevice.OptionValueSets("Current") IsNot Nothing Then
+                    If SANE.CurrentDevice.OptionValueSets("Current")(OptionIndex) IsNot Nothing Then
+                        If SANE.CurrentDevice.OptionValueSets("Current")(OptionIndex).length - 1 >= 0 Then
+                            If SANE.CurrentDevice.OptionValueSets("Current")(OptionIndex)(0) IsNot Nothing Then
+                                ctl.Text = SANE.CurrentDevice.OptionValueSets("Current")(OptionIndex)(0).ToString
                             End If
                         End If
                     End If
@@ -1126,17 +1137,17 @@ Public Class FormMain
                                 'no need to save these options
                             Case Else
                                 If SANE.SANE_OPTION_IS_ACTIVE(SANE.CurrentDevice.OptionDescriptors(i).cap) And SANE.SANE_OPTION_IS_SETTABLE(SANE.CurrentDevice.OptionDescriptors(i).cap) Then
-                                    For j As Integer = 0 To SANE.CurrentDevice.OptionValues(i).Length - 1
-                                        Dim s As String = SANE.CurrentDevice.OptionValues(i)(j).ToString
+                                    For j As Integer = 0 To SANE.CurrentDevice.OptionValueSets("Current")(i).Length - 1
+                                        Dim s As String = SANE.CurrentDevice.OptionValueSets("Current")(i)(j).ToString
                                         If Not String.IsNullOrEmpty(s) Then s = s.Replace(",", "\,")
                                         If Not String.IsNullOrEmpty(Value) Then Value += ","
                                         Value += s
                                     Next
                                 End If
                         End Select
-                        WriteIni(CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.User, _
-                                 "Option." & SANE.CurrentDevice.OptionDescriptors(i).name, _
-                                 "DefaultValue", _
+                        WriteIni(CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.User,
+                                 "Option." & SANE.CurrentDevice.OptionDescriptors(i).name,
+                                 "DefaultValue",
                                  Value)
                     End If
                 Next
@@ -1294,6 +1305,16 @@ Public Class FormMain
             '
             'Me.PanelOpt.Controls.Clear()
             Me.ClearPanelControls()
+
+            If SANE.CurrentDevice.OptionValueSets IsNot Nothing Then
+                With SANE.CurrentDevice.OptionValueSets
+                    If Not .ContainsKey("Local Defaults") Then
+                        'Local Defaults is the result of merging the shared and user copies of backend.ini, with the user copy having priority.
+                        .Add("Local Defaults", .Item("Current").Clone)
+                    End If
+                End With
+            End If
+
         Else
             Logger.Warn("Backend configuration file uninitialized; backend-specific default values were not configured")
         End If
@@ -1315,13 +1336,13 @@ Public Class FormMain
                         Select Case SANE.CurrentDevice.OptionDescriptors(i).name.ToLower
                             Case "tl-x"
                                 xyunit = SANE.CurrentDevice.OptionDescriptors(i).unit
-                                'tlx = SANE.CurrentDevice.OptionValues(i)(0)
+                                'tlx = SANE.CurrentDevice.OptionValueSets("Current")(i)(0)
                             Case "tl-y"
                                 xyunit = SANE.CurrentDevice.OptionDescriptors(i).unit
-                                'tly = SANE.CurrentDevice.OptionValues(i)(0)
+                                'tly = SANE.CurrentDevice.OptionValueSets("Current")(i)(0)
                             Case "br-x"
                                 xyunit = SANE.CurrentDevice.OptionDescriptors(i).unit
-                                'brx = SANE.CurrentDevice.OptionValues(i)(0)
+                                'brx = SANE.CurrentDevice.OptionValueSets("Current")(i)(0)
                                 Select Case SANE.CurrentDevice.OptionDescriptors(i).constraint_type
                                     Case SANE_API.SANE_Constraint_Type.SANE_CONSTRAINT_RANGE
                                         Dim n As Integer = SANE.CurrentDevice.OptionDescriptors(i).constraint.range.min
@@ -1337,7 +1358,7 @@ Public Class FormMain
                                 End Select
                             Case "br-y"
                                 xyunit = SANE.CurrentDevice.OptionDescriptors(i).unit
-                                'bry = SANE.CurrentDevice.OptionValues(i)(0)
+                                'bry = SANE.CurrentDevice.OptionValueSets("Current")(i)(0)
                                 Select Case SANE.CurrentDevice.OptionDescriptors(i).constraint_type
                                     Case SANE_API.SANE_Constraint_Type.SANE_CONSTRAINT_RANGE
                                         Dim n As Integer = SANE.CurrentDevice.OptionDescriptors(i).constraint.range.min
@@ -1446,12 +1467,24 @@ Public Class FormMain
             Dim od As SANE_API.SANE_Option_Descriptor = SANE.CurrentDevice.OptionDescriptors(Index)
             If Not String.IsNullOrEmpty(od.name) Then
                 If od.name.ToUpper.Trim = OptionName.ToUpper.Trim Then
-                    Return SANE.CurrentDevice.OptionValues(Index)
+                    Return SANE.CurrentDevice.OptionValueSets("Current")(Index)
                 End If
             End If
         Next
         Return Nothing
     End Function
+
+    Private Sub ApplyOptionValueSet(Name As String)
+        If Name Is Nothing Then Throw New ArgumentException("'Name' cannot be Nothing")
+        If Not SANE.CurrentDevice.OptionValueSets.ContainsKey(Name) Then Throw New ArgumentException("No option set named '" & Name & "' exists")
+        For i As Integer = 1 To (SANE.CurrentDevice.OptionValueSets(Name).Length - 1) 'skip the first option, which is just the option count
+            If SANE.SANE_OPTION_IS_ACTIVE(SANE.CurrentDevice.OptionDescriptors(i).cap) And SANE.SANE_OPTION_IS_SETTABLE(SANE.CurrentDevice.OptionDescriptors(i).cap) Then
+                SetOpt(i, SANE.CurrentDevice.OptionValueSets(Name)(i)) 'sets value for both SANE and TWAIN
+            Else
+                Logger.Warn("Option '{0}' is not currently settable", SANE.CurrentDevice.OptionDescriptors(i).title)
+            End If
+        Next
+    End Sub
 
     Public Function SetSANEOption(ByVal OptionName As String, ByVal Values() As Object) As Boolean
         Return (SetOpt(OptionName, Values) = SANE_API.SANE_Status.SANE_STATUS_GOOD)
@@ -1533,11 +1566,11 @@ Public Class FormMain
             Dim FixedFudgeIncrement As Double = 0.0001R 'The amount to subtract from a SANE_TYPE_FIXED value to see if the backend will accept it.
             '
             Do
-                Status = SANE.Net_Control_Option(ControlClient, OptReq, OptReply, _
-                                                                             CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Username, _
-                                                                             CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Password)
+                Status = SANE.Net_Control_Option(ControlClient, OptReq, OptReply,
+                         CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Username,
+                         CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Password)
                 If Status = SANE_API.SANE_Status.SANE_STATUS_GOOD Then
-                    Array.Copy(OptReply.values, SANE.CurrentDevice.OptionValues(OptionIndex), OptReply.values.Length)
+                    Array.Copy(OptReply.values, SANE.CurrentDevice.OptionValueSets("Current")(OptionIndex), OptReply.values.Length)
 
                     If OptReply.info And SANE_API.SANE_INFO_RELOAD_OPTIONS Then Me.GetOpts(False)
                     If Me.TreeViewOptions.SelectedNode IsNot Nothing Then

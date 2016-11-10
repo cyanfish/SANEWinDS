@@ -235,7 +235,7 @@ Module modGlobals
                                 For j As Integer = 0 To SANE.CurrentDevice.OptionDescriptors(i).constraint.string_list.Count - 1
                                     Dim s As String = SANE.CurrentDevice.OptionDescriptors(i).constraint.string_list(j).ToLower
                                     If (s.Contains("adf") Or s.Contains("automatic document feeder")) Then
-                                        If s = SANE.CurrentDevice.OptionValues(i)(0).ToLower Then Return True
+                                        If s = SANE.CurrentDevice.OptionValueSets("Current")(i)(0).ToLower Then Return True
                                     End If
                                 Next
                                 Return false
@@ -245,7 +245,7 @@ Module modGlobals
                 If SANE.CurrentDevice.OptionDescriptors(i).name IsNot Nothing Then
                     Dim s As String = SANE.CurrentDevice.OptionDescriptors(i).name.ToLower
                     If (s.Contains("adf") Or s.Contains("automatic document feeder")) Then
-                        Return SANE.CurrentDevice.OptionValues(i)(0)
+                        Return SANE.CurrentDevice.OptionValueSets("Current")(i)(0)
                     End If
                 End If
             End If

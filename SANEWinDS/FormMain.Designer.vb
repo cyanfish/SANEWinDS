@@ -39,6 +39,8 @@ Partial Class FormMain
         Me.PanelOpt = New SANEWinDS.DoubleBufferedPanel()
         Me.ComboBoxPageSize = New System.Windows.Forms.ComboBox()
         Me.Label4 = New System.Windows.Forms.Label()
+        Me.ComboBoxOptionValueSet = New System.Windows.Forms.ComboBox()
+        Me.ButtonSaveOptionValues = New System.Windows.Forms.Button()
         CType(Me.SplitContainerOptions, System.ComponentModel.ISupportInitialize).BeginInit()
         Me.SplitContainerOptions.Panel1.SuspendLayout()
         Me.SplitContainerOptions.Panel2.SuspendLayout()
@@ -50,14 +52,14 @@ Partial Class FormMain
         Me.TreeViewOptions.Dock = System.Windows.Forms.DockStyle.Fill
         Me.TreeViewOptions.Location = New System.Drawing.Point(0, 0)
         Me.TreeViewOptions.Name = "TreeViewOptions"
-        Me.TreeViewOptions.Size = New System.Drawing.Size(198, 275)
+        Me.TreeViewOptions.Size = New System.Drawing.Size(198, 303)
         Me.TreeViewOptions.TabIndex = 5
         '
         'CheckBoxBatchMode
         '
         Me.CheckBoxBatchMode.Anchor = CType((System.Windows.Forms.AnchorStyles.Bottom Or System.Windows.Forms.AnchorStyles.Left), System.Windows.Forms.AnchorStyles)
         Me.CheckBoxBatchMode.AutoSize = True
-        Me.CheckBoxBatchMode.Location = New System.Drawing.Point(13, 338)
+        Me.CheckBoxBatchMode.Location = New System.Drawing.Point(13, 385)
         Me.CheckBoxBatchMode.Name = "CheckBoxBatchMode"
         Me.CheckBoxBatchMode.Size = New System.Drawing.Size(200, 17)
         Me.CheckBoxBatchMode.TabIndex = 7
@@ -67,7 +69,7 @@ Partial Class FormMain
         'ButtonOK
         '
         Me.ButtonOK.Anchor = CType((System.Windows.Forms.AnchorStyles.Bottom Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
-        Me.ButtonOK.Location = New System.Drawing.Point(534, 334)
+        Me.ButtonOK.Location = New System.Drawing.Point(534, 381)
         Me.ButtonOK.Name = "ButtonOK"
         Me.ButtonOK.Size = New System.Drawing.Size(75, 23)
         Me.ButtonOK.TabIndex = 51
@@ -78,7 +80,7 @@ Partial Class FormMain
         '
         Me.ButtonCancel.Anchor = CType((System.Windows.Forms.AnchorStyles.Bottom Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
         Me.ButtonCancel.DialogResult = System.Windows.Forms.DialogResult.Cancel
-        Me.ButtonCancel.Location = New System.Drawing.Point(453, 334)
+        Me.ButtonCancel.Location = New System.Drawing.Point(453, 381)
         Me.ButtonCancel.Name = "ButtonCancel"
         Me.ButtonCancel.Size = New System.Drawing.Size(75, 23)
         Me.ButtonCancel.TabIndex = 50
@@ -151,7 +153,7 @@ Partial Class FormMain
         'SplitContainerOptions.Panel2
         '
         Me.SplitContainerOptions.Panel2.Controls.Add(Me.PanelOpt)
-        Me.SplitContainerOptions.Size = New System.Drawing.Size(596, 275)
+        Me.SplitContainerOptions.Size = New System.Drawing.Size(596, 303)
         Me.SplitContainerOptions.SplitterDistance = 198
         Me.SplitContainerOptions.TabIndex = 28
         '
@@ -160,7 +162,7 @@ Partial Class FormMain
         Me.PanelOpt.Dock = System.Windows.Forms.DockStyle.Fill
         Me.PanelOpt.Location = New System.Drawing.Point(0, 0)
         Me.PanelOpt.Name = "PanelOpt"
-        Me.PanelOpt.Size = New System.Drawing.Size(394, 275)
+        Me.PanelOpt.Size = New System.Drawing.Size(394, 303)
         Me.PanelOpt.TabIndex = 6
         '
         'ComboBoxPageSize
@@ -168,7 +170,7 @@ Partial Class FormMain
         Me.ComboBoxPageSize.Anchor = CType((System.Windows.Forms.AnchorStyles.Bottom Or System.Windows.Forms.AnchorStyles.Left), System.Windows.Forms.AnchorStyles)
         Me.ComboBoxPageSize.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList
         Me.ComboBoxPageSize.FormattingEnabled = True
-        Me.ComboBoxPageSize.Location = New System.Drawing.Point(293, 336)
+        Me.ComboBoxPageSize.Location = New System.Drawing.Point(293, 383)
         Me.ComboBoxPageSize.Name = "ComboBoxPageSize"
         Me.ComboBoxPageSize.Size = New System.Drawing.Size(133, 21)
         Me.ComboBoxPageSize.TabIndex = 8
@@ -177,11 +179,30 @@ Partial Class FormMain
         '
         Me.Label4.Anchor = CType((System.Windows.Forms.AnchorStyles.Bottom Or System.Windows.Forms.AnchorStyles.Left), System.Windows.Forms.AnchorStyles)
         Me.Label4.AutoSize = True
-        Me.Label4.Location = New System.Drawing.Point(232, 339)
+        Me.Label4.Location = New System.Drawing.Point(232, 386)
         Me.Label4.Name = "Label4"
         Me.Label4.Size = New System.Drawing.Size(55, 13)
         Me.Label4.TabIndex = 53
         Me.Label4.Text = "Page Size"
+        '
+        'ComboBoxOptionValueSet
+        '
+        Me.ComboBoxOptionValueSet.Anchor = CType((System.Windows.Forms.AnchorStyles.Bottom Or System.Windows.Forms.AnchorStyles.Left), System.Windows.Forms.AnchorStyles)
+        Me.ComboBoxOptionValueSet.FormattingEnabled = True
+        Me.ComboBoxOptionValueSet.Location = New System.Drawing.Point(215, 354)
+        Me.ComboBoxOptionValueSet.Name = "ComboBoxOptionValueSet"
+        Me.ComboBoxOptionValueSet.Size = New System.Drawing.Size(313, 21)
+        Me.ComboBoxOptionValueSet.TabIndex = 54
+        '
+        'ButtonSaveOptionValues
+        '
+        Me.ButtonSaveOptionValues.Anchor = CType((System.Windows.Forms.AnchorStyles.Bottom Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
+        Me.ButtonSaveOptionValues.Location = New System.Drawing.Point(534, 354)
+        Me.ButtonSaveOptionValues.Name = "ButtonSaveOptionValues"
+        Me.ButtonSaveOptionValues.Size = New System.Drawing.Size(75, 23)
+        Me.ButtonSaveOptionValues.TabIndex = 55
+        Me.ButtonSaveOptionValues.Text = "Save"
+        Me.ButtonSaveOptionValues.UseVisualStyleBackColor = True
         '
         'FormMain
         '
@@ -189,7 +210,9 @@ Partial Class FormMain
         Me.AutoScaleDimensions = New System.Drawing.SizeF(6.0!, 13.0!)
         Me.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font
         Me.CancelButton = Me.ButtonCancel
-        Me.ClientSize = New System.Drawing.Size(617, 371)
+        Me.ClientSize = New System.Drawing.Size(617, 418)
+        Me.Controls.Add(Me.ButtonSaveOptionValues)
+        Me.Controls.Add(Me.ComboBoxOptionValueSet)
         Me.Controls.Add(Me.Label4)
         Me.Controls.Add(Me.ComboBoxPageSize)
         Me.Controls.Add(Me.ButtonHost)
@@ -227,5 +250,6 @@ Partial Class FormMain
     Friend WithEvents SplitContainerOptions As System.Windows.Forms.SplitContainer
     Friend WithEvents ComboBoxPageSize As System.Windows.Forms.ComboBox
     Friend WithEvents Label4 As System.Windows.Forms.Label
-
+    Friend WithEvents ComboBoxOptionValueSet As Windows.Forms.ComboBox
+    Friend WithEvents ButtonSaveOptionValues As Windows.Forms.Button
 End Class

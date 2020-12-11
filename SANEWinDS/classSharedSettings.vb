@@ -328,6 +328,26 @@ Public Class SharedSettings
         Return hi
     End Function
 
+    Public Function GetSavedOptionValueSetNames() As ArrayList
+        Dim SetNames As New ArrayList
+        Try
+            Dim BackEnd As String = modGlobals.SANE.CurrentDevice.Name
+            Dim p As Integer = BackEnd.IndexOf(":")
+            If p Then BackEnd = BackEnd.Substring(0, p)
+            'Dim BaseName As String = CurrentSettings.UserConfigDirectory & "\" & BackEnd
+            Dim s As String = BackEnd & ".*.ini"
+            For Each f As String In My.Computer.FileSystem.GetFiles(CurrentSettings.UserConfigDirectory, FileIO.SearchOption.SearchTopLevelOnly, s)
+                Dim ff As String = My.Computer.FileSystem.GetName(f)
+                Dim ss As String = ff.Replace(BackEnd & ".", "")
+                Dim SetName As String = Strings.Replace(ss, ".ini", "",,, CompareMethod.Text)
+                SetNames.Add(SetName)
+            Next
+        Catch ex As Exception
+            Logger.Error(ex)
+        End Try
+        Return SetNames
+    End Function
+
     Public Function GetUserConfigFileName() As String
         Return Me.UserConfigDirectory & "\" & Me.ProductName.Name & ".ini"
     End Function

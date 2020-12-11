@@ -1698,6 +1698,8 @@ Public Class FormMain
             Me.TextBoxPort.Text = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Port
             Me.TextBoxDevice.Text = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Device
 
+            Me.PopulateOptionValueSets
+
         Else
             'Me.TextBoxHost.Text = Nothing
             'Me.TextBoxPort.Text = Nothing
@@ -1708,6 +1710,14 @@ Public Class FormMain
             Me.TreeViewOptions.Nodes.Clear()
             'Me.ComboBoxPageSize.Enabled = False
         End If
+    End Sub
+
+    Private Sub PopulateOptionValueSets()
+        Me.ComboBoxOptionValueSet.Items.Clear()
+        Dim Names As ArrayList = CurrentSettings.GetSavedOptionValueSetNames
+        For Each s As String In Names
+            Me.ComboBoxOptionValueSet.Items.Add(s)
+        Next
     End Sub
 
     Private Sub ButtonCancel_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles ButtonCancel.Click
@@ -1965,5 +1975,6 @@ Public Class FormMain
         MyBase.ShowDialog()
         Return Me.Result
     End Function
+
 End Class
 

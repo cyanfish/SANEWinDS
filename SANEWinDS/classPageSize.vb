@@ -17,6 +17,8 @@
 '   along with SANEWinDS.  If not, see <http://www.gnu.org/licenses/>.
 '
 Public Class PageSize
+    Implements IComparable(Of PageSize)
+
     Public Width As Single 'inches
     Public Height As Single 'inches
     Public Name As String
@@ -38,5 +40,12 @@ Public Class PageSize
         Me.Name = Name
         Me.TWAIN_TWSS = TWSS
     End Sub
+
+    Public Function CompareTo(other As PageSize) As Integer Implements IComparable(Of PageSize).CompareTo
+        Dim result As Integer = Me.Width.CompareTo(other.Width)
+        If result = 0 Then result = Me.Height.CompareTo(other.Height)
+        Return result
+    End Function
+
 End Class
 

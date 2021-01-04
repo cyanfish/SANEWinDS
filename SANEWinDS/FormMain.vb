@@ -52,6 +52,13 @@ Public Class FormMain
     Private PanelOptIsDirty As Boolean
     Private Initialized As Boolean 'Has the Load() event already been executed? Workaround for Load() always firing when using ShowDialog().
     Dim ImageCurve_KeyPoints As New System.Collections.Generic.Dictionary(Of String, System.Collections.Generic.List(Of System.Drawing.Point)) 'key is SANE option name
+    Public Function GetCurrentDevicePageSizes() As List(Of PageSize)
+        Dim Result As New List(Of PageSize)
+        For Each ps As PageSize In CurrentSettings.PageSizes
+            Result.Add(ps)
+        Next
+        Return Result
+    End Function
 
     Private Sub CloseCurrentHost()
         Logger.Debug("")
@@ -140,6 +147,14 @@ Public Class FormMain
                                     If bmp IsNot Nothing Then
                                         If Me.ShowScanProgress Then
                                             frmProgress.ShowProgress("Acquiring page " & (PageNo + 1).ToString & "...")
+                                        End If
+                                        If Me.ComboBoxPageSize.SelectedItem IsNot Nothing Then
+                                            For Each ps As PageSize In CurrentSettings.PageSizes
+                                                If ps.Name = Me.ComboBoxPageSize.SelectedItem Then
+                                                    bmp.Tag = ps 'Tag is used here to maintain the existing ImageAcquired event signature for backward compatibility.
+                                                    Exit For
+                                                End If
+                                            Next
                                         End If
                                         RaiseEvent ImageAcquired(PageNo, bmp)
                                         'bmp.Dispose() 'let the event consumer decide whether to dispose or not.

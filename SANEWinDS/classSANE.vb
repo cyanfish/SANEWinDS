@@ -520,7 +520,7 @@ Class SANE_API
                 Throw New Exception("Stream does not support reading")
             End If
         Catch ex As Exception
-            Logger.Error(ex.Message, ex)
+            Logger.Error(ex, ex.Message)
             Throw
         Finally
             stream = Nothing
@@ -570,7 +570,7 @@ Class SANE_API
                 Throw New Exception("Stream does not support reading")
             End If
         Catch ex As Exception
-            Logger.Error(ex.Message, ex)
+            Logger.Error(ex, ex.Message)
             Throw
         Finally
             stream = Nothing
@@ -622,7 +622,7 @@ Class SANE_API
                 Throw New Exception("Stream does not support reading")
             End If
         Catch ex As Exception
-            Logger.Error(ex.Message, ex)
+            Logger.Error(ex, ex.Message)
             Throw
         Finally
             stream = Nothing
@@ -653,7 +653,7 @@ Class SANE_API
                 Throw New Exception("Stream does not support reading")
             End If
         Catch ex As Exception
-            Logger.Error(ex.Message, ex)
+            Logger.Error(ex, ex.Message)
             Throw
         Finally
             stream = Nothing
@@ -684,7 +684,7 @@ Class SANE_API
                 Throw New Exception("Stream does not support reading")
             End If
         Catch ex As Exception
-            Logger.Error(ex.Message, ex)
+            Logger.Error(ex, ex.Message)
             Throw
         Finally
             stream = Nothing
@@ -771,7 +771,7 @@ Class SANE_API
             End If
 
         Catch ex As Exception
-            Logger.Error(ex.Message, ex)
+            Logger.Error(ex, ex.Message)
             Throw
         Finally
             stream = Nothing
@@ -1247,13 +1247,13 @@ Class SANE_API
             '    Logger.Error("Error acquiring image frame: " & ex.Message, ex)
             '    Throw
         Catch ex As Exception
-            Logger.Error("Error acquiring image frame: " & ex.Message, ex)
+            Logger.Error(ex, "Error acquiring image frame")
             Throw
         Finally
             Try
                 If ImageStream IsNot Nothing Then ImageStream.Close()
             Catch ex As Exception
-                Logger.Debug(ex.Message, ex)
+                Logger.Debug(ex, ex.Message)
             End Try
             'If stream IsNot Nothing Then
             '    Dim buf(Data_TCPClient.ReceiveBufferSize - 1) As Byte
@@ -1265,17 +1265,17 @@ Class SANE_API
             Try
                 If stream IsNot Nothing Then stream.Close()
             Catch ex As Exception
-                Logger.Debug(ex.Message, ex)
+                Logger.Debug(ex, ex.Message)
             End Try
             Try
                 If Data_TCPClient IsNot Nothing Then Data_TCPClient.Client.Shutdown(Net.Sockets.SocketShutdown.Both)
             Catch ex As Exception
-                Logger.Debug(ex.Message, ex)
+                Logger.Debug(ex, ex.Message)
             End Try
             Try
                 If Data_TCPClient IsNot Nothing Then Data_TCPClient.Close()
             Catch ex As Exception
-                Logger.Debug(ex.Message, ex)
+                Logger.Debug(ex, ex.Message)
             End Try
             ImageStream = Nothing
             stream = Nothing

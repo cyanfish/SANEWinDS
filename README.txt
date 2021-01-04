@@ -1,5 +1,8 @@
 Changelog:
 
+Version 0.9.5589
+-Fixed "Invalid characters in path" bug in SANEWin client when path contained a space.
+
 Version 0.9.5511
 -Dramatically increased scanning speed for most scans by reporting progress less frequently.
 -Added socket shutdown prior to closing.

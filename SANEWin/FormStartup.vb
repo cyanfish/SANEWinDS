@@ -24,8 +24,10 @@ Public Class FormStartup
     Private Structure PDFInfo
         'Dim FileName As String
         Dim FileStream As System.IO.FileStream
-        Dim iTextDocument As iTextSharp.text.Document
-        Dim iTextWriter As iTextSharp.text.pdf.PdfWriter
+        Dim iTextDocument As iText.Layout.Document
+        Dim iTextPDFDocument As iText.Kernel.Pdf.PdfDocument
+        Dim iTextWriter As iText.Kernel.Pdf.PdfWriter
+        Dim iTextPageSize As iText.Kernel.Geom.Rectangle
     End Structure
     Public Enum TIFFCompressionMethod As Byte
         None = 0
@@ -70,7 +72,6 @@ Public Class FormStartup
     Private CurrentImage As ImageInfo
     Private GUIForm_Shown As Boolean = False
     Private OutputFolderMRU As New SortedList(Of DateTime, String)
-
     Private Sub FormStartup_FormClosed(sender As Object, e As FormClosedEventArgs) Handles Me.FormClosed
         If Me.INIFileName IsNot Nothing Then
 
@@ -434,28 +435,21 @@ Public Class FormStartup
                 Try
                     If bmp IsNot Nothing Then
                         If PageNumber = 1 Then
-
                             'ShowStatus("Creating PDF document...")
-
-                            'guess page size:
-                            '8.5/11 = .773
-                            '11/8.5 = 1.294
-                            '8.5/14 = .607
-                            '14/8.5 = 1.647
-                            Dim AspectRatio As Single = bmp.Width / bmp.Height
-                            Dim PageSize As iTextSharp.text.Rectangle
-                            Select Case AspectRatio
-                                Case Is < 0.69
-                                    PageSize = iTextSharp.text.PageSize.LEGAL
-                                Case Is < 1.034
-                                    PageSize = iTextSharp.text.PageSize.LETTER
-                                Case Is < 1.471
-                                    PageSize = iTextSharp.text.PageSize.LETTER.Rotate
-                                Case Else
-                                    PageSize = iTextSharp.text.PageSize.LEGAL.Rotate
-                            End Select
-
-                            Me.OpenPDF(PageSize)
+                            If bmp.Tag IsNot Nothing Then
+                                If bmp.Tag.GetType = GetType(SANEWinDS.PageSize) Then
+                                    Try
+                                        Dim SANEWinDS_PageSize As SANEWinDS.PageSize = DirectCast(bmp.Tag, SANEWinDS.PageSize)
+                                        Dim iText_Default_dpi As Single = 72.0
+                                        Dim iText_PageWidth As Integer = iText_Default_dpi * SANEWinDS_PageSize.Width
+                                        Dim iText_PageHeight As Integer = iText_Default_dpi * SANEWinDS_PageSize.Height
+                                        CurrentImage.PDF.iTextPageSize = New iText.Kernel.Geom.PageSize(iText_PageWidth, iText_PageHeight)
+                                    Catch ex As Exception
+                                        'Logger.Error(ex, "Error converting PageSize from SANEWinDS to iText")
+                                    End Try
+                                End If
+                            End If
+                            Me.OpenPDF()
                         End If
 
                         If CurrentImage.FileName IsNot Nothing Then
@@ -613,25 +607,25 @@ Public Class FormStartup
         End If
     End Sub
 
-    Private Sub OpenPDF(ByVal PageSize As iTextSharp.text.Rectangle)
+    Private Sub OpenPDF()
         With Me.CurrentImage.PDF
             .FileStream = New System.IO.FileStream(Me.CurrentImage.FileName, IO.FileMode.Create, IO.FileAccess.Write, IO.FileShare.None)
-            .iTextDocument = New iTextSharp.text.Document(PageSize, 0, 0, 0, 0)
-            .iTextWriter = iTextSharp.text.pdf.PdfWriter.GetInstance(.iTextDocument, .FileStream)
-            .iTextDocument.Open()
+            .iTextWriter = New iText.Kernel.Pdf.PdfWriter(.FileStream)
+            .iTextPDFDocument = New iText.Kernel.Pdf.PdfDocument(.iTextWriter)
+            .iTextDocument = New iText.Layout.Document(.iTextPDFDocument, .iTextPageSize)
+            .iTextDocument.SetMargins(0, 0, 0, 0)
         End With
     End Sub
 
     Private Sub AddPDFPage(ByRef bmp As Bitmap)
         With Me.CurrentImage.PDF
-            .iTextDocument.NewPage()
+            If .iTextPDFDocument.GetNumberOfPages > 0 Then .iTextDocument.Add(New iText.Layout.Element.AreaBreak(iText.Layout.Properties.AreaBreakType.NEXT_PAGE))
 
-            'Dim img As iTextSharp.text.Image = iTextSharp.text.Image.GetInstance(bmp, iTextSharp.text.BaseColor.WHITE) 'Unbearably slow!
             Dim ms As New System.IO.MemoryStream
             bmp.Save(ms, System.Drawing.Imaging.ImageFormat.Png)
-            Dim img As iTextSharp.text.Image = iTextSharp.text.Image.GetInstance(ms.ToArray)
+            Dim img As iText.Layout.Element.Image = New iText.Layout.Element.Image(iText.IO.Image.ImageDataFactory.Create(ms.ToArray))
 
-            img.ScaleToFit(.iTextDocument.PageSize.Width, .iTextDocument.PageSize.Height)
+            img.ScaleToFit(.iTextPageSize.GetWidth, .iTextPageSize.GetHeight)
 
             .iTextDocument.Add(img)
         End With
@@ -640,7 +634,7 @@ Public Class FormStartup
     Private Sub ClosePDF()
         With Me.CurrentImage.PDF
             Try
-                If .iTextDocument IsNot Nothing Then If .iTextDocument.IsOpen Then .iTextDocument.Close()
+                If .iTextDocument IsNot Nothing Then .iTextDocument.Close()
             Catch
             End Try
             Try
@@ -850,4 +844,5 @@ Public Class FormStartup
             Process.Start("http://msdn.microsoft.com/en-us/library/8kb3ddd4(v=vs.100).aspx")
         End If
     End Sub
+
 End Class

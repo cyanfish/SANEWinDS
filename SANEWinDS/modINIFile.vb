@@ -200,7 +200,7 @@ Module modINIFile
             Next
 
         Catch ex As Exception
-            Logger.Error(ex.Message, ex)
+            Logger.Error(ex, ex.Message)
         Finally
             If sr IsNot Nothing Then sr.Close()
             If sw IsNot Nothing Then sw.Close()
@@ -274,7 +274,7 @@ Module modINIFile
             Next
 
         Catch ex As Exception
-            Logger.Error(ex.Message, ex)
+            Logger.Error(ex, ex.Message)
         Finally
             If sr IsNot Nothing Then sr.Close()
             If sw IsNot Nothing Then sw.Close()

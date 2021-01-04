@@ -2556,7 +2556,7 @@ Namespace TWAIN_VB
                             'genesys and gt68xx are examples.
                             SANE.Net_Cancel(ControlClient, SANE.CurrentDevice.Handle)
                         Catch ex As Exception
-                            Logger.Error("", ex)
+                            Logger.Error(ex)
                         End Try
                     End If
                     Marshal.StructureToPtr(CurrentJob.PendingXfers, _pData, True)
@@ -2573,7 +2573,7 @@ Namespace TWAIN_VB
                             'genesys and gt68xx are examples.
                             SANE.Net_Cancel(ControlClient, SANE.CurrentDevice.Handle)
                         Catch ex As Exception
-                            Logger.Error("", ex)
+                            Logger.Error(ex)
                         End Try
                         Marshal.StructureToPtr(CurrentJob.PendingXfers, _pData, True)
                         SetResult(TWRC.TWRC_SUCCESS)
@@ -4582,7 +4582,7 @@ Namespace TWAIN_VB
                 End If
 
             Catch ex As Exception
-                Logger.Error("Error setting capability '" & Capability.ToString & "': " & ex.Message, ex)
+                Logger.Error(ex, "Error setting capability '" & Capability.ToString & "'")
             End Try
         End Sub
 
@@ -4723,7 +4723,7 @@ Namespace TWAIN_VB
                                                             Logger.Debug("Default value: {0}", FIX32ToFloat(.DefaultValue))
                                                         End With
                                                     Catch ex As Exception
-                                                        Logger.Warn("Error translating SANE range constraint for resolution: " & ex.Message, ex)
+                                                        Logger.Warn(ex, "Error translating SANE range constraint for resolution")
                                                     End Try
                                                 Case SANE_API.SANE_Constraint_Type.SANE_CONSTRAINT_WORD_LIST
                                                     Try
@@ -4745,7 +4745,7 @@ Namespace TWAIN_VB
                                                                 Throw New Exception("Invalid data type '" & SANE.CurrentDevice.OptionDescriptors(i).type & "'")
                                                         End Select
                                                     Catch ex As Exception
-                                                        Logger.Warn("Error translating SANE word list constraint for resolution: " & ex.Message, ex)
+                                                        Logger.Warn(ex, "Error translating SANE word list constraint for resolution")
                                                     End Try
                                             End Select
                                             Caps(icap) = cap

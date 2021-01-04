@@ -1246,7 +1246,7 @@ Class SANE_API
             '    Logger.Error("Error acquiring image frame: " & ex.Message, ex)
             '    Throw
         Catch ex As Exception
-            Logger.Error("Error acquiring image frame: " & ex.Message, ex)
+            Logger.Error(ex, "Error acquiring image frame")
             Throw
         Finally
             Try

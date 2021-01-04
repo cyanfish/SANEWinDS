@@ -188,7 +188,7 @@ Public Class FormMain
                         'genesys and gt68xx are examples.
                         SANE.Net_Cancel(ControlClient, SANE.CurrentDevice.Handle)
                     Catch ex As Exception
-                        Logger.Error("", ex)
+                        Logger.Error(ex)
                     End Try
                     'If Net_Cancel() was called during the image transfer, the server may have disconnected the control connection (depends on backend).
                     'We'll need to reconnect and restore all settings.
@@ -245,7 +245,7 @@ Public Class FormMain
             End If
             Return SANE.CurrentDevice.Open
         Catch ex As Exception
-            Logger.Error("", ex)
+            Logger.Error(ex)
             Return SANE.CurrentDevice.Open
         End Try
     End Function
@@ -1067,7 +1067,7 @@ Public Class FormMain
                     End If
                 End If
             Catch ex As Exception
-                Logger.Error("Exception reading ScanContinuously setting from backend.ini: " & ex.Message, ex)
+                Logger.Error(ex, "Exception reading ScanContinuously setting from backend.ini")
             End Try
             Logger.Info("ScanContinuously = '{0}'", CurrentSettings.ScanContinuously)
             Me.CheckBoxBatchMode.Checked = CurrentSettings.ScanContinuously
@@ -1111,7 +1111,7 @@ Public Class FormMain
                     End If
                 End If
             Catch ex As Exception
-                Logger.Error("Exception reading MaxPaperWidth setting from backend.ini: " & ex.Message, ex)
+                Logger.Error(ex, "Exception reading MaxPaperWidth setting from backend.ini")
             End Try
             Try
                 'Dim opt As String = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.GetKeyValue("General", "MaxPaperHeight")
@@ -1124,7 +1124,7 @@ Public Class FormMain
                     End If
                 End If
             Catch ex As Exception
-                Logger.Error("Exception reading MaxPaperHeight setting from backend.ini: " & ex.Message, ex)
+                Logger.Error(ex, "Exception reading MaxPaperHeight setting from backend.ini")
             End Try
             If (MaxWidth = 0) And (MaxHeight = 0) Then
                 Me.Get_Current_Device_Physical_Size_In_Inches(MaxWidth, MaxHeight)
@@ -1182,7 +1182,7 @@ Public Class FormMain
                     End If
                 End If
             Catch ex As Exception
-                Logger.Error("Exception while attempting to set DefaultPaperSize value: " & ex.Message, ex)
+                Logger.Error(ex, "Exception while attempting to set DefaultPaperSize value")
             End Try
             If Me.ComboBoxPageSize.SelectedItem Is Nothing Then
                 If Me.ComboBoxPageSize.Items.Contains("Maximum") Then
@@ -1518,7 +1518,7 @@ Public Class FormMain
                 End If
             End If
         Catch ex As Exception
-            Logger.Error("Unable to set option value: " & ex.Message, ex)
+            Logger.Error(ex, "Unable to set option value")
         End Try
     End Sub
 
@@ -1655,7 +1655,7 @@ Public Class FormMain
                 End If
             End If
         Catch ex As Exception
-            Logger.Error("Error setting page dimensions: " & ex.Message, ex)
+            Logger.Error(ex, "Error setting page dimensions")
         End Try
     End Sub
 
@@ -1679,7 +1679,7 @@ Public Class FormMain
                 ctl = Nothing
             Next
         Catch ex As Exception
-            Logger.Error("Error removing event handlers from panel controls: " & ex.Message, ex)
+            Logger.Error(ex, "Error removing event handlers from panel controls")
         End Try
         Me.PanelOpt.Controls.Clear()
     End Sub
@@ -1755,7 +1755,7 @@ Public Class FormMain
 
                     g.DrawRectangle(New Pen(BorderColor, 2), imCurveRect)
                 Catch ex As Exception
-                    Logger.Error("Error painting ImageCurve rulers: " & ex.Message, ex)
+                    Logger.Error(ex, "Error painting ImageCurve rulers")
                 End Try
 
                 Exit For
@@ -1809,7 +1809,7 @@ Public Class FormMain
                     End If
             End Select
         Catch ex As Exception
-            Logger.Error("", ex)
+            Logger.Error(ex)
         End Try
     End Sub
 

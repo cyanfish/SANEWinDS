@@ -351,7 +351,7 @@ Module modGlobals
                         Status = SANE_API.SANE_Status.SANE_STATUS_CANCELLED
                         Exit Do
                     Catch ex As Exception
-                        Logger.Error("AcquireFrame returned exception: " & ex.Message, ex)
+                        Logger.Error(ex, "AcquireFrame returned exception")
                         Status = SANE_API.SANE_Status.SANE_STATUS_IO_ERROR
                         Exit Do
                     End Try
@@ -445,7 +445,7 @@ Module modGlobals
                         State.bmp.UnlockBits(bmp_data)
                     End If
                 Catch ex As Exception
-                    Logger.Error("Error creating image: " & ex.Message, ex)
+                    Logger.Error(ex, "Error creating image")
                     Status = SANE_API.SANE_Status.SANE_STATUS_IO_ERROR
                 Finally
                     'ReDim SANEImage.Frames(0).Data(-1)
@@ -467,7 +467,7 @@ Module modGlobals
             End If
         Catch ex As Exception
             Status = SANE_API.SANE_Status.SANE_STATUS_IO_ERROR
-            Logger.Error("", ex)
+            Logger.Error(ex)
         Finally
             State.Status = Status
             e.Result = State
@@ -482,12 +482,12 @@ Module modGlobals
             End If
 
             If e.Error IsNot Nothing Then
-                Logger.Error("Exception returned from image data transfer thread", e.Error)
+                Logger.Error(e.Error, "Exception returned from image data transfer thread")
                 MsgBox(e.Error.Message)
                 Exit Sub
             End If
         Catch ex As Exception
-            Logger.Error("", ex)
+            Logger.Error(ex)
         End Try
 
     End Sub

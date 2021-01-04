@@ -168,7 +168,7 @@ Public Class SharedSettings
             Me.SharedConfigDirectory = System.Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData) & "\" & Me.ProductName.Name
             If Not My.Computer.FileSystem.DirectoryExists(Me.SharedConfigDirectory) Then My.Computer.FileSystem.CreateDirectory(Me.SharedConfigDirectory)
         Catch ex As Exception
-            Logger.Log(NLog.LogLevel.Error, "Failed to create common configuration folder '" & Me.SharedConfigDirectory & "'", ex)
+            Logger.Error(ex, "Failed to create common configuration folder '" & Me.SharedConfigDirectory & "'")
         End Try
 
         Dim UserSettingsFileName As String = Me.GetUserConfigFileName
@@ -237,7 +237,7 @@ Public Class SharedSettings
                     ts = Nothing
                     Logger.Debug("TS Client IP is '" & .NameOrAddress & "'")
                 Catch ex As Exception
-                    Logger.Error("Error getting terminal server client IP address: " & ex.Message, ex)
+                    Logger.Error(ex, "Error getting terminal server client IP address")
                     Return False
                 End Try
             End If
@@ -246,7 +246,7 @@ Public Class SharedSettings
                 Logger.Debug("Returning " & (IPs.Length > 0).ToString)
                 Return (IPs.Length > 0)
             Catch ex As Exception
-                Logger.Error("Error resolving host '" & .NameOrAddress & "': " & ex.Message, ex)
+                Logger.Error(ex, "Error resolving host '" & .NameOrAddress & "'")
                 Return False
             End Try
         End With
@@ -355,7 +355,7 @@ Public Class SharedSettings
                             Process.Start("https://sourceforge.net/p/sanewinds/discussion/backend-ini/")
                         Catch ex As Exception
                             Dim msg As String = "Unable to open web page: " & ex.Message
-                            Logger.Error(msg, ex)
+                            Logger.Error(ex, msg)
                             MsgBox(msg, MsgBoxStyle.Critical)
                         End Try
                     End If
@@ -541,7 +541,7 @@ Public Class SharedSettings
                 fs.WriteLine("")
             Next
         Catch ex As Exception
-            Logger.Log(NLog.LogLevel.Error, "Error writing '{0}'", ex)
+            Logger.Error(ex, "Error writing '{0}'")
         Finally
             If fs IsNot Nothing Then fs.Close()
         End Try

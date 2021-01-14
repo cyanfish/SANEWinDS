@@ -271,7 +271,6 @@ Class SANE_API
         Dim Handle As Integer
         Dim Open As Boolean
         Dim OptionDescriptors() As SANE_Option_Descriptor
-        'Dim OptionValues() As Object
         Dim OptionValueSets As Dictionary(Of String, Object())
         Dim ScanUntilError As Boolean 'Use ADF
         Dim SupportedPageSizes As ArrayList

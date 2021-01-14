@@ -36,11 +36,11 @@ Partial Class FormMain
         Me.TextBoxDevice = New System.Windows.Forms.TextBox()
         Me.ButtonHost = New System.Windows.Forms.Button()
         Me.SplitContainerOptions = New System.Windows.Forms.SplitContainer()
-        Me.PanelOpt = New SANEWinDS.DoubleBufferedPanel()
         Me.ComboBoxPageSize = New System.Windows.Forms.ComboBox()
         Me.Label4 = New System.Windows.Forms.Label()
         Me.ComboBoxOptionValueSet = New System.Windows.Forms.ComboBox()
         Me.ButtonSaveOptionValues = New System.Windows.Forms.Button()
+        Me.PanelOpt = New SANEWinDS.DoubleBufferedPanel()
         CType(Me.SplitContainerOptions, System.ComponentModel.ISupportInitialize).BeginInit()
         Me.SplitContainerOptions.Panel1.SuspendLayout()
         Me.SplitContainerOptions.Panel2.SuspendLayout()
@@ -157,14 +157,6 @@ Partial Class FormMain
         Me.SplitContainerOptions.SplitterDistance = 198
         Me.SplitContainerOptions.TabIndex = 28
         '
-        'PanelOpt
-        '
-        Me.PanelOpt.Dock = System.Windows.Forms.DockStyle.Fill
-        Me.PanelOpt.Location = New System.Drawing.Point(0, 0)
-        Me.PanelOpt.Name = "PanelOpt"
-        Me.PanelOpt.Size = New System.Drawing.Size(394, 303)
-        Me.PanelOpt.TabIndex = 6
-        '
         'ComboBoxPageSize
         '
         Me.ComboBoxPageSize.Anchor = CType((System.Windows.Forms.AnchorStyles.Bottom Or System.Windows.Forms.AnchorStyles.Left), System.Windows.Forms.AnchorStyles)
@@ -203,6 +195,14 @@ Partial Class FormMain
         Me.ButtonSaveOptionValues.TabIndex = 55
         Me.ButtonSaveOptionValues.Text = "Save"
         Me.ButtonSaveOptionValues.UseVisualStyleBackColor = True
+        '
+        'PanelOpt
+        '
+        Me.PanelOpt.Dock = System.Windows.Forms.DockStyle.Fill
+        Me.PanelOpt.Location = New System.Drawing.Point(0, 0)
+        Me.PanelOpt.Name = "PanelOpt"
+        Me.PanelOpt.Size = New System.Drawing.Size(394, 303)
+        Me.PanelOpt.TabIndex = 6
         '
         'FormMain
         '

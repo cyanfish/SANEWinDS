@@ -4057,7 +4057,7 @@ Namespace TWAIN_VB
                                                 If s IsNot Nothing AndAlso s.Length > 0 Then CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.User = s
 
                                                 Import_SANE_Options()
-                                                MyForm.SetUserDefaults()
+                                                MyForm.ApplyUserSettings()
                                                 'Me.InitPageSizes()
                                                 'MyForm.ButtonOK.Enabled = True
                                                 Exit Do

@@ -532,4 +532,5 @@ Module modGlobals
     '        Return False
     '    End Try
     'End Function
+
 End Module

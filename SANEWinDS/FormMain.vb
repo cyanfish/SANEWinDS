@@ -66,7 +66,7 @@ Public Class FormMain
 
     Private Sub CloseCurrentHost()
         Logger.Debug("")
-        Me.CloseCurrentDevice()
+        CloseCurrentDevice()
         If ControlClient IsNot Nothing Then
             Try
                 SANE.Net_Exit(ControlClient)
@@ -134,7 +134,7 @@ Public Class FormMain
                         frmProgress = New FormScanProgress
                         frmProgress.Text = Me.Text
                         frmProgress.Icon = Me.Icon
-                        AddHandler frmProgress.ScanCancelled, AddressOf Me.CancelScan
+                        AddHandler frmProgress.ScanCancelled, AddressOf CancelScan
                     Else
                         frmProgress.Reset()
                     End If
@@ -226,7 +226,7 @@ Public Class FormMain
             ControlClient = Nothing
             'store current device info
             Dim DeviceName As String = SANE.CurrentDevice.Name
-            Dim OptVals() As Object = SANE.CurrentDevice.OptionValueSets("Current").Clone
+            Dim OptVals() As Object = CloneOptionValueSet(SANE.CurrentDevice.OptionValueSets("Current"))
             Try_Init_SANE(False)
             Update_Host_GUI()
 
@@ -246,6 +246,13 @@ Public Class FormMain
                                 End If
                         End Select
                     Next
+                    If Me.TreeViewOptions.SelectedNode IsNot Nothing Then
+                        If Me.TreeViewOptions.SelectedNode.Tag IsNot Nothing Then
+                            DisplayOption(PanelOpt, TreeViewOptions.SelectedNode.Tag)
+                        End If
+                    Else
+                        ClearPanelControls()
+                    End If
                 End If
             End If
             Return SANE.CurrentDevice.Open
@@ -368,7 +375,7 @@ Public Class FormMain
 
             With SANE.CurrentDevice.OptionValueSets
                 If Not .ContainsKey("Backend Defaults") Then
-                    .Add("Backend Defaults", .Item("Current").Clone)
+                    .Add("Backend Defaults", CloneOptionValueSet(.Item("Current")))
                 End If
             End With
 
@@ -388,7 +395,7 @@ Public Class FormMain
     End Sub
 
     Private Sub FormMain_FormClosed(sender As Object, e As FormClosedEventArgs) Handles Me.FormClosed
-        Me.CloseCurrentHost()
+        CloseCurrentHost()
         If ControlClient IsNot Nothing Then
             Try
                 ControlClient.Close()
@@ -413,8 +420,6 @@ Public Class FormMain
                 UseRoamingAppData = My.Settings.UseRoamingAppData
             Catch ex As Exception
             End Try
-
-            'If Logger Is Nothing Then Logger = New DebugLogger(UseRoamingAppData)
 
             Logger.Debug("")
 
@@ -570,7 +575,7 @@ Public Class FormMain
                     If SANE.CurrentDevice.Open Then
                         SANE.CurrentDevice.OptionValueSets = New Dictionary(Of String, Object())(StringComparer.InvariantCultureIgnoreCase)
 
-                        Me.GetOpts(True)  'must occur prior to reading GetDeviceConfigFileName()!
+                        GetOpts(True)  'must occur prior to reading GetDeviceConfigFileName()!
 
                         Dim s As String = CurrentSettings.GetDeviceConfigFileName(SharedSettings.ConfigFileScope.Shared)
                         If s IsNot Nothing AndAlso s.Length > 0 Then CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.Shared = s
@@ -578,7 +583,7 @@ Public Class FormMain
                         s = CurrentSettings.GetDeviceConfigFileName(SharedSettings.ConfigFileScope.User)
                         If s IsNot Nothing AndAlso s.Length > 0 Then CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.User = s
 
-                        Me.SetUserDefaults()
+                        ApplyUserSettings() 'Apply merged settings from User and Shared INI files.
 
                         Me.ButtonOK.Enabled = True
                     Else
@@ -602,16 +607,19 @@ Public Class FormMain
         SetOption()
     End Sub
 
-    'Private Sub DisplayOption(ByRef Panel As Panel, ByVal OptionIndex As Int32)
-    '    DisplayOption(Panel, OptionIndex, True)
-    'End Sub
     Private Sub DisplayOption(ByRef Panel As Panel, ByVal OptionIndex As Int32)
 
         'XXX Need to implement SANE_CAP_AUTOMATIC
 
         Debug.Print("OptionIndex=" & OptionIndex.ToString & ", Last=" & LastOptionIndexDisplayed.ToString)
 
-        Dim RecreateControls As Boolean = Not (LastOptionIndexDisplayed = OptionIndex)
+        If OptionIndex > SANE.CurrentDevice.OptionDescriptors.Count - 1 Then
+            Logger.Error("DisplayOption called with invalid OptionIndex:" & OptionIndex.ToString)
+            Debug.Print("*** Invalid OptionIndex ***")
+            Exit Sub
+        End If
+
+        Dim RecreateControls As Boolean = (LastOptionIndexDisplayed < 0) Or (LastOptionIndexDisplayed <> OptionIndex)
         LastOptionIndexDisplayed = OptionIndex
 
         Dim od As SANE_API.SANE_Option_Descriptor = SANE.CurrentDevice.OptionDescriptors(OptionIndex)
@@ -629,7 +637,7 @@ Public Class FormMain
                 BorderWidth = System.Windows.Forms.SystemInformation.BorderSize.Width
             End If
 
-            Me.ClearPanelControls()
+            ClearPanelControls()
 
             'WinAPI.SetProcessWorkingSetSize(Process.GetCurrentProcess().Handle, -1, -1) 'reclaim memory
 
@@ -700,7 +708,7 @@ Public Class FormMain
                     btn.Text = od.title
                     btn.Name = "ctl_" & od.name
                     btn.Enabled = SANE.SANE_OPTION_IS_ACTIVE(od.cap) And SANE.SANE_OPTION_IS_SETTABLE(od.cap)
-                    AddHandler btn.Click, AddressOf Me.SetOption
+                    AddHandler btn.Click, AddressOf SetOption
                     PanelOpt.Controls.Add(btn)
 
                     Dim lbl As New Label
@@ -1122,13 +1130,8 @@ Public Class FormMain
         LastOptionControlName = ControlName
         Try
             If Me.PanelOptIsDirty Then
-                'Me.ButtonOK.Focus()
                 Debug.Print(ControlName)
                 SetOption()
-                'Try
-                '    If ControlName IsNot Nothing Then Me.PanelOpt.Controls(ControlName).Focus()
-                'Catch
-                'End Try
             End If
         Catch ex As Exception
             Logger.Error(ex, ex.Message)
@@ -1169,23 +1172,45 @@ Public Class FormMain
                 Next
             End If
         Catch ex As Exception
-            Logger.Error("Error saving user defaults", ex)
+            Logger.Error(ex, "Error saving user defaults")
         End Try
     End Sub
 
-    Public Sub SetUserDefaults()
+    Public Sub ApplyUserSettings(Optional ByVal OptValSetName As String = Nothing)
         'read all DefaultValue= settings from the backend.ini and set live values
         Logger.Debug("begin")
+
+        Dim SetDefaults As Boolean = False
+        If SANE.CurrentDevice.OptionValueSets IsNot Nothing Then
+            '"Local Defaults" option value set will be created the first time this sub is called.
+            'If it exists, some values may have been changed from "Backend Defaults".
+            'If we're applying settings from a file, it will likely only contain a subset of the values, 
+            '   so we'll need to set "Backend Defaults" for the remaining values.
+            SetDefaults = SANE.CurrentDevice.OptionValueSets.ContainsKey("Local Defaults")
+        End If
+
+        Dim PreferredFileName As String = Nothing 'Use values from this file if present
+        Dim AlternateFileName As String = Nothing 'Use values from this file if not present in the preferred file
+        If OptValSetName Is Nothing Then OptValSetName = "Local Defaults"
+        Select Case OptValSetName
+            Case "Local Defaults"
+                PreferredFileName = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.User
+                AlternateFileName = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.Shared
+            Case Else
+                PreferredFileName = CurrentSettings.GetSavedOptionValueFileName(OptValSetName)
+                AlternateFileName = Nothing 'Unspecified settings will be taken from "Backend Defaults" in memory
+        End Select
 
         SANE.CurrentDevice.SupportedPageSizes = New ArrayList
         Me.ComboBoxPageSize.Items.Clear()
 
         Me.ImageCurve_KeyPoints.Clear()
 
-        If (CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.User IsNot Nothing) Or (CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.Shared IsNot Nothing) Then
+        If (PreferredFileName IsNot Nothing) Or (AlternateFileName IsNot Nothing) Then
+            CurrentSettings.ScanContinuously = False
+            CurrentSettings.ScanContinuouslyUserConfigured = False
             Try
-                'Dim opt As String = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.GetKeyValue("General", "ScanContinuously")
-                Dim opt As String = CurrentSettings.GetINIKeyValue("General", "ScanContinuously", CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.User, CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.Shared)
+                Dim opt As String = CurrentSettings.GetINIKeyValue("General", "ScanContinuously", PreferredFileName, AlternateFileName)
                 If opt IsNot Nothing Then
                     If opt.Length Then
                         CurrentSettings.ScanContinuously = Convert.ToBoolean(opt)
@@ -1196,32 +1221,56 @@ Public Class FormMain
                 Logger.Error(ex, "Exception reading ScanContinuously setting from backend.ini")
             End Try
             Logger.Info("ScanContinuously = '{0}'", CurrentSettings.ScanContinuously)
-            Me.CheckBoxBatchMode.Checked = CurrentSettings.ScanContinuously
-            'XXX need to set CAP_FEEDERENABLED here or does an event fire?
+            Me.CheckBoxBatchMode.Checked = CurrentSettings.ScanContinuously 'TWAIN_VB handles CheckBox_Checked event to set CAP_FEEDERENABLED.
 
             For i As Integer = 1 To SANE.CurrentDevice.OptionDescriptors.Count - 1 'skip the first option, which is just the option count
                 Select Case SANE.CurrentDevice.OptionDescriptors(i).type
                     Case SANE_API.SANE_Value_Type.SANE_TYPE_GROUP, SANE_API.SANE_Value_Type.SANE_TYPE_BUTTON
                         'no need to map these options
                     Case Else
-                        Dim optval As String = CurrentSettings.GetINIKeyValue("Option." & SANE.CurrentDevice.OptionDescriptors(i).name, "DefaultValue", CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.User, CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.Shared)
-                        If optval IsNot Nothing Then
-                            If optval.Length Then
-                                If SANE.SANE_OPTION_IS_ACTIVE(SANE.CurrentDevice.OptionDescriptors(i).cap) And SANE.SANE_OPTION_IS_SETTABLE(SANE.CurrentDevice.OptionDescriptors(i).cap) Then
-                                    Logger.Debug("importing setting '{0}' = '{1}'", SANE.CurrentDevice.OptionDescriptors(i).name, optval)
-                                    optval = optval.Replace("\,", Chr(16))
-                                    Dim Values() As Object = optval.Split(",")
-                                    For j = 0 To Values.Length - 1
-                                        If Not String.IsNullOrEmpty(Values(j)) Then Values(j) = Values(j).Replace(Chr(16), ",")
-                                    Next
-                                    SetOpt(i, Values) 'sets value for both SANE and TWAIN
-                                Else
-                                    Logger.Warn("Option '{0}' is not currently settable", SANE.CurrentDevice.OptionDescriptors(i).title)
-                                End If
+                        Dim Values() As Object = Nothing
+                        Dim ValuesAreDefault As Boolean = True
+                        If SetDefaults Then Values = SANE.CurrentDevice.OptionValueSets("Backend Defaults")(i)
+                        'Use values from memory if available
+                        If (OptValSetName IsNot Nothing) AndAlso SANE.CurrentDevice.OptionValueSets.ContainsKey(OptValSetName) Then
+                            Values = SANE.CurrentDevice.OptionValueSets(OptValSetName)(i)
+                            ValuesAreDefault = False
+                        End If
+                        'As a last resort, read values from disk
+                        If ValuesAreDefault Then
+                            Dim optval As String = CurrentSettings.GetINIKeyValue("Option." & SANE.CurrentDevice.OptionDescriptors(i).name, "DefaultValue", PreferredFileName, AlternateFileName)
+                            If optval IsNot Nothing Then
+                                Logger.Debug("importing setting '{0}' = '{1}'", SANE.CurrentDevice.OptionDescriptors(i).name, optval)
+                                optval = optval.Replace("\,", Chr(16))
+                                Values = optval.Split(",")
+                                For j = 0 To Values.Length - 1
+                                    If Not String.IsNullOrEmpty(Values(j)) Then Values(j) = Values(j).Replace(Chr(16), ",")
+                                Next
+                            End If
+                        End If
+                        If (Not Values Is Nothing) AndAlso (Not Values.Contains(Nothing)) Then
+                            If SANE.SANE_OPTION_IS_ACTIVE(SANE.CurrentDevice.OptionDescriptors(i).cap) And SANE.SANE_OPTION_IS_SETTABLE(SANE.CurrentDevice.OptionDescriptors(i).cap) Then
+                                SetOpt(i, Values) 'sets value for both SANE and TWAIN
+                            Else
+                                Logger.Warn("Option '{0}' is not currently settable", SANE.CurrentDevice.OptionDescriptors(i).title)
                             End If
                         End If
                 End Select
             Next
+            'Dim CurrentOptionIndex As Integer = LastOptionIndexDisplayed
+            LastOptionIndexDisplayed = -1 'This will cause the controls to be recreated in the correct style for the new values.
+            Try
+                'If CurrentOptionIndex > -1 Then Me.DisplayOption(PanelOpt, CurrentOptionIndex)
+                If Me.TreeViewOptions.SelectedNode IsNot Nothing Then
+                    If Me.TreeViewOptions.SelectedNode.Tag IsNot Nothing Then
+                        DisplayOption(PanelOpt, TreeViewOptions.SelectedNode.Tag)
+                    End If
+                Else
+                    ClearPanelControls()
+                End If
+            Catch ex As Exception
+                Logger.Error(ex)
+            End Try
 
             'Set user-specified maximum page dimensions.
             'It's important to do this after iterating through the options and setting user-specified defaults because some backends have their own 
@@ -1230,8 +1279,7 @@ Public Class FormMain
             Dim MaxWidth As Double = 0
             Dim MaxHeight As Double = 0
             Try
-                'Dim opt As String = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.GetKeyValue("General", "MaxPaperWidth")
-                Dim opt As String = CurrentSettings.GetINIKeyValue("General", "MaxPaperWidth", CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.User, CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.Shared)
+                Dim opt As String = CurrentSettings.GetINIKeyValue("General", "MaxPaperWidth", PreferredFileName, AlternateFileName)
                 If opt IsNot Nothing Then
                     If opt.Length Then
                         If Not Double.TryParse(opt, MaxWidth) Then
@@ -1243,8 +1291,7 @@ Public Class FormMain
                 Logger.Error(ex, "Exception reading MaxPaperWidth setting from backend.ini")
             End Try
             Try
-                'Dim opt As String = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.GetKeyValue("General", "MaxPaperHeight")
-                Dim opt As String = CurrentSettings.GetINIKeyValue("General", "MaxPaperHeight", CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.User, CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.Shared)
+                Dim opt As String = CurrentSettings.GetINIKeyValue("General", "MaxPaperHeight", PreferredFileName, AlternateFileName)
                 If opt IsNot Nothing Then
                     If opt.Length Then
                         If Not Double.TryParse(opt, MaxHeight) Then
@@ -1256,7 +1303,7 @@ Public Class FormMain
                 Logger.Error(ex, "Exception reading MaxPaperHeight setting from backend.ini")
             End Try
             If (MaxWidth = 0) And (MaxHeight = 0) Then
-                Me.Get_Current_Device_Physical_Size_In_Inches(MaxWidth, MaxHeight)
+                Get_Current_Device_Physical_Size_In_Inches(MaxWidth, MaxHeight)
             End If
 
             If (MaxWidth > 0) And (MaxHeight > 0) Then
@@ -1289,8 +1336,7 @@ Public Class FormMain
             End If
 
             Try
-                'Dim opt As String = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.GetKeyValue("General", "DefaultPaperSize")
-                Dim opt As String = CurrentSettings.GetINIKeyValue("General", "DefaultPaperSize", CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.User, CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.Shared)
+                Dim opt As String = CurrentSettings.GetINIKeyValue("General", "DefaultPaperSize", PreferredFileName, AlternateFileName)
                 If opt IsNot Nothing Then
                     If opt.Length Then
                         Dim Found_Default As Boolean = False
@@ -1319,20 +1365,20 @@ Public Class FormMain
                 End If
             End If
             '
-            'Me.PanelOpt.Controls.Clear()
-            Me.ClearPanelControls()
-
             If SANE.CurrentDevice.OptionValueSets IsNot Nothing Then
                 With SANE.CurrentDevice.OptionValueSets
                     If Not .ContainsKey("Local Defaults") Then
                         'Local Defaults is the result of merging the shared and user copies of backend.ini, with the user copy having priority.
-                        .Add("Local Defaults", .Item("Current").Clone)
+                        'We should get here only during initialization of a newly selected device.
+                        .Add("Local Defaults", CloneOptionValueSet(.Item("Current")))
+                    End If
+                    If (OptValSetName IsNot Nothing) AndAlso (Not .ContainsKey(OptValSetName)) Then
+                        .Add(OptValSetName, CloneOptionValueSet(.Item("Current")))
                     End If
                 End With
             End If
-
         Else
-            Logger.Warn("Backend configuration file uninitialized; backend-specific default values were not configured")
+            Logger.Warn("Backend configuration file uninitialized; backend-specific values were not configured")
         End If
         Logger.Debug("end")
     End Sub
@@ -1403,7 +1449,7 @@ Public Class FormMain
                         PhysicalLength = MMToInches(PhysicalLength)
                     Case SANE_API.SANE_Unit.SANE_UNIT_PIXEL
                         'XXX no way to test this without a backend that reports dimensions in pixels
-                        Dim res_dpi As Double = Me.GetSANEOption("resolution")(0)
+                        Dim res_dpi As Double = GetSANEOption("resolution")(0)
                         If res_dpi > 0 Then
                             PhysicalWidth = PhysicalWidth / res_dpi
                             PhysicalLength = PhysicalLength / res_dpi
@@ -1421,7 +1467,6 @@ Public Class FormMain
             Logger.Error(ex, ex.Message)
         End Try
     End Sub
-
 
     Friend Sub SetTWAINCaps(ByVal OptionDescriptor As SANE_API.SANE_Option_Descriptor, ByVal OptionValues() As Object, ByVal SetDefaultValue As Boolean)
         If OptionValues.Length > 1 Then Logger.Warn("Only the first value in the array will be evaluated for option '{0}'", OptionDescriptor.title)
@@ -1489,18 +1534,6 @@ Public Class FormMain
         Next
         Return Nothing
     End Function
-
-    Private Sub ApplyOptionValueSet(Name As String)
-        If Name Is Nothing Then Throw New ArgumentException("'Name' cannot be Nothing")
-        If Not SANE.CurrentDevice.OptionValueSets.ContainsKey(Name) Then Throw New ArgumentException("No option set named '" & Name & "' exists")
-        For i As Integer = 1 To (SANE.CurrentDevice.OptionValueSets(Name).Length - 1) 'skip the first option, which is just the option count
-            If SANE.SANE_OPTION_IS_ACTIVE(SANE.CurrentDevice.OptionDescriptors(i).cap) And SANE.SANE_OPTION_IS_SETTABLE(SANE.CurrentDevice.OptionDescriptors(i).cap) Then
-                SetOpt(i, SANE.CurrentDevice.OptionValueSets(Name)(i)) 'sets value for both SANE and TWAIN
-            Else
-                Logger.Warn("Option '{0}' is not currently settable", SANE.CurrentDevice.OptionDescriptors(i).title)
-            End If
-        Next
-    End Sub
 
     Public Function SetSANEOption(ByVal OptionName As String, ByVal Values() As Object) As Boolean
         Return (SetOpt(OptionName, Values) = SANE_API.SANE_Status.SANE_STATUS_GOOD)
@@ -1587,16 +1620,7 @@ Public Class FormMain
                          CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Password)
                 If Status = SANE_API.SANE_Status.SANE_STATUS_GOOD Then
                     Array.Copy(OptReply.values, SANE.CurrentDevice.OptionValueSets("Current")(OptionIndex), OptReply.values.Length)
-
-                    If OptReply.info And SANE_API.SANE_INFO_RELOAD_OPTIONS Then Me.GetOpts(False)
-                    If Me.TreeViewOptions.SelectedNode IsNot Nothing Then
-                        If Me.TreeViewOptions.SelectedNode.Tag IsNot Nothing Then
-                            Me.DisplayOption(Me.PanelOpt, Me.TreeViewOptions.SelectedNode.Tag)
-                        End If
-                    Else
-                        Me.ClearPanelControls()
-                    End If
-
+                    If OptReply.info And SANE_API.SANE_INFO_RELOAD_OPTIONS Then GetOpts(False)
                     If Me.TWAIN_Is_Active Then
                         SetTWAINCaps(od, Values, False)
                     End If
@@ -1639,6 +1663,7 @@ Public Class FormMain
     Private Sub SetOption(sender As Object, e As EventArgs)
         SetOption()
     End Sub
+
     Private Sub SetOption()
         Dim Values(Me.OptionValueControls.Length - 1) As Object
         For ctl_i As Integer = 0 To Me.OptionValueControls.Length - 1
@@ -1673,28 +1698,23 @@ Public Class FormMain
     End Sub
 
     Private Sub FormMain_Resize(ByVal sender As Object, ByVal e As System.EventArgs) Handles Me.Resize
-        'Me.PanelOpt.Width = Me.ClientRectangle.Width - PanelOpt.Left
         If Me.TreeViewOptions.SelectedNode IsNot Nothing Then
             If Me.TreeViewOptions.SelectedNode.Tag IsNot Nothing Then
-                Me.DisplayOption(Me.PanelOpt, Me.TreeViewOptions.SelectedNode.Tag)
+                Try
+                    DisplayOption(PanelOpt, TreeViewOptions.SelectedNode.Tag)
+                Catch ex As Exception
+                    Logger.Error(ex)
+                End Try
             End If
         Else
-            'Me.PanelOpt.Controls.Clear()
-            Me.ClearPanelControls()
+            ClearPanelControls()
         End If
-
     End Sub
 
     Private Sub TreeViewOptions_AfterSelect(ByVal sender As Object, ByVal e As System.Windows.Forms.TreeViewEventArgs) Handles TreeViewOptions.AfterSelect
         Try
-            'PanelOpt.Controls.Clear()
-            Me.ClearPanelControls()
-            For Index As Integer = 0 To SANE.CurrentDevice.OptionDescriptors.Length - 1
-                If Index = e.Node.Tag Then
-                    Me.DisplayOption(Me.PanelOpt, Index)
-                    Exit For
-                End If
-            Next
+            ClearPanelControls()
+            DisplayOption(PanelOpt, e.Node.Tag)
         Catch ex As Exception
             Debug.Print(ex.Message)
         End Try
@@ -1714,7 +1734,7 @@ Public Class FormMain
             Me.TextBoxPort.Text = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Port
             Me.TextBoxDevice.Text = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Device
 
-            Me.PopulateOptionValueSets
+            PopulateOptionValueSetNames()
 
         Else
             'Me.TextBoxHost.Text = Nothing
@@ -1722,18 +1742,10 @@ Public Class FormMain
             'Me.TextBoxDevice.Text = Nothing
 
             Me.ButtonOK.Enabled = False
-            Me.ClearPanelControls()
+            ClearPanelControls()
             Me.TreeViewOptions.Nodes.Clear()
             'Me.ComboBoxPageSize.Enabled = False
         End If
-    End Sub
-
-    Private Sub PopulateOptionValueSets()
-        Me.ComboBoxOptionValueSet.Items.Clear()
-        Dim Names As ArrayList = CurrentSettings.GetSavedOptionValueSetNames
-        For Each s As String In Names
-            Me.ComboBoxOptionValueSet.Items.Add(s)
-        Next
     End Sub
 
     Private Sub ButtonCancel_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles ButtonCancel.Click
@@ -1793,22 +1805,22 @@ Public Class FormMain
                 br_x = ps.Width
                 br_y = ps.Height
 
-                Select Case Me.GetSANEOptionUnit("br-x")
+                Select Case GetSANEOptionUnit("br-x")
                     Case SANE_API.SANE_Unit.SANE_UNIT_MM
                         br_x = InchesToMM(br_x)
                         br_y = InchesToMM(br_y)
                     Case SANE_API.SANE_Unit.SANE_UNIT_PIXEL
-                        Dim res_dpi As Double = CDbl(Me.GetSANEOption("resolution")(0))
+                        Dim res_dpi As Double = CDbl(GetSANEOption("resolution")(0))
                         br_x = br_x * res_dpi
                         br_y = br_y * res_dpi
                     Case Else
                         Throw New Exception("Page coordinates must use unit SANE_UNIT_MM or SANE_UNIT_PIXEL")
                 End Select
 
-                If Me.SetSANEOption("tl-x", {0}) And _
-                    Me.SetSANEOption("tl-y", {0}) And _
-                    Me.SetSANEOption("br-x", {br_x}) And _
-                    Me.SetSANEOption("br-y", {br_y}) Then
+                If SetSANEOption("tl-x", {0}) And
+                    SetSANEOption("tl-y", {0}) And
+                    SetSANEOption("br-x", {br_x}) And
+                    SetSANEOption("br-y", {br_y}) Then
                     'ok
                 Else
                     Throw New Exception("Unable to set SANE option")
@@ -1986,11 +1998,59 @@ Public Class FormMain
         Me.Result = UIResult.None
         MyBase.Show(Owner)
     End Sub
+
     Public Shadows Function ShowDialog() As UIResult
         Me.Result = UIResult.None
         MyBase.ShowDialog()
         Return Me.Result
     End Function
 
+    Private Function CloneOptionValueSet(CloneFrom As Object()) As Object()
+        'Create a deep clone of an option value set.  Array.clone is a shallow clone.
+        If CloneFrom IsNot Nothing Then
+            Dim CloneTo(CloneFrom.Count - 1) As Object
+            For i As Integer = 0 To CloneFrom.Count - 1
+                If CloneFrom(i) IsNot Nothing Then
+                    Dim FromVals As Object() = CloneFrom(i)
+                    Dim ToVals(FromVals.Count - 1) As Object
+                    For j As Integer = 0 To FromVals.Count - 1
+                        ToVals(j) = FromVals(j)
+                    Next
+                    CloneTo(i) = ToVals
+                End If
+            Next
+            Return CloneTo
+        End If
+        Return Nothing
+    End Function
+
+    Private Sub PopulateOptionValueSetNames()
+        Me.ComboBoxOptionValueSet.Items.Clear()
+        For Each s As String In SANE.CurrentDevice.OptionValueSets.Keys
+            Select Case s
+                Case "Current", "Backend Defaults"
+                    'Exclude from list
+                Case Else
+                    Me.ComboBoxOptionValueSet.Items.Add(s)
+            End Select
+        Next
+        Dim Names As ArrayList = CurrentSettings.GetSavedOptionValueSetNames
+        For Each s As String In Names
+            If Not Me.ComboBoxOptionValueSet.Items.Contains(s) Then Me.ComboBoxOptionValueSet.Items.Add(s)
+        Next
+    End Sub
+
+    Private Sub ComboBoxOptionValueSet_SelectedIndexChanged(sender As Object, e As EventArgs) Handles ComboBoxOptionValueSet.SelectedIndexChanged
+        Select Case ComboBoxOptionValueSet.SelectedItem
+            Case "Current", "Backend Defaults"
+                'Do nothing.  These should never be in the list.
+            Case Else
+                ApplyUserSettings(ComboBoxOptionValueSet.SelectedItem)
+        End Select
+    End Sub
+
+    Private Sub ButtonSaveOptionValues_Click(sender As Object, e As EventArgs) Handles ButtonSaveOptionValues.Click
+        'XXXYZ Validate characters in name
+    End Sub
 End Class
 

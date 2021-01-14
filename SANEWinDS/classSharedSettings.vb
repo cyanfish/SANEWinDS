@@ -181,7 +181,6 @@ Public Class SharedSettings
             f = Nothing
         End If
 
-
         Dim INI_Version As String = ReadIni(UserSettingsFileName, "General", "INI_Version")
         Dim INI_Ver As Double = 0
         Double.TryParse(INI_Version, INI_Ver)
@@ -325,15 +324,28 @@ Public Class SharedSettings
         Return hi
     End Function
 
+    Public Function GetSavedOptionValueFileName(ByVal OptValSetName As String) As String
+        Try
+            If String.IsNullOrWhiteSpace(OptValSetName) Then Throw New ArgumentNullException("OptValSetName")
+            If String.IsNullOrWhiteSpace(modGlobals.SANE.CurrentDevice.Name) Then Throw New Exception("The current device is unknown")
+            Dim BackEnd As String = modGlobals.SANE.CurrentDevice.Name
+            Dim p As Integer = BackEnd.IndexOf(":")
+            If p Then BackEnd = BackEnd.Substring(0, p)
+            Return Me.UserConfigDirectory & "\" & BackEnd & "." & OptValSetName & ".ini"
+        Catch ex As Exception
+            Logger.Error(ex)
+        End Try
+        Return Nothing
+    End Function
+
     Public Function GetSavedOptionValueSetNames() As ArrayList
         Dim SetNames As New ArrayList
         Try
             Dim BackEnd As String = modGlobals.SANE.CurrentDevice.Name
             Dim p As Integer = BackEnd.IndexOf(":")
             If p Then BackEnd = BackEnd.Substring(0, p)
-            'Dim BaseName As String = CurrentSettings.UserConfigDirectory & "\" & BackEnd
             Dim s As String = BackEnd & ".*.ini"
-            For Each f As String In My.Computer.FileSystem.GetFiles(CurrentSettings.UserConfigDirectory, FileIO.SearchOption.SearchTopLevelOnly, s)
+            For Each f As String In My.Computer.FileSystem.GetFiles(Me.UserConfigDirectory, FileIO.SearchOption.SearchTopLevelOnly, s)
                 Dim ff As String = My.Computer.FileSystem.GetName(f)
                 Dim ss As String = ff.Replace(BackEnd & ".", "")
                 Dim SetName As String = Strings.Replace(ss, ".ini", "",,, CompareMethod.Text)
@@ -380,7 +392,7 @@ Public Class SharedSettings
                                 Process.Start("https://sourceforge.net/p/sanewinds/discussion/backend-ini/")
                             Catch ex As Exception
                                 Dim msg As String = "Unable to open web page: " & ex.Message
-                                Logger.Error(msg, ex)
+                                Logger.Error(ex, msg)
                                 MsgBox(msg, MsgBoxStyle.Critical)
                             End Try
                         End If
@@ -587,7 +599,7 @@ Public Class SharedSettings
         '
     End Sub
 
-    Public Function GetINIKeyValue(Section As String, Key As String, Preferred_INIFile As String, Alternate_INIFile As String) As String
+    Public Function GetINIKeyValue(Section As String, Key As String, Preferred_INIFile As String, Optional Alternate_INIFile As String = Nothing) As String
         Dim Result As String = Nothing
         If Preferred_INIFile IsNot Nothing Then
             Result = ReadIni(Preferred_INIFile, Section, Key)

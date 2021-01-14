@@ -449,18 +449,18 @@ Public Class FormStartup
                                     End Try
                                 End If
                             End If
-                            Me.OpenPDF()
+                            OpenPDF()
                         End If
 
                         If CurrentImage.FileName IsNot Nothing Then
-                            Me.AddPDFPage(bmp)
+                            AddPDFPage(bmp)
                         End If
 
                     End If
                 Catch ex As Exception
-                    Me.GUIForm.CancelScan()
+                    GUIForm.CancelScan()
                     MsgBox(ex.Message)
-                    Me.ClosePDF()
+                    ClosePDF()
                 End Try
             Case ImageType.TIFF
                 Try

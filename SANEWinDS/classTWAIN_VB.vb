@@ -3938,10 +3938,10 @@ Namespace TWAIN_VB
                         If SANE Is Nothing Then SANE = New SANE_API
 
                         'If SANE isn't configured, launch the wizard.
-                        If Not ((CurrentSettings.SANE.CurrentHostIndex > -1) AndAlso _
-                               (CurrentSettings.SANE.CurrentHostIndex < CurrentSettings.SANE.Hosts.Length) AndAlso _
-                               CurrentSettings.ResolveHost(CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex)) AndAlso _
-                               CurrentSettings.HostIsValid(CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex)) AndAlso _
+                        If Not ((CurrentSettings.SANE.CurrentHostIndex > -1) AndAlso
+                               (CurrentSettings.SANE.CurrentHostIndex < CurrentSettings.SANE.Hosts.Length) AndAlso
+                               CurrentSettings.ResolveHost(CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex)) AndAlso
+                               CurrentSettings.HostIsValid(CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex)) AndAlso
                                CurrentSettings.DeviceIsValid(CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex))) Then
                             Dim f As New FormSANEHostWizard
                             If f.ShowDialog <> Windows.Forms.DialogResult.OK Then
@@ -3989,8 +3989,8 @@ Namespace TWAIN_VB
                                         Dim DeviceHandle As Integer
 
                                         Do
-                                            status = SANE.Net_Open(ControlClient, CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Device, DeviceHandle, _
-                                                                  CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Username, _
+                                            status = SANE.Net_Open(ControlClient, CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Device, DeviceHandle,
+                                                                  CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Username,
                                                                   CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Password)
                                             Logger.Debug("Net_Open returned status '{0}'", status)
                                             If (status <> SANE_API.SANE_Status.SANE_STATUS_GOOD) And (status <> SANE_API.SANE_Status.SANE_STATUS_ACCESS_DENIED) Then  'Auto-Locate
@@ -4025,8 +4025,8 @@ Namespace TWAIN_VB
                                                         Next
                                                         If FoundDevice Then
                                                             Logger.Debug("Auto-located device '{0}'; attempting to open...", FoundDeviceName)
-                                                            status = SANE.Net_Open(ControlClient, FoundDeviceName, DeviceHandle, _
-                                                                                   CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Username, _
+                                                            status = SANE.Net_Open(ControlClient, FoundDeviceName, DeviceHandle,
+                                                                                   CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Username,
                                                                                    CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Password)
                                                             Logger.Debug("Net_Open returned status '{0}'", status)
                                                             If status = SANE_API.SANE_Status.SANE_STATUS_GOOD Then CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Device = FoundDeviceName
@@ -4645,9 +4645,9 @@ Namespace TWAIN_VB
                                     Case Else
                                         Logger.Warn("Unable to set scan area using resolution unit '{0}'", unit)
                                 End Select
-                                If MyForm.SetSANEOption("tl-x", {0}) AndAlso _
-                                    MyForm.SetSANEOption("tl-y", {0}) AndAlso _
-                                    MyForm.SetSANEOption("br-x", {br_x}) AndAlso _
+                                If MyForm.SetSANEOption("tl-x", {0}) AndAlso
+                                    MyForm.SetSANEOption("tl-y", {0}) AndAlso
+                                    MyForm.SetSANEOption("br-x", {br_x}) AndAlso
                                     MyForm.SetSANEOption("br-y", {br_y}) Then
                                     Return True
                                 Else

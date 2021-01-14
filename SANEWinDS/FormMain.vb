@@ -332,8 +332,8 @@ Public Class FormMain
                                 OptReq.value_size = Descriptors(i).size
                                 OptReq.values = Nothing
                                 Do
-                                    Dim Status As SANE_API.SANE_Status = SANE.Net_Control_Option(ControlClient, OptReq, OptReply, _
-                                                                                                 CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Username, _
+                                    Dim Status As SANE_API.SANE_Status = SANE.Net_Control_Option(ControlClient, OptReq, OptReply,
+                                                                                                 CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Username,
                                                                                                  CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Password)
                                     If Status = SANE_API.SANE_Status.SANE_STATUS_GOOD Then
                                         ReDim SANE.CurrentDevice.OptionValues(i)(OptReply.values.Length - 1)
@@ -462,8 +462,8 @@ Public Class FormMain
                                     SANE.CurrentDevice = New SANE_API.CurrentDeviceInfo
 
                                     Dim DeviceHandle As Integer
-                                    Status = SANE.Net_Open(ControlClient, CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Device, DeviceHandle, _
-                                                           CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Username, _
+                                    Status = SANE.Net_Open(ControlClient, CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Device, DeviceHandle,
+                                                           CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Username,
                                                            CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Password)
                                     Logger.Debug("Net_Open returned status '{0}'", Status)
                                     If (Status <> SANE_API.SANE_Status.SANE_STATUS_GOOD) And (Status <> SANE_API.SANE_Status.SANE_STATUS_ACCESS_DENIED) Then  'Auto-Locate
@@ -499,8 +499,8 @@ Public Class FormMain
                                                 Next
                                                 If FoundDevice Then
                                                     Logger.Debug("Auto-located device '{0}'; attempting to open...", FoundDeviceName)
-                                                    Status = SANE.Net_Open(ControlClient, FoundDeviceName, DeviceHandle, _
-                                                                          CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Username, _
+                                                    Status = SANE.Net_Open(ControlClient, FoundDeviceName, DeviceHandle,
+                                                                          CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Username,
                                                                           CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Password)
                                                     Logger.Debug("Net_Open returned status '{0}'", Status)
                                                     If Status = SANE_API.SANE_Status.SANE_STATUS_GOOD Then CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Device = FoundDeviceName
@@ -1431,8 +1431,8 @@ Public Class FormMain
             Dim FixedFudgeIncrement As Double = 0.0001R 'The amount to subtract from a SANE_TYPE_FIXED value to see if the backend will accept it.
             '
             Do
-                Status = SANE.Net_Control_Option(ControlClient, OptReq, OptReply, _
-                                                                             CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Username, _
+                Status = SANE.Net_Control_Option(ControlClient, OptReq, OptReply,
+                                                                             CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Username,
                                                                              CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Password)
                 If Status = SANE_API.SANE_Status.SANE_STATUS_GOOD Then
                     Array.Copy(OptReply.values, SANE.CurrentDevice.OptionValues(OptionIndex), OptReply.values.Length)
@@ -1645,9 +1645,9 @@ Public Class FormMain
                         Throw New Exception("Page coordinates must use unit SANE_UNIT_MM or SANE_UNIT_PIXEL")
                 End Select
 
-                If Me.SetSANEOption("tl-x", {0}) And _
-                    Me.SetSANEOption("tl-y", {0}) And _
-                    Me.SetSANEOption("br-x", {br_x}) And _
+                If Me.SetSANEOption("tl-x", {0}) And
+                    Me.SetSANEOption("tl-y", {0}) And
+                    Me.SetSANEOption("br-x", {br_x}) And
                     Me.SetSANEOption("br-y", {br_y}) Then
                     'ok
                 Else

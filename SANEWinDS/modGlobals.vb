@@ -238,7 +238,7 @@ Module modGlobals
                                         If s = SANE.CurrentDevice.OptionValueSets("Current")(i)(0).ToLower Then Return True
                                     End If
                                 Next
-                                Return false
+                                Return False
                         End Select
                 End Select
             ElseIf SANE.CurrentDevice.OptionDescriptors(i).type = SANE_API.SANE_Value_Type.SANE_TYPE_BOOL Then

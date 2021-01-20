@@ -1,5 +1,5 @@
 ﻿'
-'   Copyright 2011-2015 Alec Skelly
+'   Copyright 2011-2021 Alec Skelly
 '
 '   This file is part of SANEWinDS.
 '
@@ -118,7 +118,6 @@ Public Class FormMain
                 Catch ex As Exception
                     Debug.Print(ex.Message)
                 End Try
-                'CancelAcquireImage()
             End If
         End If
     End Sub
@@ -200,10 +199,7 @@ Public Class FormMain
                     If Not Client_Is_Connected(ControlClient) Then
                         If Not Try_Reconnect() Then
                             Logger.Warn("Try_Reconnect failed.")
-                            'XXX
-                            'SANE.CurrentDevice = Nothing
                             CloseCurrentHost()
-                            'Me.Close()
                         End If
                     End If
                 Else
@@ -410,7 +406,7 @@ Public Class FormMain
     Private Sub Form1_Load(ByVal sender As Object, ByVal e As System.EventArgs) Handles Me.Load
         If Not Me.Initialized Then
             Me.Initialized = True
-            Me.Text = GetType(SANE_API).Assembly.GetName.Name.ToString() & " " & GetType(SANE_API).Assembly.GetName.Version.ToString() & " Beta"
+            Me.Text = GetType(SANE_API).Assembly.GetName.Name.ToString() & " " & GetType(SANE_API).Assembly.GetName.Version.ToString()
             Me.MinimumSize = Me.Size
 
             Me.TreeViewOptions.HideSelection = False

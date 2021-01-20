@@ -1,5 +1,5 @@
 ﻿'
-'   Copyright 2011-2015 Alec Skelly
+'   Copyright 2011-2021 Alec Skelly
 '
 '   This file is part of SANEWinDS.
 '
@@ -19,10 +19,7 @@
 Public Class SharedSettings
 
     Private Logger As NLog.Logger = NLog.LogManager.GetCurrentClassLogger()
-    'Public Enum UserSettingsLocations As Integer
-    '    LocalAppData = 0
-    '    RoamingAppData = 1
-    'End Enum
+
     Public Enum ConfigFileScope As Integer
         [Shared] = 0
         User = 1
@@ -41,54 +38,24 @@ Public Class SharedSettings
         Dim Image_Timeout_s As Integer
         Dim Open As Boolean
         Dim Device As String
-        'Dim DeviceINI As IniFile.IniFile
         Dim DeviceINI As ConfigFile
         Dim AutoLocateDevice As String 'SANE backend name of device to auto-choose from list of devices on CurrentHost (example: "canon_dr")
     End Structure
     Public Structure SANESettings
         Dim Hosts() As HostInfo
-        'Dim CurrentHost As HostInfo
         Dim CurrentHostIndex As Integer
-        'Dim CurrentDevice As String    'Full SANE device name on CurrentHost (example: "canon_dr:libusb:008:005")
-        'Dim CurrentDeviceINI As IniFile
-        'Dim AutoLocateDevice As String 'SANE backend name of device to auto-choose from list of devices on CurrentHost (example: "canon_dr")
     End Structure
-    'Public Class SANESettings
-    '    Public Hosts() As HostInfo
-    '    'Dim CurrentHost As HostInfo
-    '    Public CurrentHostIndex As Integer
-    '    Public CurrentDevice As String    'Full SANE device name on CurrentHost (example: "canon_dr:libusb:008:005")
-    '    Public CurrentDeviceINI As IniFile
-    '    Public AutoLocateDevice As String 'SANE backend name of device to auto-choose from list of devices on CurrentHost (example: "canon_dr")
-    '    Public ReadOnly Property CurrentHost As HostInfo
-    '        Get
-    '            If (Me.CurrentHostIndex >= 0) And (Me.CurrentHostIndex < Me.Hosts.Length) Then
-    '                Return Me.Hosts(Me.CurrentHostIndex)
-    '            Else
-    '                Return Nothing
-    '            End If
-    '        End Get
-    '    End Property
-    'End Class
 
-    Public Structure TWAINSettings
-        'Dim Enabled As Boolean
-
-    End Structure
     Public UserConfigDirectory As String
     Public SharedConfigDirectory As String
     Public LogDirectory As String
-
     Public ProductName As System.Reflection.AssemblyName = System.Reflection.Assembly.GetExecutingAssembly.GetName
-
     Private Initialized As Boolean
     Private UserSettingsFolder As String
     Public UseRoamingAppData As Boolean
     Public ScanContinuously As Boolean
     Public ScanContinuouslyUserConfigured As Boolean
     Public SANE As SANESettings
-    Public TWAIN As TWAINSettings
-
     Public PageSizes As New ArrayList
     Private Const MAX_HOSTS As Integer = 50
     Private Const Current_INI_Ver = 0.8
@@ -153,7 +120,6 @@ Public Class SharedSettings
 
     Private Sub ReadSettings()
         SANE = New SANESettings
-        TWAIN = New TWAINSettings
 
         If UseRoamingAppData Then
             UserSettingsFolder = System.Environment.GetFolderPath(System.Environment.SpecialFolder.ApplicationData) & "\" & Me.ProductName.Name
@@ -188,15 +154,6 @@ Public Class SharedSettings
 
         Dim SuppressWarning As Boolean = False
         Boolean.TryParse(ReadIni(UserSettingsFileName, "General", "Suppress_Startup_Messages"), SuppressWarning)
-
-        If Not SuppressWarning Then
-            Dim App_Version As String = ReadIni(UserSettingsFileName, "General", "Version")
-            If App_Version <> GetType(SANE_API).Assembly.GetName.Version.ToString Then
-                Dim r As MsgBoxResult = MsgBox("SANEWinDS is hosted by SourceForge.  If you downloaded it from any other site you probably don't have the most recent version.  " _
-                    & "The current version is available at http://sourceforge.net/projects/sanewinds/ along with configuration instructions and a forum for " _
-                    & "bug reporting, feature requests, and backend.ini contributions.", MsgBoxStyle.Information + MsgBoxStyle.OkOnly, "SANEWinDS is hosted by SourceForge!")
-            End If
-        End If
 
         SANE.Hosts = GetSANEHostsFromINI(UserSettingsFileName)
 
@@ -257,10 +214,8 @@ Public Class SharedSettings
             If .NameOrAddress IsNot Nothing AndAlso .NameOrAddress.Length Then
                 If .Port > 0 Then
                     If .TCP_Timeout_ms > 1000 Then
-                        'If .Username IsNot Nothing AndAlso .Username.Length Then
                         Logger.Log(NLog.LogLevel.Debug, "Returning True")
                         Return True
-                        'End If
                     End If
                 End If
             End If
@@ -284,6 +239,7 @@ Public Class SharedSettings
                 Dim SectionName As String = "Host." & idx.ToString
                 If ReadIniSections(INI).Contains(SectionName) Then
                     Dim NameOrAddress As String = ReadIni(INI, SectionName, "NameOrAddress")
+                    If NameOrAddress Is Nothing Then NameOrAddress = "localhost"
                     Dim UseTSClientIP As Boolean
                     Boolean.TryParse(ReadIni(INI, SectionName, "UseTSClientIP"), UseTSClientIP)
                     Dim Port As Integer = 0
@@ -469,7 +425,7 @@ Public Class SharedSettings
                                     WriteDeviceConfigLine(fs, ";" & vbTab & IIf(modGlobals.SANE.CurrentDevice.OptionDescriptors(i).type = SANE_API.SANE_Value_Type.SANE_TYPE_FIXED, modGlobals.SANE.SANE_UNFIX(modGlobals.SANE.CurrentDevice.OptionDescriptors(i).constraint.word_list(j)).ToString, modGlobals.SANE.CurrentDevice.OptionDescriptors(i).constraint.word_list(j).ToString))
                                 Next
                         End Select
-                        'WriteDeviceConfigLine(fs,SANE.CurrentDevice.OptionDescriptors(i).name & "=")
+
                         WriteDeviceConfigLine(fs, "DefaultValue=", WriteValuesAsComments)
 
                         'Configure TWAIN capability mappings for SANE well-known options
@@ -563,10 +519,7 @@ Public Class SharedSettings
                                     If modGlobals.SANE.CurrentDevice.OptionDescriptors(i).constraint.string_list.Contains("Flatbed") Then
                                         WriteDeviceConfigLine(fs, "SANE.0=source,Flatbed", WriteValuesAsComments)
                                     End If
-                                    'If modGlobals.SANE.CurrentDevice.OptionDescriptors(i).constraint.string_list.Contains("Transparency Adapter") Then
-                                    '    'XXX how does a Transparency Adapter behave?
-                                    '    WriteDeviceConfigLine(fs,"SANE.0=source,Flatbed", WriteValuesAsComments)
-                                    'End If
+
                                     If modGlobals.SANE.CurrentDevice.OptionDescriptors(i).constraint.string_list.Contains("Automatic Document Feeder") Then
                                         WriteDeviceConfigLine(fs, "SANE.1=source,Automatic Document Feeder", WriteValuesAsComments)
                                     End If
@@ -615,55 +568,55 @@ Public Class SharedSettings
             .Add(New PageSize(5.5, 8.5, "Statement", TWAIN_VB.TWSS.TWSS_USSTATEMENT))
             .Add(New PageSize(2.0, 3.5, "Business Card", TWAIN_VB.TWSS.TWSS_BUSINESSCARD))
 
-            .Add(New PageSize(1682 / 25.4, 2378 / 25.4, "4A0", TWAIN_VB.TWSS.TWSS_4A0))
-            .Add(New PageSize(1189 / 25.4, 1682 / 25.4, "2A0", TWAIN_VB.TWSS.TWSS_2A0))
-            .Add(New PageSize(841 / 25.4, 1189 / 25.4, "A0", TWAIN_VB.TWSS.TWSS_A0))
-            .Add(New PageSize(594 / 25.4, 841 / 25.4, "A1", TWAIN_VB.TWSS.TWSS_A1))
-            .Add(New PageSize(420 / 25.4, 594 / 25.4, "A2", TWAIN_VB.TWSS.TWSS_A2))
-            .Add(New PageSize(297 / 25.4, 420 / 25.4, "A3", TWAIN_VB.TWSS.TWSS_A3))
-            .Add(New PageSize(210 / 25.4, 297 / 25.4, "A4", TWAIN_VB.TWSS.TWSS_A4))
-            .Add(New PageSize(148 / 25.4, 210 / 25.4, "A5", TWAIN_VB.TWSS.TWSS_A5))
-            .Add(New PageSize(105 / 25.4, 148 / 25.4, "A6", TWAIN_VB.TWSS.TWSS_A6))
-            .Add(New PageSize(74 / 25.4, 105 / 25.4, "A7", TWAIN_VB.TWSS.TWSS_A7))
-            .Add(New PageSize(52 / 25.4, 74 / 25.4, "A8", TWAIN_VB.TWSS.TWSS_A8))
-            .Add(New PageSize(37 / 25.4, 52 / 25.4, "A9", TWAIN_VB.TWSS.TWSS_A9))
-            .Add(New PageSize(26 / 25.4, 37 / 25.4, "A10", TWAIN_VB.TWSS.TWSS_A10))
+            .Add(New PageSize(MMToInches(1682), MMToInches(2378), "4A0", TWAIN_VB.TWSS.TWSS_4A0))
+            .Add(New PageSize(MMToInches(1189), MMToInches(1682), "2A0", TWAIN_VB.TWSS.TWSS_2A0))
+            .Add(New PageSize(MMToInches(841), MMToInches(1189), "A0", TWAIN_VB.TWSS.TWSS_A0))
+            .Add(New PageSize(MMToInches(594), MMToInches(841), "A1", TWAIN_VB.TWSS.TWSS_A1))
+            .Add(New PageSize(MMToInches(420), MMToInches(594), "A2", TWAIN_VB.TWSS.TWSS_A2))
+            .Add(New PageSize(MMToInches(297), MMToInches(420), "A3", TWAIN_VB.TWSS.TWSS_A3))
+            .Add(New PageSize(MMToInches(210), MMToInches(297), "A4", TWAIN_VB.TWSS.TWSS_A4))
+            .Add(New PageSize(MMToInches(148), MMToInches(210), "A5", TWAIN_VB.TWSS.TWSS_A5))
+            .Add(New PageSize(MMToInches(105), MMToInches(148), "A6", TWAIN_VB.TWSS.TWSS_A6))
+            .Add(New PageSize(MMToInches(74), MMToInches(105), "A7", TWAIN_VB.TWSS.TWSS_A7))
+            .Add(New PageSize(MMToInches(52), MMToInches(74), "A8", TWAIN_VB.TWSS.TWSS_A8))
+            .Add(New PageSize(MMToInches(37), MMToInches(52), "A9", TWAIN_VB.TWSS.TWSS_A9))
+            .Add(New PageSize(MMToInches(26), MMToInches(37), "A10", TWAIN_VB.TWSS.TWSS_A10))
 
-            .Add(New PageSize(1000 / 25.4, 1414 / 25.4, "B0", TWAIN_VB.TWSS.TWSS_ISOB0))
-            .Add(New PageSize(707 / 25.4, 1000 / 25.4, "B1", TWAIN_VB.TWSS.TWSS_ISOB1))
-            .Add(New PageSize(500 / 25.4, 707 / 25.4, "B2", TWAIN_VB.TWSS.TWSS_ISOB2))
-            .Add(New PageSize(353 / 25.4, 500 / 25.4, "B3", TWAIN_VB.TWSS.TWSS_ISOB3))
-            .Add(New PageSize(250 / 25.4, 353 / 25.4, "B4", TWAIN_VB.TWSS.TWSS_ISOB4))
-            .Add(New PageSize(176 / 25.4, 250 / 25.4, "B5", TWAIN_VB.TWSS.TWSS_ISOB5))
-            .Add(New PageSize(125 / 25.4, 176.25 / 4, "B6", TWAIN_VB.TWSS.TWSS_ISOB6))
-            .Add(New PageSize(88 / 25.4, 125 / 25.4, "B7", TWAIN_VB.TWSS.TWSS_ISOB7))
-            .Add(New PageSize(62 / 25.4, 88 / 25.4, "B8", TWAIN_VB.TWSS.TWSS_ISOB8))
-            .Add(New PageSize(44 / 25.4, 62 / 25.4, "B9", TWAIN_VB.TWSS.TWSS_ISOB9))
-            .Add(New PageSize(31 / 25.4, 44 / 25.4, "B10", TWAIN_VB.TWSS.TWSS_ISOB10))
+            .Add(New PageSize(MMToInches(1000), MMToInches(1414), "B0", TWAIN_VB.TWSS.TWSS_ISOB0))
+            .Add(New PageSize(MMToInches(707), MMToInches(1000), "B1", TWAIN_VB.TWSS.TWSS_ISOB1))
+            .Add(New PageSize(MMToInches(500), MMToInches(707), "B2", TWAIN_VB.TWSS.TWSS_ISOB2))
+            .Add(New PageSize(MMToInches(353), MMToInches(500), "B3", TWAIN_VB.TWSS.TWSS_ISOB3))
+            .Add(New PageSize(MMToInches(250), MMToInches(353), "B4", TWAIN_VB.TWSS.TWSS_ISOB4))
+            .Add(New PageSize(MMToInches(176), MMToInches(250), "B5", TWAIN_VB.TWSS.TWSS_ISOB5))
+            .Add(New PageSize(MMToInches(125), MMToInches(176), "B6", TWAIN_VB.TWSS.TWSS_ISOB6))
+            .Add(New PageSize(MMToInches(88), MMToInches(125), "B7", TWAIN_VB.TWSS.TWSS_ISOB7))
+            .Add(New PageSize(MMToInches(62), MMToInches(88), "B8", TWAIN_VB.TWSS.TWSS_ISOB8))
+            .Add(New PageSize(MMToInches(44), MMToInches(62), "B9", TWAIN_VB.TWSS.TWSS_ISOB9))
+            .Add(New PageSize(MMToInches(31), MMToInches(44), "B10", TWAIN_VB.TWSS.TWSS_ISOB10))
 
-            .Add(New PageSize(917 / 25.4, 1297 / 25.4, "C0", TWAIN_VB.TWSS.TWSS_C0))
-            .Add(New PageSize(648 / 25.4, 917 / 25.4, "C1", TWAIN_VB.TWSS.TWSS_C1))
-            .Add(New PageSize(458 / 25.4, 648 / 25.4, "C2", TWAIN_VB.TWSS.TWSS_C2))
-            .Add(New PageSize(324 / 25.4, 458 / 25.4, "C3", TWAIN_VB.TWSS.TWSS_C3))
-            .Add(New PageSize(229 / 25.4, 324 / 25.4, "C4", TWAIN_VB.TWSS.TWSS_C4))
-            .Add(New PageSize(162 / 25.4, 229 / 25.4, "C5", TWAIN_VB.TWSS.TWSS_C5))
-            .Add(New PageSize(114 / 25.4, 162 / 25.4, "C6", TWAIN_VB.TWSS.TWSS_C6))
-            .Add(New PageSize(81 / 25.4, 114 / 25.4, "C7", TWAIN_VB.TWSS.TWSS_C7))
-            .Add(New PageSize(57 / 25.4, 81 / 25.4, "C8", TWAIN_VB.TWSS.TWSS_C8))
-            .Add(New PageSize(40 / 25.4, 57 / 25.4, "C9", TWAIN_VB.TWSS.TWSS_C9))
-            .Add(New PageSize(28 / 25.4, 40 / 25.4, "C10", TWAIN_VB.TWSS.TWSS_C10))
+            .Add(New PageSize(MMToInches(917), MMToInches(1297), "C0", TWAIN_VB.TWSS.TWSS_C0))
+            .Add(New PageSize(MMToInches(648), MMToInches(917), "C1", TWAIN_VB.TWSS.TWSS_C1))
+            .Add(New PageSize(MMToInches(458), MMToInches(648), "C2", TWAIN_VB.TWSS.TWSS_C2))
+            .Add(New PageSize(MMToInches(324), MMToInches(458), "C3", TWAIN_VB.TWSS.TWSS_C3))
+            .Add(New PageSize(MMToInches(229), MMToInches(324), "C4", TWAIN_VB.TWSS.TWSS_C4))
+            .Add(New PageSize(MMToInches(162), MMToInches(229), "C5", TWAIN_VB.TWSS.TWSS_C5))
+            .Add(New PageSize(MMToInches(114), MMToInches(162), "C6", TWAIN_VB.TWSS.TWSS_C6))
+            .Add(New PageSize(MMToInches(81), MMToInches(114), "C7", TWAIN_VB.TWSS.TWSS_C7))
+            .Add(New PageSize(MMToInches(57), MMToInches(81), "C8", TWAIN_VB.TWSS.TWSS_C8))
+            .Add(New PageSize(MMToInches(40), MMToInches(57), "C9", TWAIN_VB.TWSS.TWSS_C9))
+            .Add(New PageSize(MMToInches(28), MMToInches(40), "C10", TWAIN_VB.TWSS.TWSS_C10))
 
-            .Add(New PageSize(1030 / 25.4, 1456 / 25.4, "JIS B0", TWAIN_VB.TWSS.TWSS_JISB0))
-            .Add(New PageSize(728 / 25.4, 1030 / 25.4, "JIS B1", TWAIN_VB.TWSS.TWSS_JISB1))
-            .Add(New PageSize(515 / 25.4, 728 / 25.4, "JIS B2", TWAIN_VB.TWSS.TWSS_JISB2))
-            .Add(New PageSize(364 / 25.4, 515 / 25.4, "JIS B3", TWAIN_VB.TWSS.TWSS_JISB3))
-            .Add(New PageSize(257 / 25.4, 364 / 25.4, "JIS B4", TWAIN_VB.TWSS.TWSS_JISB4))
-            .Add(New PageSize(182 / 25.4, 257 / 25.4, "JIS B5", TWAIN_VB.TWSS.TWSS_JISB5))
-            .Add(New PageSize(128 / 25.4, 182 / 25.4, "JIS B6", TWAIN_VB.TWSS.TWSS_JISB6))
-            .Add(New PageSize(91 / 25.4, 128 / 25.4, "JIS B7", TWAIN_VB.TWSS.TWSS_JISB7))
-            .Add(New PageSize(64 / 25.4, 91 / 254.4, "JIS B8", TWAIN_VB.TWSS.TWSS_JISB8))
-            .Add(New PageSize(45 / 25.4, 64 / 25.4, "JIS B9", TWAIN_VB.TWSS.TWSS_JISB9))
-            .Add(New PageSize(32 / 25.4, 45 / 25.4, "JIS B10", TWAIN_VB.TWSS.TWSS_JISB10))
+            .Add(New PageSize(MMToInches(1030), MMToInches(1456), "JIS B0", TWAIN_VB.TWSS.TWSS_JISB0))
+            .Add(New PageSize(MMToInches(728), MMToInches(1030), "JIS B1", TWAIN_VB.TWSS.TWSS_JISB1))
+            .Add(New PageSize(MMToInches(515), MMToInches(728), "JIS B2", TWAIN_VB.TWSS.TWSS_JISB2))
+            .Add(New PageSize(MMToInches(364), MMToInches(515), "JIS B3", TWAIN_VB.TWSS.TWSS_JISB3))
+            .Add(New PageSize(MMToInches(257), MMToInches(364), "JIS B4", TWAIN_VB.TWSS.TWSS_JISB4))
+            .Add(New PageSize(MMToInches(182), MMToInches(257), "JIS B5", TWAIN_VB.TWSS.TWSS_JISB5))
+            .Add(New PageSize(MMToInches(128), MMToInches(182), "JIS B6", TWAIN_VB.TWSS.TWSS_JISB6))
+            .Add(New PageSize(MMToInches(91), MMToInches(128), "JIS B7", TWAIN_VB.TWSS.TWSS_JISB7))
+            .Add(New PageSize(MMToInches(64), MMToInches(91), "JIS B8", TWAIN_VB.TWSS.TWSS_JISB8))
+            .Add(New PageSize(MMToInches(45), MMToInches(64), "JIS B9", TWAIN_VB.TWSS.TWSS_JISB9))
+            .Add(New PageSize(MMToInches(32), MMToInches(45), "JIS B10", TWAIN_VB.TWSS.TWSS_JISB10))
 
         End With
     End Sub

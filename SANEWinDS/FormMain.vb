@@ -97,7 +97,7 @@ Public Class FormMain
             If SANE IsNot Nothing Then
                 If SANE.CurrentDevice.Name IsNot Nothing Then
                     If SANE.CurrentDevice.Open Then
-                        SaveCurrentOptionValues()
+                        If CheckBoxSaveOnExit.Checked Then SaveCurrentOptionValues()
                         SANE.Net_Close(ControlClient, SANE.CurrentDevice.Handle)
                     End If
                 End If
@@ -1138,16 +1138,17 @@ Public Class FormMain
         End Try
     End Sub
 
-    Public Sub SaveCurrentOptionValues()
+    Public Sub SaveCurrentOptionValues(Optional ByVal OptionValueSetName As String = Nothing)
+        Dim f As String = CurrentSettings.GetDeviceConfigFileName(SharedSettings.ConfigFileScope.User, OptionValueSetName, True, True)
         Try
-            'Create the user backend.ini so it will contain helpful comments.
             If CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.User Is Nothing Then
-                Dim s As String = CurrentSettings.GetDeviceConfigFileName(SharedSettings.ConfigFileScope.User, True, True)
-                If Not String.IsNullOrEmpty(s) Then CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.User = s
+                If (OptionValueSetName Is Nothing) And (Not String.IsNullOrEmpty(f)) Then
+                    CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.User = f
+                End If
             End If
 
             'Write the current settings as defaults
-            If CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.User IsNot Nothing Then
+            If f IsNot Nothing Then
                 For i As Integer = 1 To SANE.CurrentDevice.OptionDescriptors.Count - 1 'skip the first option, which is just the option count
                     If Not String.IsNullOrEmpty(SANE.CurrentDevice.OptionDescriptors(i).name) Then
                         Dim Value As String = Nothing
@@ -1164,15 +1165,12 @@ Public Class FormMain
                                     Next
                                 End If
                         End Select
-                        WriteIni(CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.User,
-                                 "Option." & SANE.CurrentDevice.OptionDescriptors(i).name,
-                                 "DefaultValue",
-                                 Value)
+                        WriteIni(f, "Option." & SANE.CurrentDevice.OptionDescriptors(i).name, "DefaultValue", Value)
                     End If
                 Next
             End If
         Catch ex As Exception
-            Logger.Error(ex, "Error saving user defaults")
+            Logger.Error(ex, "Error saving option values")
         End Try
     End Sub
 
@@ -1197,7 +1195,7 @@ Public Class FormMain
                 PreferredFileName = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.User
                 AlternateFileName = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.Shared
             Case Else
-                PreferredFileName = CurrentSettings.GetSavedOptionValueFileName(OptValSetName)
+                PreferredFileName = CurrentSettings.GetDeviceConfigFileName(SharedSettings.ConfigFileScope.User, OptValSetName, True, True)
                 AlternateFileName = Nothing 'Unspecified settings will be taken from "Backend Defaults" in memory
         End Select
 
@@ -1620,6 +1618,11 @@ Public Class FormMain
                          CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Password)
                 If Status = SANE_API.SANE_Status.SANE_STATUS_GOOD Then
                     Array.Copy(OptReply.values, SANE.CurrentDevice.OptionValueSets("Current")(OptionIndex), OptReply.values.Length)
+                    If ComboBoxOptionValueSet.Text IsNot Nothing Then
+                        If SANE.CurrentDevice.OptionValueSets.ContainsKey(ComboBoxOptionValueSet.Text) Then
+                            Array.Copy(OptReply.values, SANE.CurrentDevice.OptionValueSets(ComboBoxOptionValueSet.Text)(OptionIndex), OptReply.values.Length)
+                        End If
+                    End If
                     If OptReply.info And SANE_API.SANE_INFO_RELOAD_OPTIONS Then GetOpts(False)
                     If Me.TWAIN_Is_Active Then
                         SetTWAINCaps(od, Values, False)
@@ -1713,7 +1716,6 @@ Public Class FormMain
 
     Private Sub TreeViewOptions_AfterSelect(ByVal sender As Object, ByVal e As System.Windows.Forms.TreeViewEventArgs) Handles TreeViewOptions.AfterSelect
         Try
-            ClearPanelControls()
             DisplayOption(PanelOpt, e.Node.Tag)
         Catch ex As Exception
             Debug.Print(ex.Message)
@@ -2050,7 +2052,30 @@ Public Class FormMain
     End Sub
 
     Private Sub ButtonSaveOptionValues_Click(sender As Object, e As EventArgs) Handles ButtonSaveOptionValues.Click
-        'XXXYZ Validate characters in name
+        Dim s As String = ComboBoxOptionValueSet.Text
+        If s Is Nothing Then
+            MsgBox("Please specify a name for the option value set", MsgBoxStyle.Exclamation + MsgBoxStyle.OkOnly, "Invalid Name")
+            Exit Sub
+        Else
+            Dim InvalidChars As Char() = System.IO.Path.GetInvalidFileNameChars
+            For Each c As Char In s
+                If InvalidChars.Contains(c) Then
+                    MsgBox("Name contains invalid characters", MsgBoxStyle.OkOnly + MsgBoxStyle.Exclamation, "Invalid Name")
+                    Exit Sub
+                End If
+            Next
+        End If
+        Try
+            SaveCurrentOptionValues(s)
+            PopulateOptionValueSetNames()
+            ComboBoxOptionValueSet.Text = s
+        Catch ex As Exception
+            Logger.Error(ex)
+        End Try
+    End Sub
+
+    Private Sub CheckBoxSaveOnExit_CheckedChanged(sender As Object, e As EventArgs) Handles CheckBoxSaveOnExit.CheckedChanged
+
     End Sub
 End Class
 

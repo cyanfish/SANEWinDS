@@ -40,6 +40,8 @@ Partial Class FormMain
         Me.Label4 = New System.Windows.Forms.Label()
         Me.ComboBoxOptionValueSet = New System.Windows.Forms.ComboBox()
         Me.ButtonSaveOptionValues = New System.Windows.Forms.Button()
+        Me.CheckBoxSaveOnExit = New System.Windows.Forms.CheckBox()
+        Me.LabelOptionSet = New System.Windows.Forms.Label()
         Me.PanelOpt = New SANEWinDS.DoubleBufferedPanel()
         CType(Me.SplitContainerOptions, System.ComponentModel.ISupportInitialize).BeginInit()
         Me.SplitContainerOptions.Panel1.SuspendLayout()
@@ -181,20 +183,41 @@ Partial Class FormMain
         '
         Me.ComboBoxOptionValueSet.Anchor = CType((System.Windows.Forms.AnchorStyles.Bottom Or System.Windows.Forms.AnchorStyles.Left), System.Windows.Forms.AnchorStyles)
         Me.ComboBoxOptionValueSet.FormattingEnabled = True
-        Me.ComboBoxOptionValueSet.Location = New System.Drawing.Point(215, 354)
+        Me.ComboBoxOptionValueSet.Location = New System.Drawing.Point(293, 354)
         Me.ComboBoxOptionValueSet.Name = "ComboBoxOptionValueSet"
-        Me.ComboBoxOptionValueSet.Size = New System.Drawing.Size(313, 21)
+        Me.ComboBoxOptionValueSet.Size = New System.Drawing.Size(235, 21)
         Me.ComboBoxOptionValueSet.TabIndex = 54
         '
         'ButtonSaveOptionValues
         '
-        Me.ButtonSaveOptionValues.Anchor = CType((System.Windows.Forms.AnchorStyles.Bottom Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
+        Me.ButtonSaveOptionValues.Anchor = CType((System.Windows.Forms.AnchorStyles.Bottom Or System.Windows.Forms.AnchorStyles.Left), System.Windows.Forms.AnchorStyles)
         Me.ButtonSaveOptionValues.Location = New System.Drawing.Point(534, 354)
         Me.ButtonSaveOptionValues.Name = "ButtonSaveOptionValues"
         Me.ButtonSaveOptionValues.Size = New System.Drawing.Size(75, 23)
         Me.ButtonSaveOptionValues.TabIndex = 55
         Me.ButtonSaveOptionValues.Text = "Save"
         Me.ButtonSaveOptionValues.UseVisualStyleBackColor = True
+        '
+        'CheckBoxSaveOnExit
+        '
+        Me.CheckBoxSaveOnExit.Anchor = CType((System.Windows.Forms.AnchorStyles.Bottom Or System.Windows.Forms.AnchorStyles.Left), System.Windows.Forms.AnchorStyles)
+        Me.CheckBoxSaveOnExit.AutoSize = True
+        Me.CheckBoxSaveOnExit.Location = New System.Drawing.Point(13, 362)
+        Me.CheckBoxSaveOnExit.Name = "CheckBoxSaveOnExit"
+        Me.CheckBoxSaveOnExit.Size = New System.Drawing.Size(124, 17)
+        Me.CheckBoxSaveOnExit.TabIndex = 56
+        Me.CheckBoxSaveOnExit.Text = "Save settings on exit"
+        Me.CheckBoxSaveOnExit.UseVisualStyleBackColor = True
+        '
+        'LabelOptionSet
+        '
+        Me.LabelOptionSet.Anchor = CType((System.Windows.Forms.AnchorStyles.Bottom Or System.Windows.Forms.AnchorStyles.Left), System.Windows.Forms.AnchorStyles)
+        Me.LabelOptionSet.AutoSize = True
+        Me.LabelOptionSet.Location = New System.Drawing.Point(232, 359)
+        Me.LabelOptionSet.Name = "LabelOptionSet"
+        Me.LabelOptionSet.Size = New System.Drawing.Size(55, 13)
+        Me.LabelOptionSet.TabIndex = 57
+        Me.LabelOptionSet.Text = "Option set"
         '
         'PanelOpt
         '
@@ -211,6 +234,8 @@ Partial Class FormMain
         Me.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font
         Me.CancelButton = Me.ButtonCancel
         Me.ClientSize = New System.Drawing.Size(617, 418)
+        Me.Controls.Add(Me.LabelOptionSet)
+        Me.Controls.Add(Me.CheckBoxSaveOnExit)
         Me.Controls.Add(Me.ButtonSaveOptionValues)
         Me.Controls.Add(Me.ComboBoxOptionValueSet)
         Me.Controls.Add(Me.Label4)
@@ -252,4 +277,6 @@ Partial Class FormMain
     Friend WithEvents Label4 As System.Windows.Forms.Label
     Friend WithEvents ComboBoxOptionValueSet As Windows.Forms.ComboBox
     Friend WithEvents ButtonSaveOptionValues As Windows.Forms.Button
+    Friend WithEvents CheckBoxSaveOnExit As Windows.Forms.CheckBox
+    Friend WithEvents LabelOptionSet As Windows.Forms.Label
 End Class

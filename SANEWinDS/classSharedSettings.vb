@@ -146,6 +146,7 @@ Public Class SharedSettings
                 End With
             End If
         Next
+        'XXXYZ save new settings
 
         WriteIni(UserSettingsFileName, "SANE", "DefaultHost", CurrentSettings.SANE.CurrentHostIndex)
     End Sub
@@ -324,20 +325,6 @@ Public Class SharedSettings
         Return hi
     End Function
 
-    Public Function GetSavedOptionValueFileName(ByVal OptValSetName As String) As String
-        Try
-            If String.IsNullOrWhiteSpace(OptValSetName) Then Throw New ArgumentNullException("OptValSetName")
-            If String.IsNullOrWhiteSpace(modGlobals.SANE.CurrentDevice.Name) Then Throw New Exception("The current device is unknown")
-            Dim BackEnd As String = modGlobals.SANE.CurrentDevice.Name
-            Dim p As Integer = BackEnd.IndexOf(":")
-            If p Then BackEnd = BackEnd.Substring(0, p)
-            Return Me.UserConfigDirectory & "\" & BackEnd & "." & OptValSetName & ".ini"
-        Catch ex As Exception
-            Logger.Error(ex)
-        End Try
-        Return Nothing
-    End Function
-
     Public Function GetSavedOptionValueSetNames() As ArrayList
         Dim SetNames As New ArrayList
         Try
@@ -362,15 +349,15 @@ Public Class SharedSettings
     End Function
 
     Public Function GetDeviceConfigFileName(Scope As ConfigFileScope) As String
-        Return GetDeviceConfigFileName(Scope, False, False)
+        Return GetDeviceConfigFileName(Scope, Nothing, False, False)
     End Function
-    Public Function GetDeviceConfigFileName(Scope As ConfigFileScope, ForceCreateUserConfig As Boolean, SuppressNotifications As Boolean) As String
+    Public Function GetDeviceConfigFileName(Scope As ConfigFileScope, OptionValueSetName As String, ForceCreateUserConfig As Boolean, SuppressNotifications As Boolean) As String
         'ForceCreateUserConfig=True will create a user config file even if a shared config file exists.
         Dim BackEnd As String = modGlobals.SANE.CurrentDevice.Name
         Dim p As Integer = BackEnd.IndexOf(":")
         If p Then BackEnd = BackEnd.Substring(0, p)
-        Dim f As String = CurrentSettings.UserConfigDirectory & "\" & BackEnd & ".ini"
-        Dim ff As String = CurrentSettings.SharedConfigDirectory & "\" & BackEnd & ".ini"
+        Dim f As String = Me.UserConfigDirectory & "\" & BackEnd & IIf(OptionValueSetName Is Nothing, "", "." & OptionValueSetName) & ".ini"
+        Dim ff As String = Me.SharedConfigDirectory & "\" & BackEnd & ".ini"
         If Scope = ConfigFileScope.User Then
             If My.Computer.FileSystem.FileExists(f) Then
                 Return f
@@ -379,7 +366,7 @@ Public Class SharedSettings
                     Return Nothing 'We have a shared backend.ini we can use.  No need to auto-create a user backend.ini.
                 Else
                     CreateDeviceConfigFile(f, My.Computer.FileSystem.FileExists(ff)) 'if we have a shared backend.ini, create the user backend.ini with all values commented out.
-                    If Not SuppressNotifications Then
+                    If (Not SuppressNotifications) And (OptionValueSetName Is Nothing) Then
                         Dim r As MsgBoxResult = MsgBox("The configuration file '" & BackEnd & ".ini' for the '" & BackEnd & "' backend was not found." _
                             & "  A file containing reasonable defaults has been created in the folder '" & CurrentSettings.UserConfigDirectory & "'." _
                             & "  You will most likely need to modify this new file to take full advantage of your backend, particularly if" _

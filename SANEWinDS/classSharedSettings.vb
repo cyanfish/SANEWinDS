@@ -1,5 +1,5 @@
 ﻿'
-'   Copyright 2011, 2012 Alec Skelly
+'   Copyright 2011-2021 Alec Skelly
 '
 '   This file is part of SANEWinDS.
 '
@@ -19,10 +19,7 @@
 Public Class SharedSettings
 
     Private Logger As NLog.Logger = NLog.LogManager.GetCurrentClassLogger()
-    'Public Enum UserSettingsLocations As Integer
-    '    LocalAppData = 0
-    '    RoamingAppData = 1
-    'End Enum
+
     Public Enum ConfigFileScope As Integer
         [Shared] = 0
         User = 1
@@ -41,54 +38,24 @@ Public Class SharedSettings
         Dim Image_Timeout_s As Integer
         Dim Open As Boolean
         Dim Device As String
-        'Dim DeviceINI As IniFile.IniFile
         Dim DeviceINI As ConfigFile
         Dim AutoLocateDevice As String 'SANE backend name of device to auto-choose from list of devices on CurrentHost (example: "canon_dr")
     End Structure
     Public Structure SANESettings
         Dim Hosts() As HostInfo
-        'Dim CurrentHost As HostInfo
         Dim CurrentHostIndex As Integer
-        'Dim CurrentDevice As String    'Full SANE device name on CurrentHost (example: "canon_dr:libusb:008:005")
-        'Dim CurrentDeviceINI As IniFile
-        'Dim AutoLocateDevice As String 'SANE backend name of device to auto-choose from list of devices on CurrentHost (example: "canon_dr")
     End Structure
-    'Public Class SANESettings
-    '    Public Hosts() As HostInfo
-    '    'Dim CurrentHost As HostInfo
-    '    Public CurrentHostIndex As Integer
-    '    Public CurrentDevice As String    'Full SANE device name on CurrentHost (example: "canon_dr:libusb:008:005")
-    '    Public CurrentDeviceINI As IniFile
-    '    Public AutoLocateDevice As String 'SANE backend name of device to auto-choose from list of devices on CurrentHost (example: "canon_dr")
-    '    Public ReadOnly Property CurrentHost As HostInfo
-    '        Get
-    '            If (Me.CurrentHostIndex >= 0) And (Me.CurrentHostIndex < Me.Hosts.Length) Then
-    '                Return Me.Hosts(Me.CurrentHostIndex)
-    '            Else
-    '                Return Nothing
-    '            End If
-    '        End Get
-    '    End Property
-    'End Class
 
-    Public Structure TWAINSettings
-        'Dim Enabled As Boolean
-
-    End Structure
     Public UserConfigDirectory As String
     Public SharedConfigDirectory As String
     Public LogDirectory As String
-
     Public ProductName As System.Reflection.AssemblyName = System.Reflection.Assembly.GetExecutingAssembly.GetName
-
     Private Initialized As Boolean
     Private UserSettingsFolder As String
     Public UseRoamingAppData As Boolean
     Public ScanContinuously As Boolean
     Public ScanContinuouslyUserConfigured As Boolean
     Public SANE As SANESettings
-    Public TWAIN As TWAINSettings
-
     Public PageSizes As New ArrayList
     Private Const MAX_HOSTS As Integer = 50
     Private Const Current_INI_Ver = 0.8
@@ -152,7 +119,6 @@ Public Class SharedSettings
 
     Private Sub ReadSettings()
         SANE = New SANESettings
-        TWAIN = New TWAINSettings
 
         If UseRoamingAppData Then
             UserSettingsFolder = System.Environment.GetFolderPath(System.Environment.SpecialFolder.ApplicationData) & "\" & Me.ProductName.Name
@@ -257,10 +223,8 @@ Public Class SharedSettings
             If .NameOrAddress IsNot Nothing AndAlso .NameOrAddress.Length Then
                 If .Port > 0 Then
                     If .TCP_Timeout_ms > 1000 Then
-                        'If .Username IsNot Nothing AndAlso .Username.Length Then
                         Logger.Log(NLog.LogLevel.Debug, "Returning True")
                         Return True
-                        'End If
                     End If
                 End If
             End If
@@ -284,6 +248,7 @@ Public Class SharedSettings
                 Dim SectionName As String = "Host." & idx.ToString
                 If ReadIniSections(INI).Contains(SectionName) Then
                     Dim NameOrAddress As String = ReadIni(INI, SectionName, "NameOrAddress")
+                    If NameOrAddress Is Nothing Then NameOrAddress = "localhost"
                     Dim UseTSClientIP As Boolean
                     Boolean.TryParse(ReadIni(INI, SectionName, "UseTSClientIP"), UseTSClientIP)
                     Dim Port As Integer = 0
@@ -431,7 +396,6 @@ Public Class SharedSettings
                                     fs.WriteLine(";" & vbTab & IIf(modGlobals.SANE.CurrentDevice.OptionDescriptors(i).type = SANE_API.SANE_Value_Type.SANE_TYPE_FIXED, modGlobals.SANE.SANE_UNFIX(modGlobals.SANE.CurrentDevice.OptionDescriptors(i).constraint.word_list(j)).ToString, modGlobals.SANE.CurrentDevice.OptionDescriptors(i).constraint.word_list(j).ToString))
                                 Next
                         End Select
-                        'fs.WriteLine(SANE.CurrentDevice.OptionDescriptors(i).name & "=")
                         fs.WriteLine("DefaultValue=")
 
                         'Configure TWAIN capability mappings for SANE well-known options
@@ -525,10 +489,6 @@ Public Class SharedSettings
                                     If modGlobals.SANE.CurrentDevice.OptionDescriptors(i).constraint.string_list.Contains("Flatbed") Then
                                         fs.WriteLine("SANE.0=source,Flatbed")
                                     End If
-                                    'If modGlobals.SANE.CurrentDevice.OptionDescriptors(i).constraint.string_list.Contains("Transparency Adapter") Then
-                                    '    'XXX how does a Transparency Adapter behave?
-                                    '    fs.WriteLine("SANE.0=source,Flatbed")
-                                    'End If
                                     If modGlobals.SANE.CurrentDevice.OptionDescriptors(i).constraint.string_list.Contains("Automatic Document Feeder") Then
                                         fs.WriteLine("SANE.1=source,Automatic Document Feeder")
                                     End If

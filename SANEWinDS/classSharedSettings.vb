@@ -155,15 +155,6 @@ Public Class SharedSettings
         Dim SuppressWarning As Boolean = False
         Boolean.TryParse(ReadIni(UserSettingsFileName, "General", "Suppress_Startup_Messages"), SuppressWarning)
 
-        If Not SuppressWarning Then
-            Dim App_Version As String = ReadIni(UserSettingsFileName, "General", "Version")
-            If App_Version <> GetType(SANE_API).Assembly.GetName.Version.ToString Then
-                Dim r As MsgBoxResult = MsgBox("SANEWinDS is hosted by SourceForge.  If you downloaded it from any other site you probably don't have the most recent version.  " _
-                    & "The current version is available at http://sourceforge.net/projects/sanewinds/ along with configuration instructions and a forum for " _
-                    & "bug reporting, feature requests, and backend.ini contributions.", MsgBoxStyle.Information + MsgBoxStyle.OkOnly, "SANEWinDS is hosted by SourceForge!")
-            End If
-        End If
-
         SANE.Hosts = GetSANEHostsFromINI(UserSettingsFileName)
 
         'increase the timeout for image acquisition.  1200 is the default beginning with INI version 0.8.

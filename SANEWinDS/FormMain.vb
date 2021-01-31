@@ -29,7 +29,7 @@ Public Class FormMain
     Public Event BatchCompleted(ByVal Pages As Integer)
     Public Event ImageProgress(ByVal PercentComplete As Integer) '0-100, -1 if unknown
 
-    Public Enum UIMode As Integer
+    Friend Enum UIMode As Integer
         Scan = 0
         Configure = 1
     End Enum
@@ -41,12 +41,14 @@ Public Class FormMain
         CancelDuringScan = DialogResult.Abort
         ErrorDuringScan = DialogResult.Abort And &H80
     End Enum
-    Public Got_MSG_CLOSEDS As Boolean = False
+
     Public Result As UIResult = UIResult.None
-    Public TWAIN_Is_Active As Boolean = False
-    Public TWAINInstance As TWAIN_VB.DS_Entry_Pump
-    Public Mode As UIMode = UIMode.Scan
     Public ShowScanProgress As Boolean = True
+
+    Friend Got_MSG_CLOSEDS As Boolean = False
+    Friend TWAIN_Is_Active As Boolean = False
+    Friend TWAINInstance As TWAIN_VB.DS_Entry_Pump
+    Friend Mode As UIMode = UIMode.Scan
 
     Private OptionValueControls(-1) As Control
     Private frmProgress As FormScanProgress
@@ -97,7 +99,7 @@ Public Class FormMain
             If SANE IsNot Nothing Then
                 If SANE.CurrentDevice.Name IsNot Nothing Then
                     If SANE.CurrentDevice.Open Then
-                        If CheckBoxSaveOnExit.Checked Then SaveCurrentOptionValues()
+                        If CheckBoxSaveOnExit.Checked Then SaveUserSettings()
                         SANE.Net_Close(ControlClient, SANE.CurrentDevice.Handle)
                     End If
                 End If
@@ -405,7 +407,6 @@ Public Class FormMain
 
     Private Sub Form1_Load(ByVal sender As Object, ByVal e As System.EventArgs) Handles Me.Load
         If Not Me.Initialized Then
-            Me.Initialized = True
             Me.Text = GetType(SANE_API).Assembly.GetName.Name.ToString() & " " & GetType(SANE_API).Assembly.GetName.Version.ToString()
             Me.MinimumSize = Me.Size
 
@@ -427,6 +428,7 @@ Public Class FormMain
             AddHandler SANE.FrameProgress, AddressOf ImageFrameProgress
 
             If Not TWAIN_Is_Active Then
+                Me.Mode = UIMode.Scan
                 If Not ((CurrentSettings.SANE.CurrentHostIndex > -1) _
                         AndAlso (CurrentSettings.SANE.CurrentHostIndex < CurrentSettings.SANE.Hosts.Length) _
                         AndAlso CurrentSettings.ResolveHost(CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex)) _
@@ -452,6 +454,7 @@ Public Class FormMain
             End If
             Update_Host_GUI()
             If Me.Mode = UIMode.Scan Then Me.ButtonOK.Text = "Scan" Else Me.ButtonOK.Text = "OK"
+            Me.Initialized = True
         End If
     End Sub
 
@@ -1115,6 +1118,7 @@ Public Class FormMain
 
                 End Try
         End Select
+        ButtonSaveOptionValues.Enabled = True
     End Sub
 
     Private Sub OptionControl_Leave(ByVal sender As System.Object, ByVal e As System.EventArgs)
@@ -1134,15 +1138,9 @@ Public Class FormMain
         End Try
     End Sub
 
-    Public Sub SaveCurrentOptionValues(Optional ByVal OptionValueSetName As String = Nothing)
-        Dim f As String = CurrentSettings.GetDeviceConfigFileName(SharedSettings.ConfigFileScope.User, OptionValueSetName, True, True)
+    Private Sub SaveCurrentOptionValues(FileName As String)
+        Dim f As String = FileName
         Try
-            If CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.User Is Nothing Then
-                If (OptionValueSetName Is Nothing) And (Not String.IsNullOrEmpty(f)) Then
-                    CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.User = f
-                End If
-            End If
-
             'Write the current settings as defaults
             If f IsNot Nothing Then
                 For i As Integer = 1 To SANE.CurrentDevice.OptionDescriptors.Count - 1 'skip the first option, which is just the option count
@@ -1170,10 +1168,11 @@ Public Class FormMain
         End Try
     End Sub
 
-    Public Sub ApplyUserSettings(Optional ByVal OptValSetName As String = Nothing)
+    Friend Sub ApplyUserSettings(Optional ByVal OptValSetName As String = Nothing)
         'read all DefaultValue= settings from the backend.ini and set live values
+        Debug.Print("ApplyUserSettings '" & OptValSetName & "'")
         Logger.Debug("begin")
-
+        If (OptValSetName IsNot Nothing) AndAlso (OptValSetName.ToUpper = "LOCAL DEFAULTS") Then OptValSetName = Nothing 'Use legacy file names and behavior
         Dim SetDefaults As Boolean = False
         If SANE.CurrentDevice.OptionValueSets IsNot Nothing Then
             '"Local Defaults" option value set will be created the first time this sub is called.
@@ -1185,9 +1184,10 @@ Public Class FormMain
 
         Dim PreferredFileName As String = Nothing 'Use values from this file if present
         Dim AlternateFileName As String = Nothing 'Use values from this file if not present in the preferred file
-        If OptValSetName Is Nothing Then OptValSetName = "Local Defaults"
+        'If OptValSetName Is Nothing Then OptValSetName = "Local Defaults"
         Select Case OptValSetName
-            Case "Local Defaults"
+            'Case "Local Defaults"
+            Case Nothing
                 PreferredFileName = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.User
                 AlternateFileName = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.Shared
             Case Else
@@ -1225,11 +1225,11 @@ Public Class FormMain
                         Dim Values() As Object = Nothing
                         Dim ValuesAreDefault As Boolean = True
                         If SetDefaults Then Values = SANE.CurrentDevice.OptionValueSets("Backend Defaults")(i)
-                        'Use values from memory if available
-                        If (OptValSetName IsNot Nothing) AndAlso SANE.CurrentDevice.OptionValueSets.ContainsKey(OptValSetName) Then
-                            Values = SANE.CurrentDevice.OptionValueSets(OptValSetName)(i)
-                            ValuesAreDefault = False
-                        End If
+                        ''Use values from memory if available
+                        'If (OptValSetName IsNot Nothing) AndAlso SANE.CurrentDevice.OptionValueSets.ContainsKey(OptValSetName) Then
+                        '    Values = SANE.CurrentDevice.OptionValueSets(OptValSetName)(i)
+                        '    ValuesAreDefault = False
+                        'End If
                         'As a last resort, read values from disk
                         If ValuesAreDefault Then
                             Dim optval As String = CurrentSettings.GetINIKeyValue("Option." & SANE.CurrentDevice.OptionDescriptors(i).name, "DefaultValue", PreferredFileName, AlternateFileName)
@@ -1324,7 +1324,6 @@ Public Class FormMain
                     Me.TWAINInstance.SetCap(TWAIN_VB.CAP.ICAP_PHYSICALWIDTH, MaxWidth, TWAIN_VB.DS_Entry_Pump.SetCapScope.BothValues, TWAIN_VB.DS_Entry_Pump.RequestSource.SANE)
                     Me.TWAINInstance.SetCap(TWAIN_VB.CAP.ICAP_PHYSICALHEIGHT, MaxHeight, TWAIN_VB.DS_Entry_Pump.SetCapScope.BothValues, TWAIN_VB.DS_Entry_Pump.RequestSource.SANE)
                 End If
-
             Else
                 Logger.Warn("'MaxPaperWidth' and 'MaxPaperHeight' are not configured in backend.ini and backend doesn't properly support 'br-x' and 'br-y'; unable to determine which page sizes are supported.")
             End If
@@ -1366,15 +1365,36 @@ Public Class FormMain
                         'We should get here only during initialization of a newly selected device.
                         .Add("Local Defaults", CloneOptionValueSet(.Item("Current")))
                     End If
-                    If (OptValSetName IsNot Nothing) AndAlso (Not .ContainsKey(OptValSetName)) Then
-                        .Add(OptValSetName, CloneOptionValueSet(.Item("Current")))
-                    End If
+                    'Following lines removed to prevent storing user value sets in memory.  Always read them from file.
+                    'If (OptValSetName IsNot Nothing) AndAlso (Not .ContainsKey(OptValSetName)) Then
+                    '    .Add(OptValSetName, CloneOptionValueSet(.Item("Current")))
+                    'End If
                 End With
             End If
         Else
             Logger.Warn("Backend configuration file uninitialized; backend-specific values were not configured")
         End If
         Logger.Debug("end")
+    End Sub
+
+    Private Sub SaveUserSettings(Optional ByVal OptionValueSetName As String = Nothing)
+        If OptionValueSetName IsNot Nothing AndAlso OptionValueSetName.ToUpper = "LOCAL DEFAULTS" Then OptionValueSetName = Nothing 'Use legacy ini file names and behavior
+        Dim f As String = CurrentSettings.GetDeviceConfigFileName(SharedSettings.ConfigFileScope.User, OptionValueSetName, True, True)
+        Try
+            Me.Cursor = Cursors.WaitCursor
+            If CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.User Is Nothing Then
+                If (OptionValueSetName Is Nothing) And (Not String.IsNullOrEmpty(f)) Then
+                    CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.User = f
+                End If
+            End If
+            SaveCurrentOptionValues(f)
+            If CurrentSettings.ScanContinuouslyUserConfigured Then WriteIni(f, "General", "ScanContinuously", CurrentSettings.ScanContinuously.ToString)
+            If Not String.IsNullOrWhiteSpace(ComboBoxPageSize.Text) Then WriteIni(f, "General", "DefaultPaperSize", ComboBoxPageSize.Text)
+        Catch ex As Exception
+            Logger.Error(ex)
+        Finally
+            Me.Cursor = Cursors.Default
+        End Try
     End Sub
 
     Friend Sub Get_Current_Device_Physical_Size_In_Inches(ByRef Width As Double, ByRef Height As Double)
@@ -1503,7 +1523,7 @@ Public Class FormMain
         End If
     End Sub
 
-    Public Function GetSANEOptionUnit(ByVal OptionName As String) As Integer
+    Friend Function GetSANEOptionUnit(ByVal OptionName As String) As Integer
         If OptionName Is Nothing Then OptionName = String.Empty
         For Index As Integer = 1 To SANE.CurrentDevice.OptionDescriptors.Length - 1
             Dim od As SANE_API.SANE_Option_Descriptor = SANE.CurrentDevice.OptionDescriptors(Index)
@@ -1516,7 +1536,7 @@ Public Class FormMain
         Return SANE_API.SANE_Unit.SANE_UNIT_NONE
     End Function
 
-    Public Function GetSANEOption(ByVal OptionName As String) As Object()
+    Friend Function GetSANEOption(ByVal OptionName As String) As Object()
         If OptionName Is Nothing Then OptionName = String.Empty
         For Index As Integer = 0 To SANE.CurrentDevice.OptionDescriptors.Length - 1
             Dim od As SANE_API.SANE_Option_Descriptor = SANE.CurrentDevice.OptionDescriptors(Index)
@@ -1614,11 +1634,11 @@ Public Class FormMain
                          CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Password)
                 If Status = SANE_API.SANE_Status.SANE_STATUS_GOOD Then
                     Array.Copy(OptReply.values, SANE.CurrentDevice.OptionValueSets("Current")(OptionIndex), OptReply.values.Length)
-                    If ComboBoxOptionValueSet.Text IsNot Nothing Then
-                        If SANE.CurrentDevice.OptionValueSets.ContainsKey(ComboBoxOptionValueSet.Text) Then
-                            Array.Copy(OptReply.values, SANE.CurrentDevice.OptionValueSets(ComboBoxOptionValueSet.Text)(OptionIndex), OptReply.values.Length)
-                        End If
-                    End If
+                    'If ComboBoxOptionValueSet.Text IsNot Nothing Then
+                    '    If SANE.CurrentDevice.OptionValueSets.ContainsKey(ComboBoxOptionValueSet.Text) Then
+                    '        Array.Copy(OptReply.values, SANE.CurrentDevice.OptionValueSets(ComboBoxOptionValueSet.Text)(OptionIndex), OptReply.values.Length)
+                    '    End If
+                    'End If
                     If OptReply.info And SANE_API.SANE_INFO_RELOAD_OPTIONS Then GetOpts(False)
                     If Me.TWAIN_Is_Active Then
                         SetTWAINCaps(od, Values, False)
@@ -1647,6 +1667,10 @@ Public Class FormMain
             Loop
 
             Me.PanelOptIsDirty = False
+
+            If Not String.IsNullOrWhiteSpace(ComboBoxOptionValueSet.Text) Then
+                ButtonSaveOptionValues.Enabled = True
+            End If
 
             Return Status
         Catch ex As ApplicationException
@@ -1726,6 +1750,7 @@ Public Class FormMain
     End Sub
 
     Private Sub Update_Host_GUI()
+        Debug.Print("Update_Host_GUI")
         If (CurrentSettings.SANE.CurrentHostIndex > -1) AndAlso (CurrentSettings.SANE.CurrentHostIndex < CurrentSettings.SANE.Hosts.Length) _
             AndAlso CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Open Then
             Me.TextBoxHost.Text = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).NameOrAddress
@@ -1733,6 +1758,8 @@ Public Class FormMain
             Me.TextBoxDevice.Text = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Device
 
             PopulateOptionValueSetNames()
+            If String.IsNullOrWhiteSpace(ComboBoxOptionValueSet.Text) Then ComboBoxOptionValueSet.Text = "Local Defaults"
+            Me.CheckBoxSaveOnExit.Checked = CurrentSettings.SaveDefaultsOnExit
 
         Else
             'Me.TextBoxHost.Text = Nothing
@@ -1754,6 +1781,9 @@ Public Class FormMain
 
     Private Sub CheckBoxBatchMode_CheckedChanged(ByVal sender As Object, ByVal e As System.EventArgs) Handles CheckBoxBatchMode.CheckedChanged
         CurrentSettings.ScanContinuously = CheckBoxBatchMode.Checked
+        If Not String.IsNullOrWhiteSpace(ComboBoxOptionValueSet.Text) Then
+            ButtonSaveOptionValues.Enabled = True
+        End If
     End Sub
 
     Private Sub ButtonHost_Click(sender As Object, e As EventArgs) Handles ButtonHost.Click
@@ -1829,7 +1859,7 @@ Public Class FormMain
         End Try
     End Sub
 
-    Public Sub ClearPanelControls()
+    Friend Sub ClearPanelControls()
         Try
             For Each ctl As Control In Me.PanelOpt.Controls
                 Select Case ctl.GetType
@@ -1956,7 +1986,7 @@ Public Class FormMain
         RaiseEvent ImageProgress(PercentComplete)
     End Sub
 
-    Public Sub SetControlsEnabled(NewState As Boolean)
+    Friend Sub SetControlsEnabled(NewState As Boolean)
         'Disable or enable all controls and controlboxes while preserving their original state, and display a waitcursor if disabled.
         Static Initialized As Boolean
         Static CurrentState As Boolean
@@ -2023,6 +2053,7 @@ Public Class FormMain
     End Function
 
     Private Sub PopulateOptionValueSetNames()
+        Debug.Print("PopulateOptionValueSetNames")
         Me.ComboBoxOptionValueSet.Items.Clear()
         For Each s As String In SANE.CurrentDevice.OptionValueSets.Keys
             Select Case s
@@ -2039,17 +2070,21 @@ Public Class FormMain
     End Sub
 
     Private Sub ComboBoxOptionValueSet_SelectedIndexChanged(sender As Object, e As EventArgs) Handles ComboBoxOptionValueSet.SelectedIndexChanged
+        Debug.Print("ComboBoxOptionValueSet_SelectedIndexChanged")
         Select Case ComboBoxOptionValueSet.SelectedItem
             Case "Current", "Backend Defaults"
                 'Do nothing.  These should never be in the list.
             Case Else
-                ApplyUserSettings(ComboBoxOptionValueSet.SelectedItem)
+                If Me.Initialized Then 'Prevent applying defaults twice on initial startup
+                    ApplyUserSettings(ComboBoxOptionValueSet.SelectedItem)
+                End If
         End Select
+        ButtonSaveOptionValues.Enabled = False
     End Sub
 
     Private Sub ButtonSaveOptionValues_Click(sender As Object, e As EventArgs) Handles ButtonSaveOptionValues.Click
         Dim s As String = ComboBoxOptionValueSet.Text
-        If s Is Nothing Then
+        If String.IsNullOrWhiteSpace(s) Then
             MsgBox("Please specify a name for the option value set", MsgBoxStyle.Exclamation + MsgBoxStyle.OkOnly, "Invalid Name")
             Exit Sub
         Else
@@ -2062,16 +2097,24 @@ Public Class FormMain
             Next
         End If
         Try
-            SaveCurrentOptionValues(s)
+            Me.Cursor = Cursors.WaitCursor
+            SaveUserSettings(s)
             PopulateOptionValueSetNames()
             ComboBoxOptionValueSet.Text = s
         Catch ex As Exception
             Logger.Error(ex)
+        Finally
+            Me.Cursor = Cursors.Default
         End Try
     End Sub
 
-    Private Sub CheckBoxSaveOnExit_CheckedChanged(sender As Object, e As EventArgs) Handles CheckBoxSaveOnExit.CheckedChanged
+    Private Sub ComboBoxOptionValueSet_TextChanged(sender As Object, e As EventArgs) Handles ComboBoxOptionValueSet.TextChanged
+        Debug.Print("ComboBoxOptionValueSet_TextChanged")
+        If Not String.IsNullOrWhiteSpace(ComboBoxOptionValueSet.Text) Then ButtonSaveOptionValues.Enabled = True
+    End Sub
 
+    Private Sub CheckBoxSaveOnExit_CheckedChanged(sender As Object, e As EventArgs) Handles CheckBoxSaveOnExit.CheckedChanged
+        CurrentSettings.SaveDefaultsOnExit = CheckBoxSaveOnExit.Checked
     End Sub
 End Class
 

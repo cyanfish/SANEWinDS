@@ -286,7 +286,7 @@ Public Class FormStartup
                         OutputString += s.Substring(p)
                         s = ""
                     End If
-                 End If
+                End If
             Else
                 OutputString += s
                 s = ""
@@ -813,7 +813,7 @@ Public Class FormStartup
         End Try
     End Sub
 
-    Private Sub GUIForm_FormClosing(sender As Object, e As FormClosingEventArgs) 'Handles GUIForm.FormClosing
+    Private Sub GUIForm_FormClosing(sender As Object, e As FormClosingEventArgs)
         If e.CloseReason = CloseReason.UserClosing Then
             e.Cancel = True
             GUIForm.Hide()

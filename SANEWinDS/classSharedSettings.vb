@@ -55,6 +55,7 @@ Public Class SharedSettings
     Public UseRoamingAppData As Boolean
     Public ScanContinuously As Boolean
     Public ScanContinuouslyUserConfigured As Boolean
+    Public SaveDefaultsOnExit As Boolean
     Public SANE As SANESettings
     Public PageSizes As New ArrayList
     Private Const MAX_HOSTS As Integer = 50
@@ -113,9 +114,8 @@ Public Class SharedSettings
                 End With
             End If
         Next
-        'XXXYZ save new settings
-
-        WriteIni(UserSettingsFileName, "SANE", "DefaultHost", CurrentSettings.SANE.CurrentHostIndex)
+        WriteIni(UserSettingsFileName, "SANE", "DefaultHost", Me.SANE.CurrentHostIndex)
+        WriteIni(UserSettingsFileName, "General", "SaveDefaultsOnExit", Me.SaveDefaultsOnExit)
     End Sub
 
     Private Sub ReadSettings()
@@ -181,6 +181,8 @@ Public Class SharedSettings
         Else
             Logger.Log(NLog.LogLevel.Warn, "No hosts are configured")
         End If
+
+        Boolean.TryParse(ReadIni(UserSettingsFileName, "General", "SaveDefaultsOnExit"), Me.SaveDefaultsOnExit)
 
     End Sub
 
@@ -292,7 +294,7 @@ Public Class SharedSettings
                 Dim ff As String = My.Computer.FileSystem.GetName(f)
                 Dim ss As String = ff.Replace(BackEnd & ".", "")
                 Dim SetName As String = Strings.Replace(ss, ".ini", "",,, CompareMethod.Text)
-                SetNames.Add(SetName)
+                If Not String.IsNullOrWhiteSpace(SetName) Then SetNames.Add(SetName)
             Next
         Catch ex As Exception
             Logger.Error(ex)
@@ -324,7 +326,7 @@ Public Class SharedSettings
                     CreateDeviceConfigFile(f, My.Computer.FileSystem.FileExists(ff)) 'if we have a shared backend.ini, create the user backend.ini with all values commented out.
                     If (Not SuppressNotifications) And (OptionValueSetName Is Nothing) Then
                         Dim r As MsgBoxResult = MsgBox("The configuration file '" & BackEnd & ".ini' for the '" & BackEnd & "' backend was not found." _
-                            & "  A file containing reasonable defaults has been created in the folder '" & CurrentSettings.UserConfigDirectory & "'." _
+                            & "  A file containing reasonable defaults has been created in the folder '" & Me.UserConfigDirectory & "'." _
                             & "  You will most likely need to modify this new file to take full advantage of your backend, particularly if" _
                             & " you intend to use it through TWAIN.  Once you have tested your configuration, please help other users" _
                             & " by submitting '" & BackEnd & ".ini' back to the project at https://sourceforge.net/p/sanewinds/discussion/backend-ini/." _

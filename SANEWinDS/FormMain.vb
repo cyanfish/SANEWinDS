@@ -872,6 +872,12 @@ Public Class FormMain
                     If Me.ImageCurve_KeyPoints.ContainsKey(ic.Name) Then
                         ic.keyPt = Me.ImageCurve_KeyPoints(ic.Name).ToList
                     Else
+                        'XXX Find keypoints based on existing curve
+                        Dim values(SANE.CurrentDevice.OptionValueSets("Current")(OptionIndex).Length - 1) As Integer
+                        For i = 0 To values.Length - 1
+                            values(i) = SANE.CurrentDevice.OptionValueSets("Current")(OptionIndex)(i)
+                        Next
+                        ic.LevelValue = values
 
                     End If
 

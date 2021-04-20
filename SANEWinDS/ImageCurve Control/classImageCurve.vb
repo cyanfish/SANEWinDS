@@ -66,11 +66,15 @@ Public Class ImageCurve
         ' Raise the event.
     End Sub
 
-    Public ReadOnly Property LevelValue() As Integer()
+    'Public ReadOnly Property LevelValue() As Integer()
+    Public Property LevelValue() As Integer()
         Get
             getImageLevel()
             Return level
         End Get
+        Set(value As Integer())
+            setKeyPtsFromLevels(value)
+        End Set
     End Property
 
     Private Sub getImageLevel()
@@ -101,6 +105,144 @@ Public Class ImageCurve
             End If
             level(pts(0).X + i) = n
         Next
+    End Sub
+
+    Private Sub setKeyPtsFromLevels2(levels() As Integer)
+        Dim DirectionChangeIndex As New ArrayList
+        Dim Direction As Integer = 0 '-1 = down, 0 = none/unknown, 1 = up
+        For i As Integer = 0 To levels.Length - 1
+            Select Case i
+                Case 0, levels.Length - 1
+                    DirectionChangeIndex.Add(i)
+                Case Else
+                    Select Case Direction
+                        Case < 0
+                            If levels(i) > levels(i - 1) Then
+                                DirectionChangeIndex.Add(i)
+                                Direction = 1
+                                'ElseIf levels(i) = level(i - 1) Then
+                                '    Direction = 0
+                            End If
+                        Case 0
+                            If levels(i) > levels(i - 1) Then
+                                Direction = 1
+                            ElseIf levels(i) < levels(i - 1) Then
+                                Direction = -1
+                            End If
+                        Case > 0
+                            If levels(i) < levels(i - 1) Then
+                                DirectionChangeIndex.Add(i)
+                                Direction = -1
+                            End If
+                    End Select
+            End Select
+        Next
+
+        Dim KeyPts As New List(Of Point)
+        For i As Integer = 0 To DirectionChangeIndex.Count - 1
+            Dim idx As Integer = DirectionChangeIndex(i)
+            Debug.Print("Direction change at index " & idx.ToString & " (value=" & levels(idx).ToString & ")")
+            Dim p As New Point()
+            p.X = idx * Me.Width \ MaxX
+            p.Y = Me.Height - levels(idx) * Me.Height \ MaxY
+
+            KeyPts.Add(p)
+        Next
+        Me.keyPt = KeyPts
+
+    End Sub
+
+    Private Sub setKeyPtsFromLevels(levels() As Integer)
+        Dim DirectionChangeIndex As New ArrayList
+        Dim Direction As Integer = 0 '-1 = down, 0 = none/unknown, 1 = up
+        Dim MinDelta As Integer = Integer.MaxValue
+        Dim TowardZero As Integer = -1
+        Dim Flat As Integer = 0
+        Dim AwayFromZero As Integer = 1
+        DirectionChangeIndex.Add(0)
+        For i As Integer = 0 To levels.Length - 1
+            If (i > 0) AndAlso (i < levels.Count - 1) Then
+                'Debug.Print("i=" & i.ToString)
+                Dim PriorDelta As Integer = Math.Abs(levels(i) - levels(i - 1))
+                Dim NextDelta As Integer = Math.Abs(levels(i + 1) - levels(i))
+                Debug.Print("i=" & i.ToString & ", Value=" & levels(i).ToString & ", MinDelta=" & MinDelta.ToString & ", PriorDelta=" & PriorDelta.ToString & ", NextDelta=" & NextDelta.ToString & ", Direction=" & IIf(Direction = AwayFromZero, "AwayFromZero", IIf(Direction = TowardZero, "TowardZero", "Flat")))
+                Dim NewMinDelta As Integer = MinDelta
+                'If ((NextDelta > MinDelta) And (Direction = TowardZero)) Then
+                '    DirectionChangeIndex.Add(i)
+                '    Debug.Print("KeyPt at x=" & i.ToString)
+                '    NewMinDelta = Integer.MaxValue
+                '    'Direction = AwayFromZero
+                '    'Debug.Print("Direction==>" & IIf(Direction = AwayFromZero, "AwayFromZero", IIf(Direction = TowardZero, "TowardZero", "Flat")))
+                'Else
+                '    NewMinDelta = NextDelta
+                'End If
+                'If NewMinDelta <> MinDelta Then
+                '    MinDelta = NewMinDelta
+                '    Debug.Print("MinDelta==>" & MinDelta.ToString)
+                'End If
+                ''If PriorDelta > NextDelta Then
+                ''    'Direction = TowardZero 'Else Direction = AwayFromZero
+                ''    'Debug.Print("Direction==>" & IIf(Direction = AwayFromZero, "AwayFromZero", IIf(Direction = TowardZero, "TowardZero", "Flat")))
+                ''ElseIf PriorDelta = NextDelta Then
+                ''    'Direction = Flat
+                ''    'Debug.Print("Direction==>" & IIf(Direction = AwayFromZero, "AwayFromZero", IIf(Direction = TowardZero, "TowardZero", "Flat")))
+                ''End If
+
+                Dim NewDirection As Integer
+                Select Case NextDelta - PriorDelta
+                    Case 0
+                        NewDirection = Flat
+                    Case > 0
+                        NewDirection = AwayFromZero
+                    Case < 0
+                        NewDirection = TowardZero
+                End Select
+
+                If Direction = AwayFromZero Then
+                    NewMinDelta = Integer.MaxValue
+                Else
+                    If NextDelta < MinDelta Then
+                        NewMinDelta = NextDelta
+                    End If
+                End If
+
+                If Direction <> NewDirection Then
+                    If Direction = TowardZero Then
+                        If NextDelta > MinDelta Then
+                            DirectionChangeIndex.Add(i)
+                            Debug.Print("KeyPt at x=" & i.ToString)
+                            NewMinDelta = Integer.MaxValue
+                        Else
+                            'NewMinDelta = NextDelta
+                        End If
+                    End If
+
+
+                    Direction = NewDirection
+                    Debug.Print("Direction==>" & IIf(Direction = AwayFromZero, "AwayFromZero", IIf(Direction = TowardZero, "TowardZero", "Flat")))
+                End If
+
+                If NewMinDelta <> MinDelta Then
+                    MinDelta = NewMinDelta
+                    Debug.Print("MinDelta==>" & MinDelta.ToString)
+                End If
+
+            End If
+        Next
+        DirectionChangeIndex.Add(levels.Length - 1)
+
+        Dim KeyPts As New List(Of Point)
+        For i As Integer = 0 To DirectionChangeIndex.Count - 1
+            Dim idx As Integer = DirectionChangeIndex(i)
+            Debug.Print("Direction change at index " & idx.ToString & " (value=" & levels(idx).ToString & ")")
+            Dim p As New Point()
+            p.X = idx * Me.Width \ MaxX
+            p.Y = Me.Height - levels(idx) * Me.Height \ MaxY
+
+            KeyPts.Add(p)
+        Next
+        Me.keyPt = KeyPts
+
     End Sub
 
     Private ww As Integer, hh As Integer

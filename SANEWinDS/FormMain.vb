@@ -1125,6 +1125,10 @@ Public Class FormMain
             End If
 
             If (MaxWidth > 0) And (MaxHeight > 0) Then
+                Dim MaxHeightRounded As Single = Math.Round(MaxHeight, 1, MidpointRounding.AwayFromZero)
+                Dim MaxWidthRounded As Single = Math.Round(MaxWidth, 1, MidpointRounding.AwayFromZero)
+                Logger.Debug("Device or User Maximum Height=" & MaxHeight.ToString & ", rounded to " & MaxHeightRounded.ToString)
+                Logger.Debug("Device or User Maximum Width=" & MaxWidth.ToString & ", rounded to " & MaxWidthRounded.ToString)
                 For Each ps As PageSize In CurrentSettings.PageSizes
                     Select Case ps.TWAIN_TWSS 'We may not be using TWAIN, but this is a more reliable property than .Name.
                         Case TWAIN_VB.TWSS.TWSS_NONE, TWAIN_VB.TWSS.TWSS_MAXSIZE
@@ -1134,12 +1138,21 @@ Public Class FormMain
                             SANE.CurrentDevice.SupportedPageSizes.Add(ps)
                             Me.ComboBoxPageSize.Items.Add(ps.Name)
                         Case Else
-                            If ps.Width <= Math.Round(MaxWidth, 2, MidpointRounding.AwayFromZero) Then
-                                If ps.Height <= Math.Round(MaxHeight, 2, MidpointRounding.AwayFromZero) Then
+                            Logger.Debug("Evaluating page size '{0}':", ps.Name)
+                            Dim PageHeightRounded As Single = Math.Round(ps.Height, 1, MidpointRounding.AwayFromZero)
+                            Dim PageWidthRounded As Single = Math.Round(ps.Width, 1, MidpointRounding.AwayFromZero)
+                            Logger.Debug(vbTab & "Height={0}, rounded to {1}", ps.Height.ToString, PageHeightRounded.ToString)
+                            Logger.Debug(vbTab & "Width={0}, rounded to {1}", ps.Width.ToString, PageWidthRounded.ToString)
+                            If PageWidthRounded <= MaxWidthRounded Then
+                                If PageHeightRounded <= MaxHeightRounded Then
                                     Logger.Info("Supported page size: '{0}'", ps.Name)
                                     SANE.CurrentDevice.SupportedPageSizes.Add(ps)
                                     Me.ComboBoxPageSize.Items.Add(ps.Name)
+                                Else
+                                    Logger.Debug(vbTab & "Height oversized: {0} > {1}", PageHeightRounded.ToString, MaxHeightRounded.ToString)
                                 End If
+                            Else
+                                Logger.Debug(vbTab & "Width oversized: {0} > {1}", PageWidthRounded.ToString, MaxWidthRounded.ToString)
                             End If
                     End Select
                 Next

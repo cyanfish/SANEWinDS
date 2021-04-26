@@ -381,7 +381,15 @@ Public Class FormMain
     Private Sub Form1_Load(ByVal sender As Object, ByVal e As System.EventArgs) Handles Me.Load
         If Not Me.Initialized Then
             Me.Initialized = True
-            Me.Text = GetType(SANE_API).Assembly.GetName.Name.ToString() & " " & GetType(SANE_API).Assembly.GetName.Version.ToString()
+            'Me.Text = GetType(SANE_API).Assembly.GetName.Name & " " & GetType(SANE_API).Assembly.GetName.Version.ToString()
+            With GetType(SANE_API).Assembly.GetName
+                '"Assembly Version" from project properties
+                Me.Text = .Name _
+                    & " " & .Version.Major.ToString _
+                    & "." & .Version.Minor.ToString _
+                    & " (" & .Version.Build.ToString & ")"
+            End With
+
             Me.MinimumSize = Me.Size
 
             Me.TreeViewOptions.HideSelection = False

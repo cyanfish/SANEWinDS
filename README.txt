@@ -1,4 +1,10 @@
 Changelog:
+Version 1.0.7785
+-Updated PDF library from iTextSharp to iText7.
+-Improved detection of pages sizes supported by scanners.
+-Changed PDF page size to match image size.
+-Fixed exception when launching from the console of a terminal server.
+-Removed obnoxious "hosted by sourceforge" messagebox during first launch.
 
 Version 0.9.5589
 -Fixed "Invalid characters in path" bug in SANEWin client when path contained a space.

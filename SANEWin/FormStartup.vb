@@ -1,6 +1,6 @@
 ﻿
 '
-'   Copyright 2011, 2012 Alec Skelly
+'   Copyright 2011-2021 Alec Skelly
 '
 '   This file is part of SANEWinDS.
 '
@@ -120,7 +120,13 @@ Public Class FormStartup
 
     Private Sub FormStartup_Load(ByVal sender As Object, ByVal e As System.EventArgs) Handles Me.Load
 
-        Me.Text = My.Application.Info.ProductName & " " & My.Application.Info.Version.ToString & " Beta" 'Assembly Version
+        With My.Application
+            '"Assembly Version" from project properties
+            Me.Text = .Info.ProductName _
+                    & " " & .Info.Version.Major.ToString _
+                    & "." & .Info.Version.Minor.ToString _
+                    & " (" & .Info.Version.Build.ToString & ")"
+        End With
 
         Me.MinimumSize = Me.Size
 

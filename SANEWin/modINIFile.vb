@@ -1,5 +1,5 @@
 ﻿'
-'   Copyright 2013-2014 Alec Skelly
+'   Copyright 2013-2021 Alec Skelly
 '
 '   This file is part of SANEWinDS.
 '

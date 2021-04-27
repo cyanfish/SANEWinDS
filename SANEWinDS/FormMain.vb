@@ -366,6 +366,7 @@ Public Class FormMain
     End Sub
 
     Private Sub FormMain_FormClosed(sender As Object, e As FormClosedEventArgs) Handles Me.FormClosed
+        Logger.Trace("")
         Me.CloseCurrentHost()
         If ControlClient IsNot Nothing Then
             Try

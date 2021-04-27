@@ -108,10 +108,12 @@ Public Class FormStartup
         If Me.GUIForm_Shown Then
             'XXX MS bug: The FormClosing and FormClosed events don't fire when the form is hidden.
             '            Make the form as inconspicuous as possible before showing it.
-            GUIForm.Controls.Clear()
-            GUIForm.ControlBox = False
-            GUIForm.FormBorderStyle = Windows.Forms.FormBorderStyle.None
-            GUIForm.Size = New Size(0, 0)
+            'GUIForm.Controls.Clear()
+            'GUIForm.ControlBox = False
+            'GUIForm.FormBorderStyle = Windows.Forms.FormBorderStyle.None
+            'GUIForm.MinimumSize = New Size(0, 0)
+            'GUIForm.Size = New Size(0, 0)
+            GUIForm.WindowState = FormWindowState.Minimized
             GUIForm.Show()
             '
             GUIForm.Close()

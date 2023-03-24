@@ -8,17 +8,17 @@ Imports System.Runtime.InteropServices
 
 ' Review the values of the assembly attributes
 
-<Assembly: AssemblyTitle("SANEWinDS")> 
-<Assembly: AssemblyDescription("TWAIN Data Source for SANE scanners")> 
-<Assembly: AssemblyCompany("Alec Skelly")> 
-<Assembly: AssemblyProduct("SANEWinDS")> 
-<Assembly: AssemblyCopyright("Copyright © Alec Skelly 2012-2015")> 
-<Assembly: AssemblyTrademark("")> 
+<Assembly: AssemblyTitle("SANEWinDS")>
+<Assembly: AssemblyDescription("TWAIN Data Source for SANE scanners")>
+<Assembly: AssemblyCompany("Alec Skelly")>
+<Assembly: AssemblyProduct("SANEWinDS")>
+<Assembly: AssemblyCopyright("Copyright © Alec Skelly 2012-2021")>
+<Assembly: AssemblyTrademark("")>
 
-<Assembly: ComVisible(False)> 
+<Assembly: ComVisible(False)>
 
 'The following GUID is for the ID of the typelib if this project is exposed to COM
-<Assembly: Guid("9eb0c18a-64c0-4662-9b7b-4e6554370f30")> 
+<Assembly: Guid("9eb0c18a-64c0-4662-9b7b-4e6554370f30")>
 
 ' Version information for an assembly consists of the following four values:
 '
@@ -31,5 +31,5 @@ Imports System.Runtime.InteropServices
 ' by using the '*' as shown below:
 ' <Assembly: AssemblyVersion("1.0.*")> 
 
-<Assembly: AssemblyVersion("0.9.*")> 
-<Assembly: AssemblyFileVersion("0.9.5589")> 
+<Assembly: AssemblyVersion("1.0.*")>
+<Assembly: AssemblyFileVersion("1.0.0")>

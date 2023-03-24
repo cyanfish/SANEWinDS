@@ -1,5 +1,5 @@
 ﻿'
-'   Copyright 2011, 2012 Alec Skelly
+'   Copyright 2011-2021 Alec Skelly
 '
 '   This file is part of SANEWinDS.
 '
@@ -4144,6 +4144,7 @@ Namespace TWAIN_VB
 
                             If MyForm IsNot Nothing Then
                                 MyForm.Got_MSG_CLOSEDS = True
+                                MyForm.WindowState = Windows.Forms.FormWindowState.Minimized
                                 MyForm.Show() 'FormClosing and FormClosed events don't fire when form is hidden
                                 MyForm.Close()
                                 MyForm = Nothing

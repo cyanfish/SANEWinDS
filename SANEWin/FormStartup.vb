@@ -1,6 +1,6 @@
 ﻿
 '
-'   Copyright 2011-2015 Alec Skelly
+'   Copyright 2011-2021 Alec Skelly
 '
 '   This file is part of SANEWinDS.
 '
@@ -111,7 +111,9 @@ Public Class FormStartup
             'GUIForm.Controls.Clear()
             'GUIForm.ControlBox = False
             'GUIForm.FormBorderStyle = Windows.Forms.FormBorderStyle.None
+            'GUIForm.MinimumSize = New Size(0, 0)
             'GUIForm.Size = New Size(0, 0)
+            GUIForm.WindowState = FormWindowState.Minimized
             GUIForm.Show()
             '
             GUIForm.Close()
@@ -120,7 +122,13 @@ Public Class FormStartup
 
     Private Sub FormStartup_Load(ByVal sender As Object, ByVal e As System.EventArgs) Handles Me.Load
 
-        Me.Text = My.Application.Info.ProductName & " " & My.Application.Info.Version.ToString & " Beta" 'Assembly Version
+        With My.Application
+            '"Assembly Version" from project properties
+            Me.Text = .Info.ProductName _
+                    & " " & .Info.Version.Major.ToString _
+                    & "." & .Info.Version.Minor.ToString _
+                    & " (" & .Info.Version.Build.ToString & ")"
+        End With
 
         Me.MinimumSize = Me.Size
 
@@ -800,7 +808,7 @@ Public Class FormStartup
                 Me.Cursor = Cursors.WaitCursor
                 GUIForm.ShowScanProgress = True
                 GUIForm.ShowDialog()
-             Catch ex As Exception
+            Catch ex As Exception
                 MsgBox(ex.Message & vbCrLf & ex.StackTrace)
                 Me.ClosePDF()
                 Me.CloseTIFF(0)

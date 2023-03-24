@@ -34,6 +34,7 @@ Public Class ImageCurve
         ' Set the value of the double-buffering style bits to true.
         Me.SetStyle(ControlStyles.AllPaintingInWmPaint Or ControlStyles.UserPaint Or ControlStyles.ResizeRedraw Or ControlStyles.UserPaint Or ControlStyles.DoubleBuffer, True)
     End Sub
+
     Public Sub New(MaxX As Integer, MaxY As Integer)
         Me.New()
         Me.Init(MaxX, MaxY)
@@ -61,16 +62,28 @@ Public Class ImageCurve
     Public Event ImageLevelChanged As ImageLevelChangedEventHandler
 
     Protected Overridable Sub OnLevelChanged(e As ImageLevelEventArgs)
-        ' Make sure there are methods to execute.
         RaiseEvent ImageLevelChanged(Me, e)
-        ' Raise the event.
     End Sub
 
-    Public ReadOnly Property LevelValue() As Integer()
+    Public Property LevelValue() As Integer()
         Get
             getImageLevel()
             Return level
         End Get
+        Set(value As Integer())
+            If value.Length <> level.Length Then Throw New ArgumentOutOfRangeException("Incorrect array length supplied")
+            For i As Integer = 0 To value.Length - 1
+                If value(i) > _MaxY Then
+                    level(i) = _MaxY
+                ElseIf value(i) < 0 Then
+                    level(i) = 0
+                Else
+                    level(i) = value(i)
+                End If
+            Next
+            CalcKeyPtsFromLevels()
+            OnLevelChanged(New ImageLevelEventArgs(level))
+        End Set
     End Property
 
     Private Sub getImageLevel()
@@ -102,6 +115,105 @@ Public Class ImageCurve
             level(pts(0).X + i) = n
         Next
     End Sub
+
+    Private Sub CalcKeyPtsFromLevels()
+        Dim level_pts As New List(Of Point)
+        For i As Integer = 0 To Me.level.Length - 1
+            level_pts.Add(New Point(i, Me.level(i)))
+        Next
+
+        level_pts = SimplifyPolylineAdaptive(level_pts, MaxY * 0.2, MaxY * 0.0005, MaxY)
+
+        Dim keyPts As New List(Of Point)
+        For Each lvl As Point In level_pts
+            Dim key As New Point()
+            key.X = lvl.X * Me.Width / MaxX
+            key.Y = Me.Height - lvl.Y * Me.Height / MaxY
+            keyPts.Add(key)
+        Next
+
+        keyPt = keyPts
+    End Sub
+
+    Function SimplifyPolyline(pts As List(Of Point), tolerance As Double) As List(Of Point)
+        If pts.Count < 3 Then
+            Return pts
+        End If
+
+        Dim dmax As Double = 0.0
+        Dim index As Integer = 0
+        Dim endpt As Integer = pts.Count - 1
+
+        For i As Integer = 1 To endpt - 1
+            Dim d As Double = LineToPointDistance(pts(i), pts(0), pts(endpt))
+            If d > dmax Then
+                index = i
+                dmax = d
+            End If
+        Next
+
+        If dmax > tolerance Then
+            Dim left As List(Of Point) = SimplifyPolyline(pts.GetRange(0, index + 1), tolerance)
+            Dim right As List(Of Point) = SimplifyPolyline(pts.GetRange(index, endpt - index + 1), tolerance)
+
+            Dim result As New List(Of Point)(left.Take(left.Count - 1))
+            result.AddRange(right)
+
+            Return result
+        Else
+            Return New List(Of Point)({pts(0), pts(endpt)})
+        End If
+    End Function
+
+    Function SimplifyPolylineAdaptive(pts As List(Of Point), tolerance As Double, minTolerance As Double, maxTolerance As Double) As List(Of Point)
+        If pts.Count < 3 Then
+            Return pts
+        End If
+
+        Dim dmax As Double = 0.0
+        Dim index As Integer = 0
+        Dim endpt As Integer = pts.Count - 1
+
+        For i As Integer = 1 To endpt - 1
+            Dim d As Double = LineToPointDistance(pts(i), pts(0), pts(endpt))
+            If d > dmax Then
+                index = i
+                dmax = d
+            End If
+        Next
+
+        Dim currentTolerance As Double = tolerance
+
+        If dmax > currentTolerance Then
+            If currentTolerance < maxTolerance Then
+                currentTolerance = Math.Min(maxTolerance, currentTolerance * 2)
+            Else
+                currentTolerance = maxTolerance
+            End If
+
+            Dim left As List(Of Point) = SimplifyPolylineAdaptive(pts.GetRange(0, index + 1), currentTolerance, minTolerance, maxTolerance)
+            Dim right As List(Of Point) = SimplifyPolylineAdaptive(pts.GetRange(index, endpt - index + 1), currentTolerance, minTolerance, maxTolerance)
+
+            Dim result As New List(Of Point)(left.Take(left.Count - 1))
+            result.AddRange(right)
+
+            Return result
+        Else
+            If currentTolerance > minTolerance Then
+                currentTolerance = Math.Max(minTolerance, currentTolerance / 2)
+                Return SimplifyPolylineAdaptive(pts, currentTolerance, minTolerance, maxTolerance)
+            Else
+                Return New List(Of Point)({pts(0), pts(endpt)})
+            End If
+        End If
+    End Function
+
+    Function LineToPointDistance(pt As Point, lnA As Point, lnB As Point) As Double
+        Dim v1 As New YLScsDrawing.Geometry.Vector(lnA, lnB)
+        Dim v2 As New YLScsDrawing.Geometry.Vector(lnA, pt)
+        v1 /= v1.Magnitude
+        Return Math.Abs(v2.CrossProduct(v1))
+    End Function
 
     Private ww As Integer, hh As Integer
     Protected Overrides Sub OnLoad(e As EventArgs)
@@ -184,7 +296,6 @@ Public Class ImageCurve
                 If e.X > keyPt(moveflag - 1).X + 20 AndAlso e.X < keyPt(moveflag + 1).X - 20 Then
                     keyPt(moveflag) = e.Location
                 Else
-
                     'keyPt.RemoveAt(moveflag)
                     'drag = False
                 End If
@@ -208,10 +319,14 @@ Public Class ImageCurve
             drag = False
             removing_point = False
             getImageLevel()
+            '
+            'Show calculated result immediately:
+            'CalcKeyPtsFromLevels()
+            'getImageLevel()
+            '
             OnLevelChanged(New ImageLevelEventArgs(level))
         End If
     End Sub
-
 
     Protected Overrides Sub OnPaint(e As PaintEventArgs)
         MyBase.OnPaint(e)

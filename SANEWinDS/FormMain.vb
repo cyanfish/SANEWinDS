@@ -809,16 +809,23 @@ Public Class FormMain
                     ReDim OptionValueControls(0)
                     Me.OptionValueControls(0) = ic
 
-                    'restore keypoints
-                    If Me.ImageCurve_KeyPoints.ContainsKey(ic.Name) Then
-                        ic.keyPt = Me.ImageCurve_KeyPoints(ic.Name).ToList
-                    End If
-
                     'save keypoints
                     AddHandler ic.ImageLevelChanged, AddressOf imageCurve_ImageLevelChanged
 
                     'save values
                     AddHandler ic.Leave, AddressOf OptionControl_Leave
+
+                    'restore keypoints
+                    If Me.ImageCurve_KeyPoints.ContainsKey(ic.Name) Then 'we saved the keypoints earlier.
+                        ic.keyPt = Me.ImageCurve_KeyPoints(ic.Name).ToList
+                    Else 'supply values for the control to calculate new keypoints.
+                        Try
+                            Dim values(SANE.CurrentDevice.OptionValues(OptionIndex).Length - 1) As Integer
+                            Array.Copy(SANE.CurrentDevice.OptionValues(OptionIndex), values, SANE.CurrentDevice.OptionValues(OptionIndex).Length)
+                            ic.LevelValue = values
+                        Catch
+                        End Try
+                    End If
 
                     Dim lbl As New Label
                     lbl.Top = ic.Bottom + 35

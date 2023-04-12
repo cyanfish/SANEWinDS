@@ -122,7 +122,7 @@ Public Class ImageCurve
             level_pts.Add(New Point(i, Me.level(i)))
         Next
 
-        level_pts = SimplifyPolylineAdaptive(level_pts, MaxY * 0.2, MaxY * 0.0005, MaxY)
+        level_pts = SimplifyPolylineAdaptive(level_pts, MaxY * 0.2, 33.0, MaxY) '33.0 min tolerance determined by experimentation with genesis and plustek backends.
 
         Dim keyPts As New List(Of Point)
         For Each lvl As Point In level_pts

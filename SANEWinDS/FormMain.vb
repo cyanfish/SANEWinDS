@@ -99,7 +99,7 @@ Public Class FormMain
             If SANE IsNot Nothing Then
                 If SANE.CurrentDevice.Name IsNot Nothing Then
                     If SANE.CurrentDevice.Open Then
-                        If CheckBoxSaveOnExit.Checked Then SaveUserSettings()
+                        If CheckBoxSaveOnExit.Checked Then SaveUserSettings(Me.ComboBoxOptionValueSet.SelectedItem)
                         SANE.Net_Close(ControlClient, SANE.CurrentDevice.Handle)
                     End If
                 End If
@@ -252,6 +252,8 @@ Public Class FormMain
                         ClearPanelControls()
                     End If
                 End If
+            Else
+                If ComboBoxOptionValueSet.Items.Contains("Local Defaults") Then ComboBoxOptionValueSet.SelectedItem = "Local Defaults"
             End If
             Return SANE.CurrentDevice.Open
         Catch ex As Exception
@@ -513,6 +515,7 @@ Public Class FormMain
                     End If
                 End If
             End If
+
             Update_Host_GUI()
             If Me.Mode = UIMode.Scan Then Me.ButtonOK.Text = "Scan" Else Me.ButtonOK.Text = "OK"
             Me.Initialized = True
@@ -1183,7 +1186,7 @@ Public Class FormMain
 
                 End Try
         End Select
-        ButtonSaveOptionValues.Enabled = True
+        ButtonSaveOptionValueSet.Enabled = True
     End Sub
 
     Private Sub OptionControl_Leave(ByVal sender As System.Object, ByVal e As System.EventArgs)
@@ -1747,7 +1750,7 @@ Public Class FormMain
             Me.PanelOptIsDirty = False
 
             If Not String.IsNullOrWhiteSpace(ComboBoxOptionValueSet.Text) Then
-                ButtonSaveOptionValues.Enabled = True
+                ButtonSaveOptionValueSet.Enabled = True
             End If
 
             Return Status
@@ -1834,20 +1837,32 @@ Public Class FormMain
             Me.TextBoxHost.Text = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).NameOrAddress
             Me.TextBoxPort.Text = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Port
             Me.TextBoxDevice.Text = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Device
+            Me.ComboBoxPageSize.Enabled = True
+            Me.ComboBoxOptionValueSet.Enabled = True
+            Me.CheckBoxBatchMode.Enabled = True
+            Me.CheckBoxSaveOnExit.Enabled = True
+            'Me.ButtonSaveOptionValueSet.Enabled = True
+            Me.ButtonDeleteOptionValueSet.Enabled = True
 
             PopulateOptionValueSetNames()
-            If String.IsNullOrWhiteSpace(ComboBoxOptionValueSet.Text) Then ComboBoxOptionValueSet.Text = "Local Defaults"
+            'If String.IsNullOrWhiteSpace(ComboBoxOptionValueSet.Text) Then ComboBoxOptionValueSet.Text = "Local Defaults"
+            If ComboBoxOptionValueSet.Items.Contains("Local Defaults") Then ComboBoxOptionValueSet.SelectedItem = "Local Defaults"
             Me.CheckBoxSaveOnExit.Checked = CurrentSettings.SaveDefaultsOnExit
 
         Else
-            'Me.TextBoxHost.Text = Nothing
-            'Me.TextBoxPort.Text = Nothing
-            'Me.TextBoxDevice.Text = Nothing
+            Me.TextBoxHost.Text = Nothing
+            Me.TextBoxPort.Text = Nothing
+            Me.TextBoxDevice.Text = Nothing
+            Me.ComboBoxPageSize.Enabled = False
+            Me.ComboBoxOptionValueSet.Enabled = False
+            Me.CheckBoxBatchMode.Enabled = False
+            Me.CheckBoxSaveOnExit.Enabled = False
+            Me.ButtonSaveOptionValueSet.Enabled = False
+            Me.ButtonDeleteOptionValueSet.Enabled = False
 
             Me.ButtonOK.Enabled = False
             ClearPanelControls()
             Me.TreeViewOptions.Nodes.Clear()
-            'Me.ComboBoxPageSize.Enabled = False
         End If
     End Sub
 
@@ -1860,7 +1875,7 @@ Public Class FormMain
     Private Sub CheckBoxBatchMode_CheckedChanged(ByVal sender As Object, ByVal e As System.EventArgs) Handles CheckBoxBatchMode.CheckedChanged
         CurrentSettings.ScanContinuously = CheckBoxBatchMode.Checked
         If Not String.IsNullOrWhiteSpace(ComboBoxOptionValueSet.Text) Then
-            ButtonSaveOptionValues.Enabled = True
+            ButtonSaveOptionValueSet.Enabled = True
         End If
     End Sub
 
@@ -1932,6 +1947,19 @@ Public Class FormMain
                     Throw New Exception("Unable to set SANE option")
                 End If
             End If
+            'Update the option value display so the user gets feedback for the change
+            If Me.TreeViewOptions.SelectedNode IsNot Nothing Then
+                If Me.TreeViewOptions.SelectedNode.Name IsNot Nothing Then
+                    Select Case TreeViewOptions.SelectedNode.Name
+                        Case "tl-x", "tl-y", "br-x", "br-y"
+                            Try
+                                DisplayOption(PanelOpt, TreeViewOptions.SelectedNode.Tag)
+                            Catch ex As Exception
+                                Logger.Error(ex)
+                            End Try
+                    End Select
+                End If
+            End If
         Catch ex As Exception
             Logger.Error(ex, "Error setting page dimensions")
         End Try
@@ -1969,7 +1997,7 @@ Public Class FormMain
 
     Private Sub imageCurve_ImageLevelChanged(sender As Object, e As ImageLevelEventArgs)
         Me.PanelOptIsDirty = True
-        ButtonSaveOptionValues.Enabled = True
+        ButtonSaveOptionValueSet.Enabled = True
         If Not String.IsNullOrEmpty(sender.Name) Then
             Dim Keypoints As List(Of System.Drawing.Point) = DirectCast(sender.KeyPt, List(Of System.Drawing.Point))
             Dim NewList As List(Of System.Drawing.Point) = Keypoints.ToList()
@@ -2156,13 +2184,40 @@ Public Class FormMain
             Case Else
                 If Me.Initialized Then 'Prevent applying defaults twice on initial startup
                     ApplyUserSettings(ComboBoxOptionValueSet.SelectedItem)
+                    If Not Me.TWAIN_Is_Active Then
+                        If Not CurrentSettings.ScanContinuouslyUserConfigured Then
+                            CurrentSettings.ScanContinuously = Device_Appears_To_Have_ADF() AndAlso Device_Appears_To_Have_ADF_Enabled()
+                            Me.CheckBoxBatchMode.Checked = CurrentSettings.ScanContinuously
+                        End If
+                    End If
                 End If
         End Select
-        ButtonSaveOptionValues.Enabled = False
+        ButtonSaveOptionValueSet.Enabled = False
+        SetOptionValueSetButtonState()
     End Sub
 
-    Private Sub ButtonSaveOptionValues_Click(sender As Object, e As EventArgs) Handles ButtonSaveOptionValues.Click
-        Dim s As String = ComboBoxOptionValueSet.Text
+    Private Sub ComboBoxOptionValueSet_TextChanged(sender As Object, e As EventArgs) Handles ComboBoxOptionValueSet.TextChanged
+        Debug.Print("ComboBoxOptionValueSet_TextChanged")
+        ButtonSaveOptionValueSet.Enabled = Not String.IsNullOrWhiteSpace(ComboBoxOptionValueSet.Text)
+        SetOptionValueSetButtonState()
+    End Sub
+
+    Private Sub SetOptionValueSetButtonState()
+        If Not String.IsNullOrWhiteSpace(ComboBoxOptionValueSet.Text) Then
+            Me.ToolTip1.SetToolTip(Me.ButtonSaveOptionValueSet, "Save the '" & ComboBoxOptionValueSet.Text & "' option set for the '" & CurrentSettings.GetCurrentBackendName & "' backend")
+            Dim action As String = IIf(ComboBoxOptionValueSet.Text.ToUpper = "LOCAL DEFAULTS", "Reset", "Delete")
+            Dim s As String = action + " the '" & ComboBoxOptionValueSet.Text & "' option set for the '" & CurrentSettings.GetCurrentBackendName & "' backend"
+            Me.ToolTip1.SetToolTip(Me.ButtonDeleteOptionValueSet, s)
+            Me.ButtonDeleteOptionValueSet.ImageKey = action
+        End If
+    End Sub
+
+    Private Sub CheckBoxSaveOnExit_CheckedChanged(sender As Object, e As EventArgs) Handles CheckBoxSaveOnExit.CheckedChanged
+        CurrentSettings.SaveDefaultsOnExit = CheckBoxSaveOnExit.Checked
+    End Sub
+
+    Private Sub ButtonSaveOptionValueSet_Click(sender As Object, e As EventArgs) Handles ButtonSaveOptionValueSet.Click
+        Dim s As String = ComboBoxOptionValueSet.Text.Trim
         If String.IsNullOrWhiteSpace(s) Then
             MsgBox("Please specify a name for the option value set", MsgBoxStyle.Exclamation + MsgBoxStyle.OkOnly, "Invalid Name")
             Exit Sub
@@ -2179,7 +2234,8 @@ Public Class FormMain
             Me.Cursor = Cursors.WaitCursor
             SaveUserSettings(s)
             PopulateOptionValueSetNames()
-            ComboBoxOptionValueSet.Text = s
+            'ComboBoxOptionValueSet.Text = s
+            ComboBoxOptionValueSet.SelectedItem = s
         Catch ex As Exception
             Logger.Error(ex)
         Finally
@@ -2187,13 +2243,23 @@ Public Class FormMain
         End Try
     End Sub
 
-    Private Sub ComboBoxOptionValueSet_TextChanged(sender As Object, e As EventArgs) Handles ComboBoxOptionValueSet.TextChanged
-        Debug.Print("ComboBoxOptionValueSet_TextChanged")
-        If Not String.IsNullOrWhiteSpace(ComboBoxOptionValueSet.Text) Then ButtonSaveOptionValues.Enabled = True
+    Private Sub ButtonDeleteOptionValueSet_Click(sender As Object, e As EventArgs) Handles ButtonDeleteOptionValueSet.Click
+        Dim OptionValueSetName As String = ComboBoxOptionValueSet.Text
+        If OptionValueSetName.ToUpper = "LOCAL DEFAULTS" Then
+            SANE.CurrentDevice.OptionValueSets("Local Defaults") = CloneOptionValueSet(SANE.CurrentDevice.OptionValueSets("Backend Defaults"))
+            Dim f As String = CurrentSettings.GetDeviceConfigFileName(SharedSettings.ConfigFileScope.User, Nothing, False, True)
+            If System.IO.File.Exists(f) Then System.IO.File.Delete(f)
+            'Call GetDeviceConfigFileName again to recreate the file immediately with notifications suppressed
+            f = CurrentSettings.GetDeviceConfigFileName(SharedSettings.ConfigFileScope.User, Nothing, True, True)
+        Else
+            SANE.CurrentDevice.OptionValueSets.Remove(OptionValueSetName)
+            Dim f As String = CurrentSettings.GetDeviceConfigFileName(SharedSettings.ConfigFileScope.User, OptionValueSetName, False, True)
+            If System.IO.File.Exists(f) Then System.IO.File.Delete(f)
+            ComboBoxOptionValueSet.SelectedItem = "Local Defaults"
+        End If
+        PopulateOptionValueSetNames()
+        ComboBoxOptionValueSet_SelectedIndexChanged(sender, e)
     End Sub
 
-    Private Sub CheckBoxSaveOnExit_CheckedChanged(sender As Object, e As EventArgs) Handles CheckBoxSaveOnExit.CheckedChanged
-        CurrentSettings.SaveDefaultsOnExit = CheckBoxSaveOnExit.Checked
-    End Sub
 End Class
 

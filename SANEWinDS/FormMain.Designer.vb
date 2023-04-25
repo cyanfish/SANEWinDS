@@ -27,6 +27,10 @@ Partial Class FormMain
         Me.TreeViewOptions = New System.Windows.Forms.TreeView()
         Me.CheckBoxBatchMode = New System.Windows.Forms.CheckBox()
         Me.ToolTip1 = New System.Windows.Forms.ToolTip(Me.components)
+        Me.ButtonSaveOptionValueSet = New System.Windows.Forms.Button()
+        Me.ImageList1 = New System.Windows.Forms.ImageList(Me.components)
+        Me.ButtonDeleteOptionValueSet = New System.Windows.Forms.Button()
+        Me.ComboBoxOptionValueSet = New System.Windows.Forms.ComboBox()
         Me.ButtonOK = New System.Windows.Forms.Button()
         Me.ButtonCancel = New System.Windows.Forms.Button()
         Me.Label2 = New System.Windows.Forms.Label()
@@ -36,15 +40,14 @@ Partial Class FormMain
         Me.TextBoxDevice = New System.Windows.Forms.TextBox()
         Me.ButtonHost = New System.Windows.Forms.Button()
         Me.SplitContainerOptions = New System.Windows.Forms.SplitContainer()
-        Me.PanelOpt = New SANEWinDS.DoubleBufferedPanel()
         Me.ComboBoxPageSize = New System.Windows.Forms.ComboBox()
         Me.Label4 = New System.Windows.Forms.Label()
-        Me.ComboBoxOptionValueSet = New System.Windows.Forms.ComboBox()
-        Me.ButtonSaveOptionValues = New System.Windows.Forms.Button()
         Me.CheckBoxSaveOnExit = New System.Windows.Forms.CheckBox()
         Me.LabelOptionSet = New System.Windows.Forms.Label()
         Me.GroupBoxOptionSets = New System.Windows.Forms.GroupBox()
         Me.GroupBoxDevice = New System.Windows.Forms.GroupBox()
+        Me.Label1 = New System.Windows.Forms.Label()
+        Me.PanelOpt = New SANEWinDS.DoubleBufferedPanel()
         CType(Me.SplitContainerOptions, System.ComponentModel.ISupportInitialize).BeginInit()
         Me.SplitContainerOptions.Panel1.SuspendLayout()
         Me.SplitContainerOptions.Panel2.SuspendLayout()
@@ -64,12 +67,69 @@ Partial Class FormMain
         'CheckBoxBatchMode
         '
         Me.CheckBoxBatchMode.AutoSize = True
-        Me.CheckBoxBatchMode.Location = New System.Drawing.Point(388, 48)
+        Me.CheckBoxBatchMode.Location = New System.Drawing.Point(386, 34)
         Me.CheckBoxBatchMode.Name = "CheckBoxBatchMode"
         Me.CheckBoxBatchMode.Size = New System.Drawing.Size(200, 17)
         Me.CheckBoxBatchMode.TabIndex = 7
         Me.CheckBoxBatchMode.Text = "Scan continuously (for use with ADF)"
+        Me.ToolTip1.SetToolTip(Me.CheckBoxBatchMode, resources.GetString("CheckBoxBatchMode.ToolTip"))
         Me.CheckBoxBatchMode.UseVisualStyleBackColor = True
+        '
+        'ButtonSaveOptionValueSet
+        '
+        Me.ButtonSaveOptionValueSet.ImageKey = "Save"
+        Me.ButtonSaveOptionValueSet.ImageList = Me.ImageList1
+        Me.ButtonSaveOptionValueSet.Location = New System.Drawing.Point(320, 14)
+        Me.ButtonSaveOptionValueSet.Name = "ButtonSaveOptionValueSet"
+        Me.ButtonSaveOptionValueSet.Size = New System.Drawing.Size(24, 23)
+        Me.ButtonSaveOptionValueSet.TabIndex = 55
+        Me.ToolTip1.SetToolTip(Me.ButtonSaveOptionValueSet, "Save the selected option set")
+        Me.ButtonSaveOptionValueSet.UseVisualStyleBackColor = True
+        '
+        'ImageList1
+        '
+        Me.ImageList1.ImageStream = CType(resources.GetObject("ImageList1.ImageStream"), System.Windows.Forms.ImageListStreamer)
+        Me.ImageList1.TransparentColor = System.Drawing.Color.Transparent
+        Me.ImageList1.Images.SetKeyName(0, "Delete")
+        Me.ImageList1.Images.SetKeyName(1, "Save")
+        Me.ImageList1.Images.SetKeyName(2, "SaveAll")
+        Me.ImageList1.Images.SetKeyName(3, "Undo")
+        Me.ImageList1.Images.SetKeyName(4, "Reset4")
+        Me.ImageList1.Images.SetKeyName(5, "Reset2")
+        Me.ImageList1.Images.SetKeyName(6, "Reset")
+        Me.ImageList1.Images.SetKeyName(7, "ResetGlobe")
+        Me.ImageList1.Images.SetKeyName(8, "ConnectPlug")
+        Me.ImageList1.Images.SetKeyName(9, "ConnectLightning")
+        Me.ImageList1.Images.SetKeyName(10, "DisconnectPlug")
+        Me.ImageList1.Images.SetKeyName(11, "Help")
+        Me.ImageList1.Images.SetKeyName(12, "HelpBlue")
+        Me.ImageList1.Images.SetKeyName(13, "Information")
+        Me.ImageList1.Images.SetKeyName(14, "Settings")
+        Me.ImageList1.Images.SetKeyName(15, "SettingsGlobe")
+        Me.ImageList1.Images.SetKeyName(16, "NetworkServer")
+        Me.ImageList1.Images.SetKeyName(17, "WebServer")
+        Me.ImageList1.Images.SetKeyName(18, "NetworkFax")
+        '
+        'ButtonDeleteOptionValueSet
+        '
+        Me.ButtonDeleteOptionValueSet.ImageKey = "Delete"
+        Me.ButtonDeleteOptionValueSet.ImageList = Me.ImageList1
+        Me.ButtonDeleteOptionValueSet.Location = New System.Drawing.Point(345, 14)
+        Me.ButtonDeleteOptionValueSet.Name = "ButtonDeleteOptionValueSet"
+        Me.ButtonDeleteOptionValueSet.Size = New System.Drawing.Size(24, 23)
+        Me.ButtonDeleteOptionValueSet.TabIndex = 58
+        Me.ToolTip1.SetToolTip(Me.ButtonDeleteOptionValueSet, "Remove or reset the selected option set")
+        Me.ButtonDeleteOptionValueSet.UseVisualStyleBackColor = True
+        '
+        'ComboBoxOptionValueSet
+        '
+        Me.ComboBoxOptionValueSet.FormattingEnabled = True
+        Me.ComboBoxOptionValueSet.Location = New System.Drawing.Point(67, 16)
+        Me.ComboBoxOptionValueSet.Name = "ComboBoxOptionValueSet"
+        Me.ComboBoxOptionValueSet.Size = New System.Drawing.Size(247, 21)
+        Me.ComboBoxOptionValueSet.TabIndex = 54
+        Me.ToolTip1.SetToolTip(Me.ComboBoxOptionValueSet, "Select an existing option set for the current SANE backend, or type a name to cre" &
+        "ate a new one")
         '
         'ButtonOK
         '
@@ -95,7 +155,7 @@ Partial Class FormMain
         'Label2
         '
         Me.Label2.AutoSize = True
-        Me.Label2.Location = New System.Drawing.Point(248, 17)
+        Me.Label2.Location = New System.Drawing.Point(262, 18)
         Me.Label2.Name = "Label2"
         Me.Label2.Size = New System.Drawing.Size(26, 13)
         Me.Label2.TabIndex = 22
@@ -104,7 +164,7 @@ Partial Class FormMain
         'Label3
         '
         Me.Label3.AutoSize = True
-        Me.Label3.Location = New System.Drawing.Point(346, 17)
+        Me.Label3.Location = New System.Drawing.Point(350, 18)
         Me.Label3.Name = "Label3"
         Me.Label3.Size = New System.Drawing.Size(41, 13)
         Me.Label3.TabIndex = 23
@@ -113,15 +173,15 @@ Partial Class FormMain
         'TextBoxHost
         '
         Me.TextBoxHost.Enabled = False
-        Me.TextBoxHost.Location = New System.Drawing.Point(52, 14)
+        Me.TextBoxHost.Location = New System.Drawing.Point(77, 15)
         Me.TextBoxHost.Name = "TextBoxHost"
-        Me.TextBoxHost.Size = New System.Drawing.Size(180, 20)
+        Me.TextBoxHost.Size = New System.Drawing.Size(179, 20)
         Me.TextBoxHost.TabIndex = 2
         '
         'TextBoxPort
         '
         Me.TextBoxPort.Enabled = False
-        Me.TextBoxPort.Location = New System.Drawing.Point(280, 14)
+        Me.TextBoxPort.Location = New System.Drawing.Point(294, 15)
         Me.TextBoxPort.Name = "TextBoxPort"
         Me.TextBoxPort.Size = New System.Drawing.Size(50, 20)
         Me.TextBoxPort.TabIndex = 3
@@ -129,18 +189,20 @@ Partial Class FormMain
         'TextBoxDevice
         '
         Me.TextBoxDevice.Enabled = False
-        Me.TextBoxDevice.Location = New System.Drawing.Point(393, 14)
+        Me.TextBoxDevice.Location = New System.Drawing.Point(397, 15)
         Me.TextBoxDevice.Name = "TextBoxDevice"
-        Me.TextBoxDevice.Size = New System.Drawing.Size(195, 20)
+        Me.TextBoxDevice.Size = New System.Drawing.Size(185, 20)
         Me.TextBoxDevice.TabIndex = 4
         '
         'ButtonHost
         '
+        Me.ButtonHost.ImageKey = "ConnectLightning"
+        Me.ButtonHost.ImageList = Me.ImageList1
         Me.ButtonHost.Location = New System.Drawing.Point(9, 12)
         Me.ButtonHost.Name = "ButtonHost"
-        Me.ButtonHost.Size = New System.Drawing.Size(37, 23)
+        Me.ButtonHost.Size = New System.Drawing.Size(24, 23)
         Me.ButtonHost.TabIndex = 1
-        Me.ButtonHost.Text = "Host"
+        Me.ToolTip1.SetToolTip(Me.ButtonHost, "Connect to a different host or device")
         Me.ButtonHost.UseVisualStyleBackColor = True
         '
         'SplitContainerOptions
@@ -162,14 +224,6 @@ Partial Class FormMain
         Me.SplitContainerOptions.SplitterDistance = 198
         Me.SplitContainerOptions.TabIndex = 28
         '
-        'PanelOpt
-        '
-        Me.PanelOpt.Dock = System.Windows.Forms.DockStyle.Fill
-        Me.PanelOpt.Location = New System.Drawing.Point(0, 0)
-        Me.PanelOpt.Name = "PanelOpt"
-        Me.PanelOpt.Size = New System.Drawing.Size(394, 299)
-        Me.PanelOpt.TabIndex = 6
-        '
         'ComboBoxPageSize
         '
         Me.ComboBoxPageSize.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList
@@ -178,6 +232,7 @@ Partial Class FormMain
         Me.ComboBoxPageSize.Name = "ComboBoxPageSize"
         Me.ComboBoxPageSize.Size = New System.Drawing.Size(133, 21)
         Me.ComboBoxPageSize.TabIndex = 8
+        Me.ToolTip1.SetToolTip(Me.ComboBoxPageSize, "Set the scan area to match a predefined page size")
         '
         'Label4
         '
@@ -188,31 +243,15 @@ Partial Class FormMain
         Me.Label4.TabIndex = 53
         Me.Label4.Text = "Page Size"
         '
-        'ComboBoxOptionValueSet
-        '
-        Me.ComboBoxOptionValueSet.FormattingEnabled = True
-        Me.ComboBoxOptionValueSet.Location = New System.Drawing.Point(67, 16)
-        Me.ComboBoxOptionValueSet.Name = "ComboBoxOptionValueSet"
-        Me.ComboBoxOptionValueSet.Size = New System.Drawing.Size(247, 21)
-        Me.ComboBoxOptionValueSet.TabIndex = 54
-        '
-        'ButtonSaveOptionValues
-        '
-        Me.ButtonSaveOptionValues.Location = New System.Drawing.Point(320, 14)
-        Me.ButtonSaveOptionValues.Name = "ButtonSaveOptionValues"
-        Me.ButtonSaveOptionValues.Size = New System.Drawing.Size(43, 23)
-        Me.ButtonSaveOptionValues.TabIndex = 55
-        Me.ButtonSaveOptionValues.Text = "Save"
-        Me.ButtonSaveOptionValues.UseVisualStyleBackColor = True
-        '
         'CheckBoxSaveOnExit
         '
         Me.CheckBoxSaveOnExit.AutoSize = True
-        Me.CheckBoxSaveOnExit.Location = New System.Drawing.Point(388, 18)
+        Me.CheckBoxSaveOnExit.Location = New System.Drawing.Point(386, 16)
         Me.CheckBoxSaveOnExit.Name = "CheckBoxSaveOnExit"
-        Me.CheckBoxSaveOnExit.Size = New System.Drawing.Size(160, 17)
+        Me.CheckBoxSaveOnExit.Size = New System.Drawing.Size(170, 17)
         Me.CheckBoxSaveOnExit.TabIndex = 56
-        Me.CheckBoxSaveOnExit.Text = "Save 'Local Defaults' on exit"
+        Me.CheckBoxSaveOnExit.Text = "Save current option set on exit"
+        Me.ToolTip1.SetToolTip(Me.CheckBoxSaveOnExit, "Save the currently active option set on exit")
         Me.CheckBoxSaveOnExit.UseVisualStyleBackColor = True
         '
         'LabelOptionSet
@@ -228,11 +267,12 @@ Partial Class FormMain
         '
         Me.GroupBoxOptionSets.Anchor = CType(((System.Windows.Forms.AnchorStyles.Bottom Or System.Windows.Forms.AnchorStyles.Left) _
             Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
+        Me.GroupBoxOptionSets.Controls.Add(Me.ButtonDeleteOptionValueSet)
         Me.GroupBoxOptionSets.Controls.Add(Me.CheckBoxSaveOnExit)
         Me.GroupBoxOptionSets.Controls.Add(Me.LabelOptionSet)
         Me.GroupBoxOptionSets.Controls.Add(Me.CheckBoxBatchMode)
         Me.GroupBoxOptionSets.Controls.Add(Me.ComboBoxPageSize)
-        Me.GroupBoxOptionSets.Controls.Add(Me.ButtonSaveOptionValues)
+        Me.GroupBoxOptionSets.Controls.Add(Me.ButtonSaveOptionValueSet)
         Me.GroupBoxOptionSets.Controls.Add(Me.Label4)
         Me.GroupBoxOptionSets.Controls.Add(Me.ComboBoxOptionValueSet)
         Me.GroupBoxOptionSets.Location = New System.Drawing.Point(13, 359)
@@ -245,6 +285,7 @@ Partial Class FormMain
         '
         Me.GroupBoxDevice.Anchor = CType(((System.Windows.Forms.AnchorStyles.Top Or System.Windows.Forms.AnchorStyles.Left) _
             Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
+        Me.GroupBoxDevice.Controls.Add(Me.Label1)
         Me.GroupBoxDevice.Controls.Add(Me.TextBoxHost)
         Me.GroupBoxDevice.Controls.Add(Me.Label2)
         Me.GroupBoxDevice.Controls.Add(Me.ButtonHost)
@@ -256,6 +297,23 @@ Partial Class FormMain
         Me.GroupBoxDevice.Size = New System.Drawing.Size(596, 44)
         Me.GroupBoxDevice.TabIndex = 59
         Me.GroupBoxDevice.TabStop = False
+        '
+        'Label1
+        '
+        Me.Label1.AutoSize = True
+        Me.Label1.Location = New System.Drawing.Point(42, 18)
+        Me.Label1.Name = "Label1"
+        Me.Label1.Size = New System.Drawing.Size(29, 13)
+        Me.Label1.TabIndex = 25
+        Me.Label1.Text = "Host"
+        '
+        'PanelOpt
+        '
+        Me.PanelOpt.Dock = System.Windows.Forms.DockStyle.Fill
+        Me.PanelOpt.Location = New System.Drawing.Point(0, 0)
+        Me.PanelOpt.Name = "PanelOpt"
+        Me.PanelOpt.Size = New System.Drawing.Size(394, 299)
+        Me.PanelOpt.TabIndex = 6
         '
         'FormMain
         '
@@ -298,9 +356,12 @@ Partial Class FormMain
     Friend WithEvents ComboBoxPageSize As System.Windows.Forms.ComboBox
     Friend WithEvents Label4 As System.Windows.Forms.Label
     Friend WithEvents ComboBoxOptionValueSet As Windows.Forms.ComboBox
-    Friend WithEvents ButtonSaveOptionValues As Windows.Forms.Button
+    Friend WithEvents ButtonSaveOptionValueSet As Windows.Forms.Button
     Friend WithEvents CheckBoxSaveOnExit As Windows.Forms.CheckBox
     Friend WithEvents LabelOptionSet As Windows.Forms.Label
     Friend WithEvents GroupBoxOptionSets As Windows.Forms.GroupBox
     Friend WithEvents GroupBoxDevice As Windows.Forms.GroupBox
+    Friend WithEvents ButtonDeleteOptionValueSet As Windows.Forms.Button
+    Friend WithEvents ImageList1 As Windows.Forms.ImageList
+    Friend WithEvents Label1 As Windows.Forms.Label
 End Class

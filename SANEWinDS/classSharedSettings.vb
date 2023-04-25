@@ -283,12 +283,20 @@ Public Class SharedSettings
         Return hi
     End Function
 
+    Public Function GetCurrentBackendName() As String
+        Try
+            Dim s As String = modGlobals.SANE.CurrentDevice.Name
+            Dim p As Integer = s.IndexOf(":")
+            If p Then Return s.Substring(0, p)
+        Catch ex As Exception
+        End Try
+        Return Nothing
+    End Function
+
     Public Function GetSavedOptionValueSetNames() As ArrayList
         Dim SetNames As New ArrayList
         Try
-            Dim BackEnd As String = modGlobals.SANE.CurrentDevice.Name
-            Dim p As Integer = BackEnd.IndexOf(":")
-            If p Then BackEnd = BackEnd.Substring(0, p)
+            Dim BackEnd As String = GetCurrentBackendName()
             Dim s As String = BackEnd & ".*.ini"
             For Each f As String In My.Computer.FileSystem.GetFiles(Me.UserConfigDirectory, FileIO.SearchOption.SearchTopLevelOnly, s)
                 Dim ff As String = My.Computer.FileSystem.GetName(f)
@@ -311,9 +319,7 @@ Public Class SharedSettings
     End Function
     Public Function GetDeviceConfigFileName(Scope As ConfigFileScope, OptionValueSetName As String, ForceCreateUserConfig As Boolean, SuppressNotifications As Boolean) As String
         'ForceCreateUserConfig=True will create a user config file even if a shared config file exists.
-        Dim BackEnd As String = modGlobals.SANE.CurrentDevice.Name
-        Dim p As Integer = BackEnd.IndexOf(":")
-        If p Then BackEnd = BackEnd.Substring(0, p)
+        Dim BackEnd As String = GetCurrentBackendName()
         Dim f As String = Me.UserConfigDirectory & "\" & BackEnd & IIf(OptionValueSetName Is Nothing, "", "." & OptionValueSetName) & ".ini"
         Dim ff As String = Me.SharedConfigDirectory & "\" & BackEnd & ".ini"
         If Scope = ConfigFileScope.User Then

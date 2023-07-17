@@ -99,10 +99,10 @@ Public Class FormMain
             If SANE IsNot Nothing Then
                 If SANE.CurrentDevice.Name IsNot Nothing Then
                     If SANE.CurrentDevice.Open Then
-                        If CheckBoxSaveOnExit.Checked Then SaveUserSettings(Me.ComboBoxOptionValueSet.SelectedItem)
+                        If CheckBoxSaveOnExit.Checked Then ButtonSaveOptionValueSet.PerformClick()
                         SANE.Net_Close(ControlClient, SANE.CurrentDevice.Handle)
+                        End If
                     End If
-                End If
             End If
         Catch ex As Exception
             Logger.Error(ex, ex.Message)
@@ -397,9 +397,14 @@ Public Class FormMain
 
     End Sub
 
+    Private Sub FormMain_FormClosing(sender As Object, e As FormClosingEventArgs) Handles Me.FormClosing
+        'TWAIN_VB will capture the FormClosing event and cancel it, hiding the form and sending MSG_CLOSEDSREQ instead.
+        'SANEWin will capture the FormClosing event and cancel it, hiding the form instead.
+    End Sub
+
     Private Sub FormMain_FormClosed(sender As Object, e As FormClosedEventArgs) Handles Me.FormClosed
         Logger.Trace("")
-        Me.CloseCurrentHost()
+        CloseCurrentHost()
         If ControlClient IsNot Nothing Then
             Try
                 ControlClient.Close()
@@ -1845,12 +1850,15 @@ Public Class FormMain
             Me.ButtonDeleteOptionValueSet.Enabled = True
 
             PopulateOptionValueSetNames()
-            'If String.IsNullOrWhiteSpace(ComboBoxOptionValueSet.Text) Then ComboBoxOptionValueSet.Text = "Local Defaults"
-            If ComboBoxOptionValueSet.Items.Contains("Local Defaults") Then ComboBoxOptionValueSet.SelectedItem = "Local Defaults"
+            If String.IsNullOrWhiteSpace(ComboBoxOptionValueSet.Text) Then
+                If ComboBoxOptionValueSet.Items.Contains("Local Defaults") Then ComboBoxOptionValueSet.SelectedItem = "Local Defaults"
+            Else
+                If ComboBoxOptionValueSet.Items.Contains(ComboBoxOptionValueSet.Text) Then ComboBoxOptionValueSet.SelectedItem = ComboBoxOptionValueSet.Text
+            End If
             Me.CheckBoxSaveOnExit.Checked = CurrentSettings.SaveDefaultsOnExit
 
-        Else
-            Me.TextBoxHost.Text = Nothing
+            Else
+                Me.TextBoxHost.Text = Nothing
             Me.TextBoxPort.Text = Nothing
             Me.TextBoxDevice.Text = Nothing
             Me.ComboBoxPageSize.Enabled = False
@@ -1867,7 +1875,8 @@ Public Class FormMain
     End Sub
 
     Private Sub ButtonCancel_Click(ByVal sender As System.Object, ByVal e As System.EventArgs) Handles ButtonCancel.Click
-        'TWAIN_VB will capture the FormClosing event and cancel it, sending MSG_CLOSEDSREQ instead.
+        'TWAIN_VB will capture the FormClosing event and cancel it, hiding the form and sending MSG_CLOSEDSREQ instead.
+        'SANEWin will capture the FormClosing event and cancel it, hiding the form instead.
         Me.Result = UIResult.Cancel
         Me.Close()
     End Sub
@@ -2161,18 +2170,25 @@ Public Class FormMain
 
     Private Sub PopulateOptionValueSetNames()
         Debug.Print("PopulateOptionValueSetNames")
-        Me.ComboBoxOptionValueSet.Items.Clear()
+        'ComboBoxOptionValueSet.Items.Clear() 'This clobbers the SelectedItem property.
         For Each s As String In SANE.CurrentDevice.OptionValueSets.Keys
             Select Case s
                 Case "Current", "Backend Defaults"
                     'Exclude from list
                 Case Else
-                    Me.ComboBoxOptionValueSet.Items.Add(s)
+                    If Not ComboBoxOptionValueSet.Items.Contains(s) Then ComboBoxOptionValueSet.Items.Add(s)
             End Select
         Next
         Dim Names As ArrayList = CurrentSettings.GetSavedOptionValueSetNames
         For Each s As String In Names
-            If Not Me.ComboBoxOptionValueSet.Items.Contains(s) Then Me.ComboBoxOptionValueSet.Items.Add(s)
+            If Not ComboBoxOptionValueSet.Items.Contains(s) Then ComboBoxOptionValueSet.Items.Add(s)
+        Next
+        Dim ItemsToRemove As New ArrayList
+        For Each s As String In ComboBoxOptionValueSet.Items
+            If Not SANE.CurrentDevice.OptionValueSets.Keys.Contains(s) AndAlso Not Names.Contains(s) Then ItemsToRemove.Add(s)
+        Next
+        For Each s As String In ItemsToRemove
+            ComboBoxOptionValueSet.Items.Remove(s)
         Next
     End Sub
 
@@ -2225,7 +2241,7 @@ Public Class FormMain
             Dim InvalidChars As Char() = System.IO.Path.GetInvalidFileNameChars
             For Each c As Char In s
                 If InvalidChars.Contains(c) Then
-                    MsgBox("Name contains invalid characters", MsgBoxStyle.OkOnly + MsgBoxStyle.Exclamation, "Invalid Name")
+                    MsgBox("Name contains invalid characters", MsgBoxStyle.OkOnly + MsgBoxStyle.Exclamation, "Invalid Option Set Name")
                     Exit Sub
                 End If
             Next
@@ -2234,7 +2250,6 @@ Public Class FormMain
             Me.Cursor = Cursors.WaitCursor
             SaveUserSettings(s)
             PopulateOptionValueSetNames()
-            'ComboBoxOptionValueSet.Text = s
             ComboBoxOptionValueSet.SelectedItem = s
         Catch ex As Exception
             Logger.Error(ex)

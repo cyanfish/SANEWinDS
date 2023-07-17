@@ -9,10 +9,10 @@ Imports System.Runtime.InteropServices
 ' Review the values of the assembly attributes
 
 <Assembly: AssemblyTitle("SANEWin")>
-<Assembly: AssemblyDescription("")>
-<Assembly: AssemblyCompany("Microsoft")>
+<Assembly: AssemblyDescription("Lightweight wrapper for SANEWinDS")>
+<Assembly: AssemblyCompany("Alec Skelly")>
 <Assembly: AssemblyProduct("SANEWin")>
-<Assembly: AssemblyCopyright("Copyright © Alec Skelly 2012-2021")>
+<Assembly: AssemblyCopyright("Copyright © Alec Skelly 2012-2023")>
 <Assembly: AssemblyTrademark("")>
 
 <Assembly: ComVisible(False)>
@@ -31,5 +31,5 @@ Imports System.Runtime.InteropServices
 ' by using the '*' as shown below:
 ' <Assembly: AssemblyVersion("1.0.*")> 
 
-<Assembly: AssemblyVersion("1.0.*")>
-<Assembly: AssemblyFileVersion("1.0.0")>
+<Assembly: AssemblyVersion("1.1.*")>
+<Assembly: AssemblyFileVersion("1.1.0")>

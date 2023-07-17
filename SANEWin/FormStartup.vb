@@ -627,15 +627,17 @@ Public Class FormStartup
 
     Private Sub AddPDFPage(ByRef bmp As Bitmap)
         With Me.CurrentImage.PDF
-            If .iTextPDFDocument.GetNumberOfPages > 0 Then .iTextDocument.Add(New iText.Layout.Element.AreaBreak(iText.Layout.Properties.AreaBreakType.NEXT_PAGE))
+            If .iTextDocument IsNot Nothing AndAlso .iTextPDFDocument IsNot Nothing Then
+                If .iTextPDFDocument.GetNumberOfPages > 0 Then .iTextDocument.Add(New iText.Layout.Element.AreaBreak(iText.Layout.Properties.AreaBreakType.NEXT_PAGE))
 
-            Dim ms As New System.IO.MemoryStream
-            bmp.Save(ms, System.Drawing.Imaging.ImageFormat.Png)
-            Dim img As iText.Layout.Element.Image = New iText.Layout.Element.Image(iText.IO.Image.ImageDataFactory.Create(ms.ToArray))
+                Dim ms As New System.IO.MemoryStream
+                bmp.Save(ms, System.Drawing.Imaging.ImageFormat.Png)
+                Dim img As iText.Layout.Element.Image = New iText.Layout.Element.Image(iText.IO.Image.ImageDataFactory.Create(ms.ToArray))
 
-            img.ScaleToFit(.iTextPageSize.GetWidth, .iTextPageSize.GetHeight)
+                img.ScaleToFit(.iTextPageSize.GetWidth, .iTextPageSize.GetHeight)
 
-            .iTextDocument.Add(img)
+                .iTextDocument.Add(img)
+            End If
         End With
     End Sub
 

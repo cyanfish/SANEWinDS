@@ -58,6 +58,7 @@ Public Class SharedSettings
     Public SaveDefaultsOnExit As Boolean
     Public SANE As SANESettings
     Public PageSizes As New ArrayList
+    Public OptionValueSetMRU As New Dictionary(Of String, String)
     Private Const MAX_HOSTS As Integer = 50
     Private Const Current_INI_Ver = 0.8
 
@@ -116,6 +117,10 @@ Public Class SharedSettings
         Next
         WriteIni(UserSettingsFileName, "SANE", "DefaultHost", Me.SANE.CurrentHostIndex)
         WriteIni(UserSettingsFileName, "General", "SaveDefaultsOnExit", Me.SaveDefaultsOnExit)
+
+        Dim s As String = System.Text.Json.JsonSerializer.Serialize(OptionValueSetMRU)
+        WriteIni(UserSettingsFileName, "General", "OptionValueSetMRU", s)
+
     End Sub
 
     Private Sub ReadSettings()
@@ -183,6 +188,16 @@ Public Class SharedSettings
         End If
 
         Boolean.TryParse(ReadIni(UserSettingsFileName, "General", "SaveDefaultsOnExit"), Me.SaveDefaultsOnExit)
+
+        s = ReadIni(UserSettingsFileName, "General", "OptionValueSetMRU")
+        Logger.Log(NLog.LogLevel.Info, "OptionValueSetMRU is '{0}'", s)
+        If Not String.IsNullOrWhiteSpace(s) Then
+            Try
+                OptionValueSetMRU = System.Text.Json.JsonSerializer.Deserialize(Of Dictionary(Of String, String))(s)
+            Catch ex As Exception
+                Logger.Error(ex, "Error deserealizing OptionValueSetMRU")
+            End Try
+        End If
 
     End Sub
 

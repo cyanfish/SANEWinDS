@@ -38,16 +38,21 @@ Partial Class FormStartup
         Me.CheckBoxViewAfterAcquire = New System.Windows.Forms.CheckBox()
         Me.Label6 = New System.Windows.Forms.Label()
         Me.ButtonOutputFileNameBaseFormatHelp = New System.Windows.Forms.Button()
+        Me.Label7 = New System.Windows.Forms.Label()
+        Me.CheckBoxHideSANEWinDSAfterAcquire = New System.Windows.Forms.CheckBox()
+        Me.Label8 = New System.Windows.Forms.Label()
+        Me.Label9 = New System.Windows.Forms.Label()
+        Me.CheckBoxExitAfterAcquire = New System.Windows.Forms.CheckBox()
         Me.SuspendLayout()
         '
         'ButtonAcquire
         '
         Me.ButtonAcquire.Anchor = CType((System.Windows.Forms.AnchorStyles.Bottom Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
-        Me.ButtonAcquire.Location = New System.Drawing.Point(421, 141)
+        Me.ButtonAcquire.Location = New System.Drawing.Point(421, 189)
         Me.ButtonAcquire.Name = "ButtonAcquire"
         Me.ButtonAcquire.Size = New System.Drawing.Size(75, 23)
         Me.ButtonAcquire.TabIndex = 0
-        Me.ButtonAcquire.Text = "Acquire"
+        Me.ButtonAcquire.Text = "Scan..."
         Me.ButtonAcquire.UseVisualStyleBackColor = True
         '
         'ComboBoxOutputFormat
@@ -94,7 +99,7 @@ Partial Class FormStartup
         Me.ComboBoxOutputFolderName.Location = New System.Drawing.Point(134, 66)
         Me.ComboBoxOutputFolderName.Name = "ComboBoxOutputFolderName"
         Me.ComboBoxOutputFolderName.Size = New System.Drawing.Size(328, 21)
-        Me.ComboBoxOutputFolderName.TabIndex = 5
+        Me.ComboBoxOutputFolderName.TabIndex = 3
         '
         'Label3
         '
@@ -111,7 +116,7 @@ Partial Class FormStartup
         Me.ButtonBrowseOutputFolder.Location = New System.Drawing.Point(468, 64)
         Me.ButtonBrowseOutputFolder.Name = "ButtonBrowseOutputFolder"
         Me.ButtonBrowseOutputFolder.Size = New System.Drawing.Size(28, 23)
-        Me.ButtonBrowseOutputFolder.TabIndex = 7
+        Me.ButtonBrowseOutputFolder.TabIndex = 4
         Me.ButtonBrowseOutputFolder.Text = "..."
         Me.ButtonBrowseOutputFolder.UseVisualStyleBackColor = True
         '
@@ -122,7 +127,7 @@ Partial Class FormStartup
         Me.TextBoxOutputFileNameBase.Location = New System.Drawing.Point(134, 94)
         Me.TextBoxOutputFileNameBase.Name = "TextBoxOutputFileNameBase"
         Me.TextBoxOutputFileNameBase.Size = New System.Drawing.Size(328, 20)
-        Me.TextBoxOutputFileNameBase.TabIndex = 8
+        Me.TextBoxOutputFileNameBase.TabIndex = 5
         '
         'Label4
         '
@@ -137,7 +142,7 @@ Partial Class FormStartup
         'CheckBoxOverwriteOutputFile
         '
         Me.CheckBoxOverwriteOutputFile.AutoSize = True
-        Me.CheckBoxOverwriteOutputFile.Location = New System.Drawing.Point(134, 121)
+        Me.CheckBoxOverwriteOutputFile.Location = New System.Drawing.Point(134, 125)
         Me.CheckBoxOverwriteOutputFile.Name = "CheckBoxOverwriteOutputFile"
         Me.CheckBoxOverwriteOutputFile.Size = New System.Drawing.Size(15, 14)
         Me.CheckBoxOverwriteOutputFile.TabIndex = 10
@@ -146,7 +151,7 @@ Partial Class FormStartup
         'Label5
         '
         Me.Label5.AutoSize = True
-        Me.Label5.Location = New System.Drawing.Point(12, 121)
+        Me.Label5.Location = New System.Drawing.Point(12, 125)
         Me.Label5.Name = "Label5"
         Me.Label5.Size = New System.Drawing.Size(110, 13)
         Me.Label5.TabIndex = 11
@@ -155,7 +160,7 @@ Partial Class FormStartup
         'CheckBoxViewAfterAcquire
         '
         Me.CheckBoxViewAfterAcquire.AutoSize = True
-        Me.CheckBoxViewAfterAcquire.Location = New System.Drawing.Point(134, 142)
+        Me.CheckBoxViewAfterAcquire.Location = New System.Drawing.Point(134, 154)
         Me.CheckBoxViewAfterAcquire.Name = "CheckBoxViewAfterAcquire"
         Me.CheckBoxViewAfterAcquire.Size = New System.Drawing.Size(15, 14)
         Me.CheckBoxViewAfterAcquire.TabIndex = 12
@@ -164,11 +169,11 @@ Partial Class FormStartup
         'Label6
         '
         Me.Label6.AutoSize = True
-        Me.Label6.Location = New System.Drawing.Point(12, 143)
+        Me.Label6.Location = New System.Drawing.Point(155, 154)
         Me.Label6.Name = "Label6"
-        Me.Label6.Size = New System.Drawing.Size(94, 13)
+        Me.Label6.Size = New System.Drawing.Size(110, 13)
         Me.Label6.TabIndex = 13
-        Me.Label6.Text = "View After Acquire"
+        Me.Label6.Text = "Display Scanned Item"
         '
         'ButtonOutputFileNameBaseFormatHelp
         '
@@ -176,15 +181,65 @@ Partial Class FormStartup
         Me.ButtonOutputFileNameBaseFormatHelp.Location = New System.Drawing.Point(468, 91)
         Me.ButtonOutputFileNameBaseFormatHelp.Name = "ButtonOutputFileNameBaseFormatHelp"
         Me.ButtonOutputFileNameBaseFormatHelp.Size = New System.Drawing.Size(28, 23)
-        Me.ButtonOutputFileNameBaseFormatHelp.TabIndex = 14
+        Me.ButtonOutputFileNameBaseFormatHelp.TabIndex = 6
         Me.ButtonOutputFileNameBaseFormatHelp.Text = "?"
         Me.ButtonOutputFileNameBaseFormatHelp.UseVisualStyleBackColor = True
+        '
+        'Label7
+        '
+        Me.Label7.AutoSize = True
+        Me.Label7.Location = New System.Drawing.Point(155, 175)
+        Me.Label7.Name = "Label7"
+        Me.Label7.Size = New System.Drawing.Size(105, 13)
+        Me.Label7.TabIndex = 16
+        Me.Label7.Text = "Hide Scanner Dialog"
+        '
+        'CheckBoxHideSANEWinDSAfterAcquire
+        '
+        Me.CheckBoxHideSANEWinDSAfterAcquire.AutoSize = True
+        Me.CheckBoxHideSANEWinDSAfterAcquire.Location = New System.Drawing.Point(134, 174)
+        Me.CheckBoxHideSANEWinDSAfterAcquire.Name = "CheckBoxHideSANEWinDSAfterAcquire"
+        Me.CheckBoxHideSANEWinDSAfterAcquire.Size = New System.Drawing.Size(15, 14)
+        Me.CheckBoxHideSANEWinDSAfterAcquire.TabIndex = 15
+        Me.CheckBoxHideSANEWinDSAfterAcquire.UseVisualStyleBackColor = True
+        '
+        'Label8
+        '
+        Me.Label8.AutoSize = True
+        Me.Label8.Location = New System.Drawing.Point(12, 153)
+        Me.Label8.Name = "Label8"
+        Me.Label8.Size = New System.Drawing.Size(80, 13)
+        Me.Label8.TabIndex = 17
+        Me.Label8.Text = "After Scanning:"
+        '
+        'Label9
+        '
+        Me.Label9.AutoSize = True
+        Me.Label9.Location = New System.Drawing.Point(155, 196)
+        Me.Label9.Name = "Label9"
+        Me.Label9.Size = New System.Drawing.Size(79, 13)
+        Me.Label9.TabIndex = 19
+        Me.Label9.Text = "Exit Application"
+        '
+        'CheckBoxExitAfterAcquire
+        '
+        Me.CheckBoxExitAfterAcquire.AutoSize = True
+        Me.CheckBoxExitAfterAcquire.Location = New System.Drawing.Point(134, 195)
+        Me.CheckBoxExitAfterAcquire.Name = "CheckBoxExitAfterAcquire"
+        Me.CheckBoxExitAfterAcquire.Size = New System.Drawing.Size(15, 14)
+        Me.CheckBoxExitAfterAcquire.TabIndex = 18
+        Me.CheckBoxExitAfterAcquire.UseVisualStyleBackColor = True
         '
         'FormStartup
         '
         Me.AutoScaleDimensions = New System.Drawing.SizeF(6.0!, 13.0!)
         Me.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font
-        Me.ClientSize = New System.Drawing.Size(507, 176)
+        Me.ClientSize = New System.Drawing.Size(507, 224)
+        Me.Controls.Add(Me.Label9)
+        Me.Controls.Add(Me.CheckBoxExitAfterAcquire)
+        Me.Controls.Add(Me.Label8)
+        Me.Controls.Add(Me.Label7)
+        Me.Controls.Add(Me.CheckBoxHideSANEWinDSAfterAcquire)
         Me.Controls.Add(Me.ButtonOutputFileNameBaseFormatHelp)
         Me.Controls.Add(Me.Label6)
         Me.Controls.Add(Me.CheckBoxViewAfterAcquire)
@@ -222,4 +277,9 @@ Partial Class FormStartup
     Friend WithEvents CheckBoxViewAfterAcquire As System.Windows.Forms.CheckBox
     Friend WithEvents Label6 As System.Windows.Forms.Label
     Friend WithEvents ButtonOutputFileNameBaseFormatHelp As System.Windows.Forms.Button
+    Friend WithEvents Label7 As Label
+    Friend WithEvents CheckBoxHideSANEWinDSAfterAcquire As CheckBox
+    Friend WithEvents Label8 As Label
+    Friend WithEvents Label9 As Label
+    Friend WithEvents CheckBoxExitAfterAcquire As CheckBox
 End Class

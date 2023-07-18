@@ -2614,7 +2614,7 @@ Namespace TWAIN_VB
                                     If MyForm.ShowScanProgress Then
                                         If MyProgressForm IsNot Nothing Then
                                             MyProgressForm.Reset()
-                                            MyProgressForm.ShowProgress("Acquiring page " & (CurrentJob.ImagesXferred + 1).ToString & "...")
+                                            MyProgressForm.ShowProgress("Scanning page " & (CurrentJob.ImagesXferred + 1).ToString & "...")
                                         End If
                                     End If
                                 End If
@@ -2699,7 +2699,7 @@ Namespace TWAIN_VB
                                     If MyForm.ShowScanProgress Then
                                         If MyProgressForm IsNot Nothing Then
                                             MyProgressForm.Reset()
-                                            MyProgressForm.ShowProgress("Acquiring page " & (CurrentJob.ImagesXferred + 1).ToString & "...")
+                                            MyProgressForm.ShowProgress("Scanning page " & (CurrentJob.ImagesXferred + 1).ToString & "...")
                                         End If
                                     End If
                                 End If

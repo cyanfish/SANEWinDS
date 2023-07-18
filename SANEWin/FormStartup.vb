@@ -1,6 +1,6 @@
 ﻿
 '
-'   Copyright 2011-2021 Alec Skelly
+'   Copyright 2011-2023 Alec Skelly
 '
 '   This file is part of SANEWinDS.
 '
@@ -22,7 +22,6 @@ Public Class FormStartup
     Private WithEvents GUIForm As New SANEWinDS.FormMain
 
     Private Structure PDFInfo
-        'Dim FileName As String
         Dim FileStream As System.IO.FileStream
         Dim iTextDocument As iText.Layout.Document
         Dim iTextPDFDocument As iText.Kernel.Pdf.PdfDocument
@@ -37,8 +36,6 @@ Public Class FormStartup
     End Enum
     Private Structure TIFFInfo
         Dim FirstPage As Bitmap
-        'Dim FileName As String
-        'Dim FileStream As System.IO.FileStream
         Dim ImageCodecInfo As System.Drawing.Imaging.ImageCodecInfo
         Dim SaveEncoder As System.Drawing.Imaging.Encoder
         Dim CompressionEncoder As System.Drawing.Imaging.Encoder
@@ -62,10 +59,8 @@ Public Class FormStartup
         Dim TIFF As TIFFInfo
         Dim PDF As PDFInfo
     End Structure
-    'Public ProductName As System.Reflection.AssemblyName = System.Reflection.Assembly.GetExecutingAssembly.GetName
 
     Private INIFileName As String
-    'Private INI As New IniFile.IniFile
     Private UserConfigDirectory As String
     Private SharedConfigDirectory As String
     Private LogDirectory As String
@@ -85,6 +80,8 @@ Public Class FormStartup
             WriteIni(Me.INIFileName, "Output", "Format", Me.ComboBoxOutputFormat.Text)
             WriteIni(Me.INIFileName, "Output", "Compression", Me.ComboBoxCompression.Text)
             WriteIni(Me.INIFileName, "Output", "ViewAfterAcquire", Me.CheckBoxViewAfterAcquire.Checked.ToString)
+            WriteIni(Me.INIFileName, "Output", "HideSANEWinDSAfterAcquire", Me.CheckBoxHideSANEWinDSAfterAcquire.Checked.ToString)
+            WriteIni(Me.INIFileName, "Output", "ExitAfterAcquire", Me.CheckBoxExitAfterAcquire.Checked.ToString)
 
             Dim OutputMRU As String = ""
             Dim i As Integer = 0
@@ -234,7 +231,15 @@ Public Class FormStartup
             End If
 
             s = ReadIni(Me.INIFileName, "Output", "ViewAfterAcquire")
+            If s Is Nothing Then s = "True"
             Boolean.TryParse(s, Me.CheckBoxViewAfterAcquire.Checked)
+
+            s = ReadIni(Me.INIFileName, "Output", "HideSANEWinDSAfterAcquire")
+            If s Is Nothing Then s = "True"
+            Boolean.TryParse(s, Me.CheckBoxHideSANEWinDSAfterAcquire.Checked)
+
+            s = ReadIni(Me.INIFileName, "Output", "ExitAfterAcquire")
+            Boolean.TryParse(s, Me.CheckBoxExitAfterAcquire.Checked)
 
             s = ReadIni(Me.INIFileName, "Window", "Top")
             Dim Top As Integer = 0
@@ -360,7 +365,8 @@ Public Class FormStartup
         Finally
             Me.CurrentImage.FileName = Nothing
             Me.CurrentImage.FileNamePage1 = Nothing
-            GUIForm.Hide()
+            If Me.CheckBoxHideSANEWinDSAfterAcquire.Checked Then GUIForm.Hide()
+            If Me.CheckBoxExitAfterAcquire.Checked Then Me.Close()
         End Try
     End Sub
 

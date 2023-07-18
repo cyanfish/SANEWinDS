@@ -139,7 +139,7 @@ Public Class FormMain
                     Else
                         frmProgress.Reset()
                     End If
-                    If Me.ShowScanProgress Then frmProgress.ShowProgress("Acquiring page 1...")
+                    If Me.ShowScanProgress Then frmProgress.ShowProgress("Scanning page 1...")
                     RaiseEvent BatchStarted()
                     Dim Status As SANE_API.SANE_Status = 0
                     Do
@@ -152,7 +152,7 @@ Public Class FormMain
                                 Case SANE_API.SANE_Status.SANE_STATUS_GOOD
                                     If bmp IsNot Nothing Then
                                         If Me.ShowScanProgress Then
-                                            frmProgress.ShowProgress("Acquiring page " & (PageNo + 1).ToString & "...")
+                                            frmProgress.ShowProgress("Scanning page " & (PageNo + 1).ToString & "...")
                                         End If
                                         If Me.ComboBoxPageSize.SelectedItem IsNot Nothing Then
                                             For Each ps As PageSize In CurrentSettings.PageSizes
@@ -1245,7 +1245,12 @@ Public Class FormMain
         'read all DefaultValue= settings from the backend.ini and set live values
         Debug.Print("ApplyUserSettings '" & OptValSetName & "'")
         Logger.Debug("begin")
+
+        'store the OptValSetName to be used by default next time we use this backend
+        If Not String.IsNullOrWhiteSpace(OptValSetName) Then CurrentSettings.OptionValueSetMRU(CurrentSettings.GetCurrentBackendName) = OptValSetName
+
         If (OptValSetName IsNot Nothing) AndAlso (OptValSetName.ToUpper = "LOCAL DEFAULTS") Then OptValSetName = Nothing 'Use legacy file names and behavior
+
         Dim SetDefaults As Boolean = False
         If SANE.CurrentDevice.OptionValueSets IsNot Nothing Then
             '"Local Defaults" option value set will be created the first time this sub is called.
@@ -1850,15 +1855,19 @@ Public Class FormMain
             Me.ButtonDeleteOptionValueSet.Enabled = True
 
             PopulateOptionValueSetNames()
-            If String.IsNullOrWhiteSpace(ComboBoxOptionValueSet.Text) Then
-                If ComboBoxOptionValueSet.Items.Contains("Local Defaults") Then ComboBoxOptionValueSet.SelectedItem = "Local Defaults"
-            Else
-                If ComboBoxOptionValueSet.Items.Contains(ComboBoxOptionValueSet.Text) Then ComboBoxOptionValueSet.SelectedItem = ComboBoxOptionValueSet.Text
-            End If
-            Me.CheckBoxSaveOnExit.Checked = CurrentSettings.SaveDefaultsOnExit
 
-            Else
-                Me.TextBoxHost.Text = Nothing
+            'restore MRU option value set for this backend
+            Try
+                Dim s As String = CurrentSettings.OptionValueSetMRU(CurrentSettings.GetCurrentBackendName)
+                If ComboBoxOptionValueSet.Items.Contains(s) Then ComboBoxOptionValueSet.SelectedItem = s
+            Catch
+            End Try
+
+            If String.IsNullOrWhiteSpace(ComboBoxOptionValueSet.Text) AndAlso ComboBoxOptionValueSet.Items.Contains("Local Defaults") Then ComboBoxOptionValueSet.SelectedItem = "Local Defaults"
+
+            Me.CheckBoxSaveOnExit.Checked = CurrentSettings.SaveDefaultsOnExit
+        Else
+            Me.TextBoxHost.Text = Nothing
             Me.TextBoxPort.Text = Nothing
             Me.TextBoxDevice.Text = Nothing
             Me.ComboBoxPageSize.Enabled = False
@@ -1907,6 +1916,7 @@ Public Class FormMain
         Else
             Try_Init_SANE(False)
         End If
+        Me.ComboBoxOptionValueSet.SelectedItem = Nothing 'Trigger application of option values to the new device during Update_Host_GUI.
         Update_Host_GUI()
     End Sub
 
@@ -2251,6 +2261,7 @@ Public Class FormMain
             SaveUserSettings(s)
             PopulateOptionValueSetNames()
             ComboBoxOptionValueSet.SelectedItem = s
+            ButtonSaveOptionValueSet.Enabled = False
         Catch ex As Exception
             Logger.Error(ex)
         Finally

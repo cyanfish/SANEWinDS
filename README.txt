@@ -1,4 +1,10 @@
 Changelog:
+Version 1.1.8600
+-Added ability to recreate gamma curves from current/saved values.
+-Added ability to save and restore multiple option value sets for each backend.
+-Added options to SANEWin client to control behavior after scan completion.
+-Updated build environment and packages to current.
+
 Version 1.0.7786
 -Updated PDF library from iTextSharp to iText7.
 -Improved detection of pages sizes supported by scanners.

@@ -44,8 +44,8 @@ Public Class FormMain
 
     Public Result As UIResult = UIResult.None
     Public ShowScanProgress As Boolean = True
+    Public Got_MSG_CLOSEDS As Boolean = False
 
-    Friend Got_MSG_CLOSEDS As Boolean = False
     Friend TWAIN_Is_Active As Boolean = False
     Friend TWAINInstance As TWAIN_VB.DS_Entry_Pump
     Friend Mode As UIMode = UIMode.Scan
@@ -264,7 +264,6 @@ Public Class FormMain
 
     Friend Sub GetOpts(ByVal Recreate As Boolean)
         Try
-
             Me.ImageCurve_KeyPoints.Clear()
 
             If Recreate Then
@@ -419,55 +418,6 @@ Public Class FormMain
     Private Sub Form1_Load(ByVal sender As Object, ByVal e As System.EventArgs) Handles Me.Load
         If Not Me.Initialized Then
             Me.Initialized = True
-            'Me.Text = GetType(SANE_API).Assembly.GetName.Name & " " & GetType(SANE_API).Assembly.GetName.Version.ToString()
-            With GetType(SANE_API).Assembly.GetName
-                '"Assembly Version" from project properties
-                Me.Text = .Name _
-                    & " " & .Version.Major.ToString _
-                    & "." & .Version.Minor.ToString _
-                    & " (" & .Version.Build.ToString & ")"
-            End With
-
-            With GetType(SANE_API).Assembly.GetName
-                '"Assembly Version" from project properties
-                Me.Text = .Name _
-                    & " " & .Version.Major.ToString _
-                    & "." & .Version.Minor.ToString _
-                    & " (" & .Version.Build.ToString & ")"
-            End With
-
-            With GetType(SANE_API).Assembly.GetName
-                '"Assembly Version" from project properties
-                Me.Text = .Name _
-                    & " " & .Version.Major.ToString _
-                    & "." & .Version.Minor.ToString _
-                    & " (" & .Version.Build.ToString & ")"
-            End With
-
-            With GetType(SANE_API).Assembly.GetName
-                '"Assembly Version" from project properties
-                Me.Text = .Name _
-                    & " " & .Version.Major.ToString _
-                    & "." & .Version.Minor.ToString _
-                    & " (" & .Version.Build.ToString & ")"
-            End With
-
-            With GetType(SANE_API).Assembly.GetName
-                '"Assembly Version" from project properties
-                Me.Text = .Name _
-                    & " " & .Version.Major.ToString _
-                    & "." & .Version.Minor.ToString _
-                    & " (" & .Version.Build.ToString & ")"
-            End With
-
-            With GetType(SANE_API).Assembly.GetName
-                '"Assembly Version" from project properties
-                Me.Text = .Name _
-                    & " " & .Version.Major.ToString _
-                    & "." & .Version.Minor.ToString _
-                    & " (" & .Version.Build.ToString & ")"
-            End With
-
             With GetType(SANE_API).Assembly.GetName
                 '"Assembly Version" from project properties
                 Me.Text = .Name _
@@ -1211,8 +1161,9 @@ Public Class FormMain
         End Try
     End Sub
 
-    Private Sub SaveCurrentOptionValues(FileName As String)
-        Dim f As String = FileName
+    Private Sub SaveCurrentUserOptionValues(SharedFileName As String, UserFileName As String)
+        Dim f As String = UserFileName
+        Dim ff As String = SharedFileName
         Try
             'Write the current settings as defaults
             If f IsNot Nothing Then
@@ -1232,7 +1183,10 @@ Public Class FormMain
                                     Next
                                 End If
                         End Select
-                        WriteIni(f, "Option." & SANE.CurrentDevice.OptionDescriptors(i).name, "DefaultValue", Value)
+                        Dim Section As String = "Option." & SANE.CurrentDevice.OptionDescriptors(i).name
+                        Dim Key As String = "DefaultValue"
+                        Dim SharedValue As String = ReadIni(ff, Section, Key)
+                        If Value <> SharedValue Then WriteIni(f, Section, Key, Value)
                     End If
                 Next
             End If
@@ -1243,8 +1197,8 @@ Public Class FormMain
 
     Friend Sub ApplyUserSettings(Optional ByVal OptValSetName As String = Nothing)
         'read all DefaultValue= settings from the backend.ini and set live values
-        Debug.Print("ApplyUserSettings '" & OptValSetName & "'")
-        Logger.Debug("begin")
+
+        Logger.Debug("ApplyUserSettings '" & OptValSetName & "'")
 
         'store the OptValSetName to be used by default next time we use this backend
         If Not String.IsNullOrWhiteSpace(OptValSetName) Then CurrentSettings.OptionValueSetMRU(CurrentSettings.GetCurrentBackendName) = OptValSetName
@@ -1471,6 +1425,7 @@ Public Class FormMain
     Private Sub SaveUserSettings(Optional ByVal OptionValueSetName As String = Nothing)
         If OptionValueSetName IsNot Nothing AndAlso OptionValueSetName.ToUpper = "LOCAL DEFAULTS" Then OptionValueSetName = Nothing 'Use legacy ini file names and behavior
         Dim f As String = CurrentSettings.GetDeviceConfigFileName(SharedSettings.ConfigFileScope.User, OptionValueSetName, True, True)
+        Dim ff As String = CurrentSettings.GetDeviceConfigFileName(SharedSettings.ConfigFileScope.Shared)
         Try
             Me.Cursor = Cursors.WaitCursor
             If CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.User Is Nothing Then
@@ -1478,7 +1433,7 @@ Public Class FormMain
                     CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.User = f
                 End If
             End If
-            SaveCurrentOptionValues(f)
+            SaveCurrentUserOptionValues(ff, f)
             If CurrentSettings.ScanContinuouslyUserConfigured Then WriteIni(f, "General", "ScanContinuously", CurrentSettings.ScanContinuously.ToString)
             If Not String.IsNullOrWhiteSpace(ComboBoxPageSize.Text) Then WriteIni(f, "General", "DefaultPaperSize", ComboBoxPageSize.Text)
         Catch ex As Exception
@@ -1578,10 +1533,8 @@ Public Class FormMain
         If (CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.User IsNot Nothing) Or (CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.Shared IsNot Nothing) Then
             If OptionValues.Length > 0 Then
                 If OptionValues(0) IsNot Nothing Then
-                    'Dim s As String = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.GetKeyValue("Option." & OptionDescriptor.name, "TWAIN." & OptionValues(0).ToString.Replace(" ", ""))
                     Dim s As String = CurrentSettings.GetINIKeyValue("Option." & OptionDescriptor.name, "TWAIN." & OptionValues(0).ToString.Replace(" ", ""), CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.User, CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.Shared)
                     'If there wasn't a TWAIN mapping for the specific value that was set, look for a general mapping.
-                    'If (s Is Nothing) OrElse (s.Length = 0) Then s = CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.GetKeyValue("Option." & OptionDescriptor.name, "TWAIN")
                     If (s Is Nothing) OrElse (s.Length = 0) Then s = CurrentSettings.GetINIKeyValue("Option." & OptionDescriptor.name, "TWAIN", CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.User, CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).DeviceINI.Shared)
                     If s IsNot Nothing AndAlso s.Length Then
                         Dim caps() As String = s.Split(";")
@@ -1915,8 +1868,8 @@ Public Class FormMain
             Logger.Debug("User cancelled SANE host wizard")
         Else
             Try_Init_SANE(False)
+            Me.ComboBoxOptionValueSet.SelectedItem = Nothing 'Trigger application of option values to the new device during Update_Host_GUI.
         End If
-        Me.ComboBoxOptionValueSet.SelectedItem = Nothing 'Trigger application of option values to the new device during Update_Host_GUI.
         Update_Host_GUI()
     End Sub
 

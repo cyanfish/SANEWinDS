@@ -16,6 +16,7 @@
 '   You should have received a copy of the GNU General Public License
 '   along with SANEWinDS.  If not, see <http://www.gnu.org/licenses/>.
 '
+
 Public Class SharedSettings
 
     Private Logger As NLog.Logger = NLog.LogManager.GetCurrentClassLogger()
@@ -118,7 +119,8 @@ Public Class SharedSettings
         WriteIni(UserSettingsFileName, "SANE", "DefaultHost", Me.SANE.CurrentHostIndex)
         WriteIni(UserSettingsFileName, "General", "SaveDefaultsOnExit", Me.SaveDefaultsOnExit)
 
-        Dim s As String = System.Text.Json.JsonSerializer.Serialize(OptionValueSetMRU)
+        Dim ser As New System.Web.Script.Serialization.JavaScriptSerializer
+        Dim s As String = ser.Serialize(OptionValueSetMRU)
         WriteIni(UserSettingsFileName, "General", "OptionValueSetMRU", s)
 
     End Sub
@@ -193,7 +195,8 @@ Public Class SharedSettings
         Logger.Log(NLog.LogLevel.Info, "OptionValueSetMRU is '{0}'", s)
         If Not String.IsNullOrWhiteSpace(s) Then
             Try
-                OptionValueSetMRU = System.Text.Json.JsonSerializer.Deserialize(Of Dictionary(Of String, String))(s)
+                Dim ser As New System.Web.Script.Serialization.JavaScriptSerializer
+                OptionValueSetMRU = ser.Deserialize(Of Dictionary(Of String, String))(s)
             Catch ex As Exception
                 Logger.Error(ex, "Error deserealizing OptionValueSetMRU")
             End Try

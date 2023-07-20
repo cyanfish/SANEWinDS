@@ -1,5 +1,5 @@
 ﻿'
-'   Copyright 2011-2021 Alec Skelly
+'   Copyright 2011-2023 Alec Skelly
 '
 '   This file is part of SANEWinDS.
 '
@@ -4045,6 +4045,8 @@ Namespace TWAIN_VB
                                                 SANE.CurrentDevice.Handle = DeviceHandle
                                                 SANE.CurrentDevice.Open = True
 
+                                                SANE.CurrentDevice.OptionValueSets = New Dictionary(Of String, Object())(StringComparer.InvariantCultureIgnoreCase)
+
                                                 MyForm.GetOpts(True) 'must occur prior to reading GetDeviceConfigFileName()!
 
                                                 Dim s As String = CurrentSettings.GetDeviceConfigFileName(SharedSettings.ConfigFileScope.Shared)
@@ -4073,7 +4075,6 @@ Namespace TWAIN_VB
                                     End If
 
                                     If Not SANE.CurrentDevice.Open Then
-
                                         If CurrentSettings.SANE.Hosts(CurrentSettings.SANE.CurrentHostIndex).Open Then
                                             SANE.Net_Exit(ControlClient)
                                         End If

@@ -604,6 +604,11 @@ Public Class FormMain
                         ApplyUserSettings() 'Apply merged settings from User and Shared INI files.
 
                         Me.ButtonOK.Enabled = True
+                        Try
+                            Me.ButtonOK.Focus()
+                        Catch
+                        End Try
+
                     Else
                         Logger.Warn("SANE device is not open")
                     End If

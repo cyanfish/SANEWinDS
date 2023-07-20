@@ -31,6 +31,9 @@ Partial Class FormMain
         Me.ImageList1 = New System.Windows.Forms.ImageList(Me.components)
         Me.ButtonDeleteOptionValueSet = New System.Windows.Forms.Button()
         Me.ComboBoxOptionValueSet = New System.Windows.Forms.ComboBox()
+        Me.ButtonHost = New System.Windows.Forms.Button()
+        Me.ComboBoxPageSize = New System.Windows.Forms.ComboBox()
+        Me.CheckBoxSaveOnExit = New System.Windows.Forms.CheckBox()
         Me.ButtonOK = New System.Windows.Forms.Button()
         Me.ButtonCancel = New System.Windows.Forms.Button()
         Me.Label2 = New System.Windows.Forms.Label()
@@ -38,16 +41,13 @@ Partial Class FormMain
         Me.TextBoxHost = New System.Windows.Forms.TextBox()
         Me.TextBoxPort = New System.Windows.Forms.TextBox()
         Me.TextBoxDevice = New System.Windows.Forms.TextBox()
-        Me.ButtonHost = New System.Windows.Forms.Button()
         Me.SplitContainerOptions = New System.Windows.Forms.SplitContainer()
-        Me.ComboBoxPageSize = New System.Windows.Forms.ComboBox()
+        Me.PanelOpt = New SANEWinDS.DoubleBufferedPanel()
         Me.Label4 = New System.Windows.Forms.Label()
-        Me.CheckBoxSaveOnExit = New System.Windows.Forms.CheckBox()
         Me.LabelOptionSet = New System.Windows.Forms.Label()
         Me.GroupBoxOptionSets = New System.Windows.Forms.GroupBox()
         Me.GroupBoxDevice = New System.Windows.Forms.GroupBox()
         Me.Label1 = New System.Windows.Forms.Label()
-        Me.PanelOpt = New SANEWinDS.DoubleBufferedPanel()
         CType(Me.SplitContainerOptions, System.ComponentModel.ISupportInitialize).BeginInit()
         Me.SplitContainerOptions.Panel1.SuspendLayout()
         Me.SplitContainerOptions.Panel2.SuspendLayout()
@@ -61,8 +61,8 @@ Partial Class FormMain
         Me.TreeViewOptions.Dock = System.Windows.Forms.DockStyle.Fill
         Me.TreeViewOptions.Location = New System.Drawing.Point(0, 0)
         Me.TreeViewOptions.Name = "TreeViewOptions"
-        Me.TreeViewOptions.Size = New System.Drawing.Size(198, 299)
-        Me.TreeViewOptions.TabIndex = 5
+        Me.TreeViewOptions.Size = New System.Drawing.Size(199, 299)
+        Me.TreeViewOptions.TabIndex = 30
         '
         'CheckBoxBatchMode
         '
@@ -70,7 +70,7 @@ Partial Class FormMain
         Me.CheckBoxBatchMode.Location = New System.Drawing.Point(386, 34)
         Me.CheckBoxBatchMode.Name = "CheckBoxBatchMode"
         Me.CheckBoxBatchMode.Size = New System.Drawing.Size(200, 17)
-        Me.CheckBoxBatchMode.TabIndex = 7
+        Me.CheckBoxBatchMode.TabIndex = 70
         Me.CheckBoxBatchMode.Text = "Scan continuously (for use with ADF)"
         Me.ToolTip1.SetToolTip(Me.CheckBoxBatchMode, resources.GetString("CheckBoxBatchMode.ToolTip"))
         Me.CheckBoxBatchMode.UseVisualStyleBackColor = True
@@ -82,7 +82,7 @@ Partial Class FormMain
         Me.ButtonSaveOptionValueSet.Location = New System.Drawing.Point(320, 14)
         Me.ButtonSaveOptionValueSet.Name = "ButtonSaveOptionValueSet"
         Me.ButtonSaveOptionValueSet.Size = New System.Drawing.Size(24, 23)
-        Me.ButtonSaveOptionValueSet.TabIndex = 55
+        Me.ButtonSaveOptionValueSet.TabIndex = 50
         Me.ToolTip1.SetToolTip(Me.ButtonSaveOptionValueSet, "Save the selected option set")
         Me.ButtonSaveOptionValueSet.UseVisualStyleBackColor = True
         '
@@ -117,7 +117,7 @@ Partial Class FormMain
         Me.ButtonDeleteOptionValueSet.Location = New System.Drawing.Point(345, 14)
         Me.ButtonDeleteOptionValueSet.Name = "ButtonDeleteOptionValueSet"
         Me.ButtonDeleteOptionValueSet.Size = New System.Drawing.Size(24, 23)
-        Me.ButtonDeleteOptionValueSet.TabIndex = 58
+        Me.ButtonDeleteOptionValueSet.TabIndex = 55
         Me.ToolTip1.SetToolTip(Me.ButtonDeleteOptionValueSet, "Remove or reset the selected option set")
         Me.ButtonDeleteOptionValueSet.UseVisualStyleBackColor = True
         '
@@ -127,17 +127,49 @@ Partial Class FormMain
         Me.ComboBoxOptionValueSet.Location = New System.Drawing.Point(67, 16)
         Me.ComboBoxOptionValueSet.Name = "ComboBoxOptionValueSet"
         Me.ComboBoxOptionValueSet.Size = New System.Drawing.Size(247, 21)
-        Me.ComboBoxOptionValueSet.TabIndex = 54
+        Me.ComboBoxOptionValueSet.TabIndex = 45
         Me.ToolTip1.SetToolTip(Me.ComboBoxOptionValueSet, "Select an existing option set for the current SANE backend, or type a name to cre" &
         "ate a new one")
+        '
+        'ButtonHost
+        '
+        Me.ButtonHost.ImageKey = "ConnectLightning"
+        Me.ButtonHost.ImageList = Me.ImageList1
+        Me.ButtonHost.Location = New System.Drawing.Point(9, 12)
+        Me.ButtonHost.Name = "ButtonHost"
+        Me.ButtonHost.Size = New System.Drawing.Size(24, 23)
+        Me.ButtonHost.TabIndex = 5
+        Me.ToolTip1.SetToolTip(Me.ButtonHost, "Connect to a different host or device")
+        Me.ButtonHost.UseVisualStyleBackColor = True
+        '
+        'ComboBoxPageSize
+        '
+        Me.ComboBoxPageSize.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList
+        Me.ComboBoxPageSize.FormattingEnabled = True
+        Me.ComboBoxPageSize.Location = New System.Drawing.Point(67, 46)
+        Me.ComboBoxPageSize.Name = "ComboBoxPageSize"
+        Me.ComboBoxPageSize.Size = New System.Drawing.Size(133, 21)
+        Me.ComboBoxPageSize.TabIndex = 60
+        Me.ToolTip1.SetToolTip(Me.ComboBoxPageSize, "Set the scan area to match a predefined page size")
+        '
+        'CheckBoxSaveOnExit
+        '
+        Me.CheckBoxSaveOnExit.AutoSize = True
+        Me.CheckBoxSaveOnExit.Location = New System.Drawing.Point(386, 16)
+        Me.CheckBoxSaveOnExit.Name = "CheckBoxSaveOnExit"
+        Me.CheckBoxSaveOnExit.Size = New System.Drawing.Size(170, 17)
+        Me.CheckBoxSaveOnExit.TabIndex = 65
+        Me.CheckBoxSaveOnExit.Text = "Save current option set on exit"
+        Me.ToolTip1.SetToolTip(Me.CheckBoxSaveOnExit, "Save the currently active option set on exit")
+        Me.CheckBoxSaveOnExit.UseVisualStyleBackColor = True
         '
         'ButtonOK
         '
         Me.ButtonOK.Anchor = CType((System.Windows.Forms.AnchorStyles.Bottom Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
-        Me.ButtonOK.Location = New System.Drawing.Point(533, 442)
+        Me.ButtonOK.Location = New System.Drawing.Point(534, 441)
         Me.ButtonOK.Name = "ButtonOK"
         Me.ButtonOK.Size = New System.Drawing.Size(75, 23)
-        Me.ButtonOK.TabIndex = 51
+        Me.ButtonOK.TabIndex = 80
         Me.ButtonOK.Text = "OK"
         Me.ButtonOK.UseVisualStyleBackColor = True
         '
@@ -145,10 +177,10 @@ Partial Class FormMain
         '
         Me.ButtonCancel.Anchor = CType((System.Windows.Forms.AnchorStyles.Bottom Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
         Me.ButtonCancel.DialogResult = System.Windows.Forms.DialogResult.Cancel
-        Me.ButtonCancel.Location = New System.Drawing.Point(452, 442)
+        Me.ButtonCancel.Location = New System.Drawing.Point(453, 441)
         Me.ButtonCancel.Name = "ButtonCancel"
         Me.ButtonCancel.Size = New System.Drawing.Size(75, 23)
-        Me.ButtonCancel.TabIndex = 50
+        Me.ButtonCancel.TabIndex = 75
         Me.ButtonCancel.Text = "Close"
         Me.ButtonCancel.UseVisualStyleBackColor = True
         '
@@ -176,7 +208,7 @@ Partial Class FormMain
         Me.TextBoxHost.Location = New System.Drawing.Point(77, 15)
         Me.TextBoxHost.Name = "TextBoxHost"
         Me.TextBoxHost.Size = New System.Drawing.Size(179, 20)
-        Me.TextBoxHost.TabIndex = 2
+        Me.TextBoxHost.TabIndex = 10
         '
         'TextBoxPort
         '
@@ -184,7 +216,7 @@ Partial Class FormMain
         Me.TextBoxPort.Location = New System.Drawing.Point(294, 15)
         Me.TextBoxPort.Name = "TextBoxPort"
         Me.TextBoxPort.Size = New System.Drawing.Size(50, 20)
-        Me.TextBoxPort.TabIndex = 3
+        Me.TextBoxPort.TabIndex = 15
         '
         'TextBoxDevice
         '
@@ -192,25 +224,14 @@ Partial Class FormMain
         Me.TextBoxDevice.Location = New System.Drawing.Point(397, 15)
         Me.TextBoxDevice.Name = "TextBoxDevice"
         Me.TextBoxDevice.Size = New System.Drawing.Size(185, 20)
-        Me.TextBoxDevice.TabIndex = 4
-        '
-        'ButtonHost
-        '
-        Me.ButtonHost.ImageKey = "ConnectLightning"
-        Me.ButtonHost.ImageList = Me.ImageList1
-        Me.ButtonHost.Location = New System.Drawing.Point(9, 12)
-        Me.ButtonHost.Name = "ButtonHost"
-        Me.ButtonHost.Size = New System.Drawing.Size(24, 23)
-        Me.ButtonHost.TabIndex = 1
-        Me.ToolTip1.SetToolTip(Me.ButtonHost, "Connect to a different host or device")
-        Me.ButtonHost.UseVisualStyleBackColor = True
+        Me.TextBoxDevice.TabIndex = 20
         '
         'SplitContainerOptions
         '
         Me.SplitContainerOptions.Anchor = CType((((System.Windows.Forms.AnchorStyles.Top Or System.Windows.Forms.AnchorStyles.Bottom) _
             Or System.Windows.Forms.AnchorStyles.Left) _
             Or System.Windows.Forms.AnchorStyles.Right), System.Windows.Forms.AnchorStyles)
-        Me.SplitContainerOptions.Location = New System.Drawing.Point(13, 56)
+        Me.SplitContainerOptions.Location = New System.Drawing.Point(10, 55)
         Me.SplitContainerOptions.Name = "SplitContainerOptions"
         '
         'SplitContainerOptions.Panel1
@@ -220,19 +241,17 @@ Partial Class FormMain
         'SplitContainerOptions.Panel2
         '
         Me.SplitContainerOptions.Panel2.Controls.Add(Me.PanelOpt)
-        Me.SplitContainerOptions.Size = New System.Drawing.Size(596, 299)
-        Me.SplitContainerOptions.SplitterDistance = 198
-        Me.SplitContainerOptions.TabIndex = 28
+        Me.SplitContainerOptions.Size = New System.Drawing.Size(600, 299)
+        Me.SplitContainerOptions.SplitterDistance = 199
+        Me.SplitContainerOptions.TabIndex = 25
         '
-        'ComboBoxPageSize
+        'PanelOpt
         '
-        Me.ComboBoxPageSize.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList
-        Me.ComboBoxPageSize.FormattingEnabled = True
-        Me.ComboBoxPageSize.Location = New System.Drawing.Point(67, 46)
-        Me.ComboBoxPageSize.Name = "ComboBoxPageSize"
-        Me.ComboBoxPageSize.Size = New System.Drawing.Size(133, 21)
-        Me.ComboBoxPageSize.TabIndex = 8
-        Me.ToolTip1.SetToolTip(Me.ComboBoxPageSize, "Set the scan area to match a predefined page size")
+        Me.PanelOpt.Dock = System.Windows.Forms.DockStyle.Fill
+        Me.PanelOpt.Location = New System.Drawing.Point(0, 0)
+        Me.PanelOpt.Name = "PanelOpt"
+        Me.PanelOpt.Size = New System.Drawing.Size(397, 299)
+        Me.PanelOpt.TabIndex = 35
         '
         'Label4
         '
@@ -242,17 +261,6 @@ Partial Class FormMain
         Me.Label4.Size = New System.Drawing.Size(55, 13)
         Me.Label4.TabIndex = 53
         Me.Label4.Text = "Page Size"
-        '
-        'CheckBoxSaveOnExit
-        '
-        Me.CheckBoxSaveOnExit.AutoSize = True
-        Me.CheckBoxSaveOnExit.Location = New System.Drawing.Point(386, 16)
-        Me.CheckBoxSaveOnExit.Name = "CheckBoxSaveOnExit"
-        Me.CheckBoxSaveOnExit.Size = New System.Drawing.Size(170, 17)
-        Me.CheckBoxSaveOnExit.TabIndex = 56
-        Me.CheckBoxSaveOnExit.Text = "Save current option set on exit"
-        Me.ToolTip1.SetToolTip(Me.CheckBoxSaveOnExit, "Save the currently active option set on exit")
-        Me.CheckBoxSaveOnExit.UseVisualStyleBackColor = True
         '
         'LabelOptionSet
         '
@@ -275,10 +283,10 @@ Partial Class FormMain
         Me.GroupBoxOptionSets.Controls.Add(Me.ButtonSaveOptionValueSet)
         Me.GroupBoxOptionSets.Controls.Add(Me.Label4)
         Me.GroupBoxOptionSets.Controls.Add(Me.ComboBoxOptionValueSet)
-        Me.GroupBoxOptionSets.Location = New System.Drawing.Point(13, 359)
+        Me.GroupBoxOptionSets.Location = New System.Drawing.Point(10, 358)
         Me.GroupBoxOptionSets.Name = "GroupBoxOptionSets"
-        Me.GroupBoxOptionSets.Size = New System.Drawing.Size(596, 77)
-        Me.GroupBoxOptionSets.TabIndex = 58
+        Me.GroupBoxOptionSets.Size = New System.Drawing.Size(600, 77)
+        Me.GroupBoxOptionSets.TabIndex = 40
         Me.GroupBoxOptionSets.TabStop = False
         '
         'GroupBoxDevice
@@ -292,10 +300,10 @@ Partial Class FormMain
         Me.GroupBoxDevice.Controls.Add(Me.Label3)
         Me.GroupBoxDevice.Controls.Add(Me.TextBoxDevice)
         Me.GroupBoxDevice.Controls.Add(Me.TextBoxPort)
-        Me.GroupBoxDevice.Location = New System.Drawing.Point(13, 6)
+        Me.GroupBoxDevice.Location = New System.Drawing.Point(10, 5)
         Me.GroupBoxDevice.Name = "GroupBoxDevice"
-        Me.GroupBoxDevice.Size = New System.Drawing.Size(596, 44)
-        Me.GroupBoxDevice.TabIndex = 59
+        Me.GroupBoxDevice.Size = New System.Drawing.Size(600, 44)
+        Me.GroupBoxDevice.TabIndex = 3
         Me.GroupBoxDevice.TabStop = False
         '
         'Label1
@@ -307,21 +315,13 @@ Partial Class FormMain
         Me.Label1.TabIndex = 25
         Me.Label1.Text = "Host"
         '
-        'PanelOpt
-        '
-        Me.PanelOpt.Dock = System.Windows.Forms.DockStyle.Fill
-        Me.PanelOpt.Location = New System.Drawing.Point(0, 0)
-        Me.PanelOpt.Name = "PanelOpt"
-        Me.PanelOpt.Size = New System.Drawing.Size(394, 299)
-        Me.PanelOpt.TabIndex = 6
-        '
         'FormMain
         '
         Me.AcceptButton = Me.ButtonOK
         Me.AutoScaleDimensions = New System.Drawing.SizeF(6.0!, 13.0!)
         Me.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font
         Me.CancelButton = Me.ButtonCancel
-        Me.ClientSize = New System.Drawing.Size(617, 476)
+        Me.ClientSize = New System.Drawing.Size(621, 476)
         Me.Controls.Add(Me.GroupBoxDevice)
         Me.Controls.Add(Me.GroupBoxOptionSets)
         Me.Controls.Add(Me.ButtonCancel)

@@ -3825,6 +3825,10 @@ Namespace TWAIN_VB
                             MyProgressForm.Text = MyForm.Text
                             MyProgressForm.Icon = MyForm.Icon
                             MyForm.ButtonOK.Enabled = True
+                            Try
+                                MyForm.ButtonOK.Focus()
+                            Catch
+                            End Try
                         Else
                             MyForm.ShowScanProgress = False
                             'MyForm.ButtonOK.PerformClick() 'this doesn't work for some reason
@@ -3848,6 +3852,10 @@ Namespace TWAIN_VB
                         MyForm.Mode = FormMain.UIMode.Configure
                         MyForm.Show()
                         MyForm.ButtonOK.Enabled = True
+                        Try
+                            MyForm.ButtonOK.Focus()
+                        Catch
+                        End Try
 
                         UserInterface.ModalUI = TW_FALSE
                         Marshal.StructureToPtr(UserInterface, _pData, True)

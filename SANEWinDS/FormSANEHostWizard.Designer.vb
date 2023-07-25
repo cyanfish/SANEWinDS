@@ -24,6 +24,9 @@ Partial Class FormSANEHostWizard
     Private Sub InitializeComponent()
         Me.ButtonNext = New System.Windows.Forms.Button()
         Me.PanelHost = New System.Windows.Forms.Panel()
+        Me.ButtonDefaultTimeout = New System.Windows.Forms.Button()
+        Me.ButtonDefaultPort = New System.Windows.Forms.Button()
+        Me.CheckBoxUseTSClientIP = New System.Windows.Forms.CheckBox()
         Me.Label3 = New System.Windows.Forms.Label()
         Me.TextBoxTimeout = New System.Windows.Forms.TextBox()
         Me.Label2 = New System.Windows.Forms.Label()
@@ -35,9 +38,6 @@ Partial Class FormSANEHostWizard
         Me.ComboBoxDevices = New System.Windows.Forms.ComboBox()
         Me.ButtonPrevious = New System.Windows.Forms.Button()
         Me.ButtonCancel = New System.Windows.Forms.Button()
-        Me.CheckBoxUseTSClientIP = New System.Windows.Forms.CheckBox()
-        Me.ButtonDefaultPort = New System.Windows.Forms.Button()
-        Me.ButtonDefaultTimeout = New System.Windows.Forms.Button()
         Me.PanelHost.SuspendLayout()
         Me.PanelDevice.SuspendLayout()
         Me.SuspendLayout()
@@ -68,6 +68,34 @@ Partial Class FormSANEHostWizard
         Me.PanelHost.Name = "PanelHost"
         Me.PanelHost.Size = New System.Drawing.Size(356, 138)
         Me.PanelHost.TabIndex = 1
+        '
+        'ButtonDefaultTimeout
+        '
+        Me.ButtonDefaultTimeout.Location = New System.Drawing.Point(254, 89)
+        Me.ButtonDefaultTimeout.Name = "ButtonDefaultTimeout"
+        Me.ButtonDefaultTimeout.Size = New System.Drawing.Size(87, 23)
+        Me.ButtonDefaultTimeout.TabIndex = 8
+        Me.ButtonDefaultTimeout.Text = "Default"
+        Me.ButtonDefaultTimeout.UseVisualStyleBackColor = True
+        '
+        'ButtonDefaultPort
+        '
+        Me.ButtonDefaultPort.Location = New System.Drawing.Point(254, 65)
+        Me.ButtonDefaultPort.Name = "ButtonDefaultPort"
+        Me.ButtonDefaultPort.Size = New System.Drawing.Size(87, 23)
+        Me.ButtonDefaultPort.TabIndex = 7
+        Me.ButtonDefaultPort.Text = "Default"
+        Me.ButtonDefaultPort.UseVisualStyleBackColor = True
+        '
+        'CheckBoxUseTSClientIP
+        '
+        Me.CheckBoxUseTSClientIP.AutoSize = True
+        Me.CheckBoxUseTSClientIP.Location = New System.Drawing.Point(148, 15)
+        Me.CheckBoxUseTSClientIP.Name = "CheckBoxUseTSClientIP"
+        Me.CheckBoxUseTSClientIP.Size = New System.Drawing.Size(174, 17)
+        Me.CheckBoxUseTSClientIP.TabIndex = 6
+        Me.CheckBoxUseTSClientIP.Text = "Use Terminal Services Client IP"
+        Me.CheckBoxUseTSClientIP.UseVisualStyleBackColor = True
         '
         'Label3
         '
@@ -124,7 +152,7 @@ Partial Class FormSANEHostWizard
         Me.PanelDevice.Controls.Add(Me.ComboBoxDevices)
         Me.PanelDevice.Location = New System.Drawing.Point(1, 41)
         Me.PanelDevice.Name = "PanelDevice"
-        Me.PanelDevice.Size = New System.Drawing.Size(204, 40)
+        Me.PanelDevice.Size = New System.Drawing.Size(344, 40)
         Me.PanelDevice.TabIndex = 2
         '
         'Label5
@@ -141,7 +169,7 @@ Partial Class FormSANEHostWizard
         Me.ComboBoxDevices.FormattingEnabled = True
         Me.ComboBoxDevices.Location = New System.Drawing.Point(55, 11)
         Me.ComboBoxDevices.Name = "ComboBoxDevices"
-        Me.ComboBoxDevices.Size = New System.Drawing.Size(146, 21)
+        Me.ComboBoxDevices.Size = New System.Drawing.Size(286, 21)
         Me.ComboBoxDevices.TabIndex = 0
         '
         'ButtonPrevious
@@ -161,34 +189,6 @@ Partial Class FormSANEHostWizard
         Me.ButtonCancel.TabIndex = 4
         Me.ButtonCancel.Text = "Cancel"
         Me.ButtonCancel.UseVisualStyleBackColor = True
-        '
-        'CheckBoxUseTSClientIP
-        '
-        Me.CheckBoxUseTSClientIP.AutoSize = True
-        Me.CheckBoxUseTSClientIP.Location = New System.Drawing.Point(148, 15)
-        Me.CheckBoxUseTSClientIP.Name = "CheckBoxUseTSClientIP"
-        Me.CheckBoxUseTSClientIP.Size = New System.Drawing.Size(174, 17)
-        Me.CheckBoxUseTSClientIP.TabIndex = 6
-        Me.CheckBoxUseTSClientIP.Text = "Use Terminal Services Client IP"
-        Me.CheckBoxUseTSClientIP.UseVisualStyleBackColor = True
-        '
-        'ButtonDefaultPort
-        '
-        Me.ButtonDefaultPort.Location = New System.Drawing.Point(254, 65)
-        Me.ButtonDefaultPort.Name = "ButtonDefaultPort"
-        Me.ButtonDefaultPort.Size = New System.Drawing.Size(87, 23)
-        Me.ButtonDefaultPort.TabIndex = 7
-        Me.ButtonDefaultPort.Text = "Default"
-        Me.ButtonDefaultPort.UseVisualStyleBackColor = True
-        '
-        'ButtonDefaultTimeout
-        '
-        Me.ButtonDefaultTimeout.Location = New System.Drawing.Point(254, 89)
-        Me.ButtonDefaultTimeout.Name = "ButtonDefaultTimeout"
-        Me.ButtonDefaultTimeout.Size = New System.Drawing.Size(87, 23)
-        Me.ButtonDefaultTimeout.TabIndex = 8
-        Me.ButtonDefaultTimeout.Text = "Default"
-        Me.ButtonDefaultTimeout.UseVisualStyleBackColor = True
         '
         'FormSANEHostWizard
         '

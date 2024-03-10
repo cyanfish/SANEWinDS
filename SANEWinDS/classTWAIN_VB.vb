@@ -3816,12 +3816,15 @@ Namespace TWAIN_VB
                     Else
                         Dim UserInterface As TW_USERINTERFACE = Marshal.PtrToStructure(_pData, GetType(TW_USERINTERFACE))
                         Logger.Debug("ShowUI = '{0}'", CBool(UserInterface.ShowUI))
-                        MyForm.Parent = System.Windows.Forms.Form.FromHandle(UserInterface.hParent)
                         MyForm.Mode = FormMain.UIMode.Scan
                         Me.SetState(TwainState.DS_Enabled)
                         If CBool(UserInterface.ShowUI) Then
                             MyForm.ShowScanProgress = True
-                            MyForm.Show()
+                            If UserInterface.hParent <> IntPtr.Zero Then
+                                MyForm.Show(new classWin32Window(UserInterface.hParent))
+                            Else
+                                MyForm.Show()
+                            End If
                             MyProgressForm.Text = MyForm.Text
                             MyProgressForm.Icon = MyForm.Icon
                             MyForm.ButtonOK.Enabled = True

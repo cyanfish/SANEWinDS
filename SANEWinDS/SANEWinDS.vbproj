@@ -121,6 +121,7 @@
     <Compile Include="classTSAPI.vb" />
     <Compile Include="classTWAIN_VB.vb" />
     <Compile Include="classUniversalConverter.vb" />
+    <Compile Include="classWin32Window.vb" />
     <Compile Include="classWinAPI.vb" />
     <Compile Include="FormMain.Designer.vb">
       <DependentUpon>FormMain.vb</DependentUpon>

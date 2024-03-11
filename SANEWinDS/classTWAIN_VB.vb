@@ -3413,7 +3413,7 @@ Namespace TWAIN_VB
                                             End Try
 
                                             Dim ItemOffset As Integer = Marshal.SizeOf(val_enum.ItemType) + Marshal.SizeOf(val_enum.NumItems) + Marshal.SizeOf(val_enum.CurrentIndex) + Marshal.SizeOf(val_enum.DefaultIndex)
-                                            Dim pContainer As IntPtr = WinAPI.GlobalAlloc(WinAPI.GlobalAllocFlags.GHND, CInt(ItemOffset + (2 * val_enum.NumItems)))
+                                            Dim pContainer As IntPtr = WinAPI.GlobalAlloc(WinAPI.GlobalAllocFlags.GHND, CInt(ItemOffset + (4 * val_enum.NumItems)))
                                             Marshal.WriteInt16(pContainer, val_enum.ItemType)
                                             Marshal.WriteInt32(pContainer + 2, val_enum.NumItems)
                                             Marshal.WriteInt32(pContainer + 6, val_enum.CurrentIndex)

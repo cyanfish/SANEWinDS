@@ -100,14 +100,14 @@ Class DIB
     Friend Sub CopyLinesToUnmanagedBuffer(ByVal LineOffset As Integer, ByVal LineCount As UInt32, ByVal AlignedBytesPerLine As UInt32, ByVal pBuffer As IntPtr)
         Try
             Dim B((AlignedBytesPerLine * LineCount) - 1) As Byte
-            MyStream.Seek(MyStream.Length - (AlignedBytesPerLine * LineOffset), IO.SeekOrigin.Begin) 'ok to seek past end of stream
+            MyStream.Seek(MyStream.Length - (AlignedBytesPerLine * (MyBitmapInfo.bmiHeader.biHeight - LineOffset - LineCount)), IO.SeekOrigin.Begin) 'ok to seek past end of stream
             Dim PreviousLineOffset As Integer = MyStream.Position
             For i As Integer = 0 To LineCount - 1
                 Dim Line(AlignedBytesPerLine - 1) As Byte
                 PreviousLineOffset -= AlignedBytesPerLine
                 MyStream.Seek(PreviousLineOffset, IO.SeekOrigin.Begin)
                 MyStream.Read(Line, 0, AlignedBytesPerLine)
-                If MyBitmapInfo.bmiHeader.bitCount = 24 Then RGBtoBGR(Line, 8) 'XXX what about other bitCounts?
+                If MyBitmapInfo.bmiHeader.bitCount = 24 Then RGBtoBGR(Line, 8)
                 Array.Copy(Line, 0, B, i * Line.Length, Line.Length)
             Next
             Marshal.Copy(B, 0, pBuffer, B.Length)

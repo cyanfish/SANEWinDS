@@ -172,6 +172,12 @@ Module modGlobals
         End Select
     End Sub
 
+    Public Sub WBtoBW(ByRef bytes() As Byte)
+        For i As UInt32 = 0 To bytes.Length - 1
+            bytes(i) = Not bytes(i)
+        Next
+    End Sub
+
     Private Sub SwapImageBytes(ByRef bytes() As Byte)
         For i As UInteger = 0 To bytes.Length - 1 Step 2
             If i < bytes.Length - 1 Then

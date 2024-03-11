@@ -108,6 +108,7 @@ Class DIB
                 MyStream.Seek(PreviousLineOffset, IO.SeekOrigin.Begin)
                 MyStream.Read(Line, 0, AlignedBytesPerLine)
                 If MyBitmapInfo.bmiHeader.bitCount = 24 Then RGBtoBGR(Line, 8)
+                If MyBitmapInfo.bmiHeader.bitCount = 1 Then WBtoBW(Line)
                 Array.Copy(Line, 0, B, i * Line.Length, Line.Length)
             Next
             Marshal.Copy(B, 0, pBuffer, B.Length)
